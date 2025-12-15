@@ -1,5 +1,5 @@
 # Binaries
-webcc/webcc
+webcc
 
 # Generated Web Artifacts (produced by the tool)
 app.wasm
