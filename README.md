@@ -152,4 +152,4 @@ Currently, the best way to learn WebCC is to explore the header files and exampl
 
 ## License
 
-MIT
+[MIT](LICENSE)
