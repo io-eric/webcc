@@ -108,6 +108,9 @@ When `webcc::flush()` is called, the buffer is passed to the JavaScript runtime,
 - **`webcc/audio.h`**: Audio playback and control.
 - **`webcc/input.h`**: Mouse and keyboard input handling.
 - **`webcc/system.h`**: System utilities (logging, main loop, title).
+- **`webcc/websocket.h`**: WebSocket communication.
+- **`webcc/storage.h`**: Local and session storage.
+- **`webcc/image.h`**: Image loading and drawing.
 
 ## Examples
 
