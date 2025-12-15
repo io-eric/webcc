@@ -19,7 +19,7 @@ dom|REMOVE_CLASS|remove_class|string:id string:cls|{ const el = elements.get(id)
 # ------------------------------------------------------------------------------
 # CANVAS 2D
 # ------------------------------------------------------------------------------
-canvas|CREATE_CANVAS|create_canvas|string:id float32:width float32:height|{ const c = document.createElement('canvas'); c.width = width; c.height = height; canvases.set(id, c); elements.set(id, c); }
+canvas|CREATE_CANVAS|create_canvas|string:id float32:width float32:height|{ const c = document.createElement('canvas'); c.id = id; c.width = width; c.height = height; canvases.set(id, c); elements.set(id, c); }
 canvas|SET_SIZE|set_size|string:id float32:width float32:height|{ const c = canvases.get(id); if(c) { c.width = width; c.height = height; } }
 canvas|SET_FILL_STYLE|set_fill_style|string:id uint8:r uint8:g uint8:b|{ const cv = canvases.get(id); if(!cv){ console.warn('set_fill_style: unknown canvas id', id); continue; } cv.getContext('2d').fillStyle = `rgb(${r},${g},${b})`; }
 canvas|SET_FILL_STYLE_STR|set_fill_style_str|string:id string:color|{ const cv = canvases.get(id); if(cv) cv.getContext('2d').fillStyle = color; }

@@ -62,6 +62,7 @@ const std::string JS_FLUSH_HEAD = R"(
 
         const view = new DataView(memory.buffer, ptr, size);
         let pos = 0;
+        const string_cache = [];
 
         // Loop through the buffer
         while (pos < size) {
@@ -182,8 +183,16 @@ static std::string gen_js_case(const CommandDef& c){
         } else if(p.type == "float32"){
             ss << "                const "<<varName<<" = view.getFloat32(pos, true); pos += 4;\n";
         } else if(p.type == "string"){
-            ss << "                const "<<varName<<"_len = view.getUint32(pos, true); pos += 4;\n";
-            ss << "                const "<<varName<<" = decoder.decode(new Uint8Array(memory.buffer, ptr + pos, "<<varName<<"_len)); pos += "<<varName<<"_len;\n";
+            ss << "                const "<<varName<<"_tag = view.getUint8(pos); pos += 1;\n";
+            ss << "                let "<<varName<<";\n";
+            ss << "                if ("<<varName<<"_tag === 0) {\n";
+            ss << "                    const "<<varName<<"_id = view.getUint16(pos, true); pos += 2;\n";
+            ss << "                    "<<varName<<" = string_cache["<<varName<<"_id];\n";
+            ss << "                } else {\n";
+            ss << "                    const "<<varName<<"_len = view.getUint16(pos, true); pos += 2;\n";
+            ss << "                    "<<varName<<" = decoder.decode(new Uint8Array(memory.buffer, ptr + pos, "<<varName<<"_len)); pos += "<<varName<<"_len;\n";
+            ss << "                    string_cache.push("<<varName<<");\n";
+            ss << "                }\n";
         } else {
             ss << "                // Unknown type: "<<p.type<<"\n";
         }
@@ -287,7 +296,7 @@ static void emit_command_headers(const std::vector<CommandDef>& defs){
                 else if(p.type=="uint32") out << "        push_data<uint32_t>("<<name<<");\n";
                 else if(p.type=="int32") out << "        push_data<int32_t>("<<name<<");\n";
                 else if(p.type=="float32") out << "        push_data<float>("<<name<<");\n";
-                else if(p.type=="string") out << "        { uint32_t len = strlen("<<name<<"); push_data<uint32_t>(len); webcc::CommandBuffer::push_bytes((const uint8_t*)"<<name<<", len); }\n";
+                else if(p.type=="string") out << "        webcc::CommandBuffer::push_string("<<name<<", strlen("<<name<<"));\n";
                 else out << "        // unknown type: "<<p.type<<"\n";
             }
             out << "    }\n\n";
