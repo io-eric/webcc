@@ -1,4 +1,3 @@
-// cli/webcc.cc
 #include <iostream>
 #include <fstream>
 #include <string>
