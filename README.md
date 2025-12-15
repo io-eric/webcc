@@ -6,111 +6,68 @@
 
 - **🚀 Lightweight**: Generates minimal WASM binaries and glue code.
 - **⚡ Fast**: Uses a binary command buffer to batch API calls, minimizing the C++/JS boundary overhead.
-- **🛠️ Simple Toolchain**: A single CLI tool (`webcc`) handles code generation, HTML scaffolding, and compilation.
-- **🌐 Web APIs**: First-class support for:
-  - **DOM**: Create and manipulate HTML elements.
-  - **Canvas 2D**: High-performance 2D rendering.
-  - **WebGL**: Direct access to WebGL for 3D graphics.
-  - **Audio**: Play sounds and control audio playback.
-  - **Input**: Handle keyboard and mouse events.
-  - **WebSockets**: Real-time network communication.
-  - **Storage**: Local storage and session storage.
-  - **Image**: Load and draw images.
-  - **System**: Logging, main loop, and window management.
+- **🌐 Web APIs**: First-class support for DOM, Canvas 2D, WebGL, Audio, Input, WebSockets, and more.
+- **🛠️ Simple Toolchain**: A single CLI tool handles code generation and compilation.
 
-## Prerequisites
+## Quick Start
 
-- **C++ Compiler**: `g++` or `clang++` with **C++17** support (required to build the CLI tool itself).
-- **Clang for WASM**: `clang++` (specifically `clang` version 8+ is recommended) is used **under the hood** to compile your code to WebAssembly.
-- **Environment**: Linux/macOS with Bash.
+Here is a complete example of creating a Canvas and drawing to it from C++:
 
-## Installation
+```cpp
+#include "webcc/canvas.h"
+#include "webcc/dom.h"
+#include "webcc/system.h"
 
-1. **Clone the repository:**
-   ```bash
-   git clone https://github.com/io-eric/webcc.git
-   cd webcc
-   ```
+int main() {
+    // Get the document body handle
+    int body = webcc::dom::get_body();
 
-2. **Build the CLI tool:**
-   ```bash
-   ./build.sh
-   ```
-   This will compile the `webcc` binary in the `webcc/` directory.
+    // Create a canvas element (800x600)
+    // Returns an integer handle for fast access
+    int canvas = webcc::canvas::create_canvas("game-canvas", 800, 600);
+    
+    // Append the canvas to the body
+    webcc::dom::append_child(body, canvas);
 
-## Usage
+    // Draw a blue background
+    webcc::canvas::set_fill_style(canvas, 52, 152, 219); // RGB
+    webcc::canvas::fill_rect(canvas, 0, 0, 800, 600);
 
-1. **Create a C++ file** (e.g., `main.cc`):
+    // Draw a yellow circle in the center
+    webcc::canvas::begin_path(canvas);
+    webcc::canvas::arc(canvas, 400, 300, 50, 0, 6.28318f);
+    webcc::canvas::set_fill_style(canvas, 241, 196, 15);
+    webcc::canvas::fill(canvas);
 
-   ```cpp
-   #include "webcc/canvas.h"
-   #include "webcc/dom.h"
-   #include "webcc/system.h"
+    // Draw some text
+    webcc::canvas::set_font(canvas, "30px Arial");
+    webcc::canvas::set_fill_style(canvas, 255, 255, 255);
+    webcc::canvas::fill_text(canvas, "Hello WebCC!", 310, 500);
 
-   int main() {
-       // Create a canvas element (800x600)
-       webcc::canvas::create_canvas("game-canvas", 800, 600);
-       webcc::dom::append_child("body", "game-canvas");
+    // Flush commands to JS
+    webcc::flush();
+    
+    return 0;
+}
+```
 
-       // Draw a blue background
-       webcc::canvas::set_fill_style("game-canvas", 52, 152, 219); // RGB
-       webcc::canvas::fill_rect("game-canvas", 0, 0, 800, 600);
+### Building & Running
 
-       // Draw a yellow circle in the center
-       webcc::canvas::begin_path("game-canvas");
-       webcc::canvas::arc("game-canvas", 400, 300, 50, 0, 6.28318f);
-       webcc::canvas::set_fill_style("game-canvas", 241, 196, 15);
-       webcc::canvas::fill("game-canvas");
+1.  **Build the toolchain** (first time only):
+    ```bash
+    ./build.sh
+    ```
 
-       // Draw some text
-       webcc::canvas::set_font("game-canvas", "30px Arial");
-       webcc::canvas::set_fill_style("game-canvas", 255, 255, 255);
-       webcc::canvas::fill_text("game-canvas", "Hello WebCC!", 310, 500);
+2.  **Compile your app**:
+    ```bash
+    ./webcc main.cc
+    ```
 
-       // Flush commands to JS
-       webcc::flush();
-       
-       return 0;
-   }
-   ```
-
-2. **Compile your application:**
-   Run the `webcc` tool (ensure you have built it first!) from the root of the repository, passing your source file:
-
-   ```bash
-   ./webcc main.cc
-   ```
-
-   This will generate:
-   - `app.wasm`: Your compiled WebAssembly code.
-   - `app.js`: The generated JavaScript runtime and bindings.
-   - `index.html`: A basic HTML entry point.
-
-3. **Run it:**
-   You need a local web server to serve WASM files correctly.
-
-   ```bash
-   python3 -m http.server
-   ```
-   Open [http://localhost:8000](http://localhost:8000) in your browser.
-
-## Architecture
-
-WebCC works by serializing API calls into a linear memory buffer. When you call a function like `webcc::dom::create_element`, it writes an opcode and arguments to this buffer.
-
-When `webcc::flush()` is called, the buffer is passed to the JavaScript runtime, which decodes the commands and executes the corresponding Web APIs. This batching approach significantly reduces the performance penalty of calling back and forth between WebAssembly and JavaScript.
-
-## Modules
-
-- **`webcc/dom.h`**: DOM manipulation (create, append, remove, attributes, innerHTML).
-- **`webcc/canvas.h`**: HTML5 Canvas 2D context (shapes, text, images, transforms).
-- **`webcc/webgl.h`**: WebGL context (shaders, buffers, drawing).
-- **`webcc/audio.h`**: Audio playback and control.
-- **`webcc/input.h`**: Mouse and keyboard input handling.
-- **`webcc/system.h`**: System utilities (logging, main loop, title).
-- **`webcc/websocket.h`**: WebSocket communication.
-- **`webcc/storage.h`**: Local and session storage.
-- **`webcc/image.h`**: Image loading and drawing.
+3.  **Run**:
+    ```bash
+    python3 -m http.server
+    ```
+    Open [http://localhost:8000](http://localhost:8000).
 
 ## Examples
 
@@ -131,27 +88,59 @@ Creating and styling HTML elements from C++.
 
 <img src="docs/images/dom_demo.gif" width="400" alt="DOM Demo">
 
-To build an example:
-```bash
-./webcc examples/webcc_canvas/example.cc
-```
+## Installation
 
-## Documentation
+1.  **Clone the repository:**
+    ```bash
+    git clone https://github.com/io-eric/webcc.git
+    cd webcc
+    ```
 
-Currently, the best way to learn WebCC is to explore the header files and examples:
+2.  **Prerequisites**:
+    - Linux/macOS with Bash.
+    - `clang++` (version 8+ recommended) for compiling WASM.
+    - A C++17 compiler for building the CLI tool.
 
-- **API Definitions**: `webcc/commands.def` contains the raw definitions of all supported JS operations.
-- **Headers**: `webcc/include/webcc/*.h` show the C++ API signatures.
-- **Examples**: `examples/` contains working demos for DOM, Canvas, WebGL, and Audio.
+## Architecture
 
-## Project Structure
+WebCC works by serializing API calls into a linear memory buffer (the **Command Buffer**). When you call a function like `webcc::canvas::fill_rect`, it writes a compact binary opcode and its arguments to this buffer.
 
-- `webcc/`: Source code for the CLI tool and runtime.
-  - `src/`: Implementation of the generator and command buffer.
-  - `include/`: Public headers (`webcc.h`, etc.).
-  - `examples/`: Example projects demonstrating different features.
-  - `commands.def`: Definition file for all supported Web API commands.
-  - `build.sh`: Build script for the CLI tool.
+When `webcc::flush()` is called, the buffer is passed to the JavaScript runtime, which decodes the commands and executes the corresponding Web APIs in a tight loop. This batching approach significantly reduces the overhead of crossing the WebAssembly/JavaScript boundary.
+
+### Resource Handles vs. Strings
+To maximize performance, WebCC uses **integer handles** to reference resources (like DOM elements, Canvases, Audio objects, and WebGL programs).
+- **Creation**: Functions like `create_element` or `create_canvas` return a unique `int` handle.
+- **Usage**: Subsequent commands use this integer handle, avoiding expensive string lookups or map queries on the JavaScript side during hot code paths (like rendering loops).
+- **Strings**: Strings are still used where necessary (e.g., setting text content, colors, or font styles).
+  - **Per-Frame Deduplication**: WebCC implements a smart string cache that resets every frame. If you use the same string (e.g., setting "red" color for 50 different objects) multiple times in a single frame, the string data is only sent across the WASM boundary **once**. Subsequent uses send a tiny 2-byte ID, significantly reducing bandwidth for repetitive text rendering.
+
+### Easy Extensibility
+The entire API surface is defined in a single configuration file: `commands.def`.
+- **Format**: `NAMESPACE|COMMAND_NAME|func_name|ARG_TYPES|JS_IMPLEMENTATION`
+- **Generation**: The `webcc` tool parses this file to automatically generate:
+  1.  **C++ Headers**: Type-safe function prototypes (e.g., `webcc/canvas.h`).
+  2.  **JavaScript Runtime**: The switch-case logic to execute commands in `app.js`.
+
+To add a new Web API feature, you simply add one line to `commands.def` and rebuild!
+
+## Contributing ✅
+
+- **Contributions welcome.** If you'd like to add a command, update `webcc/commands.def` following the file format and run `./build.sh` to regenerate headers and `app.js`.
+- **Small PRs are best.** Include a short example (or a unit test) demonstrating the new API and a brief description in the PR.
+- **Tips:** Prefer returning integer handles for created resources (use `RET:int32`), register DOM/audio/image objects in the `elements` map when appropriate, and ensure your JS implementation is robust (checks for missing handles, etc.).
+
+
+## Modules
+
+- **`webcc/dom.h`**: DOM manipulation (create, append, remove, attributes).
+- **`webcc/canvas.h`**: HTML5 Canvas 2D context.
+- **`webcc/webgl.h`**: WebGL context.
+- **`webcc/audio.h`**: Audio playback and control.
+- **`webcc/input.h`**: Mouse and keyboard input.
+- **`webcc/system.h`**: System utilities.
+- **`webcc/websocket.h`**: WebSocket communication.
+- **`webcc/storage.h`**: Local storage.
+- **`webcc/image.h`**: Image loading.
 
 ## License
 
