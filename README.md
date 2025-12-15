@@ -1,6 +1,6 @@
 # WebCC
 
-**WebCC** is a lightweight, zero-dependency C++ framework for building WebAssembly applications. It provides a direct, high-performance bridge between C++ and HTML5 APIs (DOM, Canvas, WebGL, Audio) without the overhead of heavy runtimes like Emscripten.
+**WebCC** is a lightweight, zero-dependency C++ framework for building WebAssembly applications. It provides a direct, high-performance bridge between C++ and HTML5 APIs (DOM, Canvas, WebGL, Audio, ...) without the overhead of heavy runtimes like Emscripten.
 
 ## Features
 
