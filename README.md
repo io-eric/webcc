@@ -126,7 +126,7 @@ A rotating 3D cube using raw WebGL calls.
 ### 3. DOM Manipulation (`webcc_dom`)
 Creating and styling HTML elements from C++.
 
-<img src="docs/images/dom_demo.png" width="400" alt="DOM Demo">
+<img src="docs/images/dom_demo.gif" width="400" alt="DOM Demo">
 
 To build an example:
 ```bash
