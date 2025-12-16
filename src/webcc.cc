@@ -56,16 +56,22 @@ const std::string JS_INIT_TAIL = R"(
 const std::string JS_FLUSH_HEAD = R"(
     // Reusable text decoder to avoid garbage collection overhead
     const decoder = new TextDecoder();
+    let view = new DataView(memory.buffer);
+    const string_cache = [];
 
     function flush(ptr, size) {
         if (size === 0) return;
 
-        const view = new DataView(memory.buffer, ptr, size);
-        let pos = 0;
-        const string_cache = [];
+        if (view.buffer !== memory.buffer) {
+            view = new DataView(memory.buffer);
+        }
+
+        let pos = ptr;
+        const end = ptr + size;
+        string_cache.length = 0;
 
         // Loop through the buffer
-        while (pos < size) {
+        while (pos < end) {
             const opcode = view.getUint8(pos);
             pos += 1;
 
@@ -190,7 +196,7 @@ static std::string gen_js_case(const CommandDef& c){
             ss << "                    "<<varName<<" = string_cache["<<varName<<"_id];\n";
             ss << "                } else {\n";
             ss << "                    const "<<varName<<"_len = view.getUint16(pos, true); pos += 2;\n";
-            ss << "                    "<<varName<<" = decoder.decode(new Uint8Array(memory.buffer, ptr + pos, "<<varName<<"_len)); pos += "<<varName<<"_len;\n";
+            ss << "                    "<<varName<<" = decoder.decode(new Uint8Array(memory.buffer, pos, "<<varName<<"_len)); pos += "<<varName<<"_len;\n";
             ss << "                    string_cache.push("<<varName<<");\n";
             ss << "                }\n";
         } else {
