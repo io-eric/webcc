@@ -4,11 +4,12 @@
 
 # WebCC
 
-**WebCC** is a lightweight, zero-dependency C++ framework for building WebAssembly applications. It provides a direct, high-performance bridge between C++ and HTML5 APIs (DOM, Canvas, WebGL, Audio, ...) without the overhead of heavy runtimes like Emscripten.
+**WebCC** is a lightweight, zero-dependency C++ framework for building WebAssembly applications. It provides a direct, high-performance bridge between C++ and HTML5 APIs (DOM, Canvas, WebGL, Audio, ...).
 
 ## Features
 
 - **🚀 Lightweight**: Generates minimal WASM binaries and glue code.
+- **📦 Zero Dependency**: No heavy runtimes or external libraries required.
 - **⚡ Fast**: Uses a binary command buffer to batch API calls, minimizing the C++/JS boundary overhead.
 - **🌐 Web APIs**: First-class support for DOM, Canvas 2D, WebGL, Audio, Input, WebSockets, and more.
 - **🛠️ Simple Toolchain**: A single CLI tool handles code generation and compilation.
@@ -33,8 +34,8 @@ int main() {
     // Append the canvas to the body
     webcc::dom::append_child(body, canvas);
 
-    // Draw a blue background
-    webcc::canvas::set_fill_style(canvas, 52, 152, 219); // RGB
+    // Draw a blue **background**
+    webcc::canvas::**set_fill_style**(canvas, 52, 152, 219); // RGB
     webcc::canvas::fill_rect(canvas, 0, 0, 800, 600);
 
     // Draw a yellow circle in the center
@@ -58,6 +59,7 @@ int main() {
 ### Building & Running
 
 1.  **Build the toolchain** (first time only):
+    Compiles the `webcc` CLI tool and generates the API headers (via `./webcc --headers`).
     ```bash
     ./build.sh
     ```
@@ -72,6 +74,24 @@ int main() {
     python3 -m http.server
     ```
     Open [http://localhost:8000](http://localhost:8000).
+
+## CLI Reference
+
+The `webcc` tool is your primary interface for the framework.
+
+### 1. Generate Headers
+Generates the C++ header files in `include/webcc/` based on `commands.def`. This is automatically run by `build.sh`.
+```bash
+./webcc --headers
+```
+
+### 2. Compile Application
+Compiles your C++ source files into `app.wasm`, and generates the optimized `app.js` and `index.html`.
+```bash
+./webcc main.cc [other_sources.cc ...]
+```
+**Options:**
+- `--defs <path>`: Specify a custom definitions file (default: `commands.def`).
 
 ## Examples
 
@@ -111,6 +131,22 @@ WebCC works by serializing API calls into a linear memory buffer (the **Command 
 
 When `webcc::flush()` is called, the buffer is passed to the JavaScript runtime, which decodes the commands and executes the corresponding Web APIs in a tight loop. This batching approach significantly reduces the overhead of crossing the WebAssembly/JavaScript boundary.
 
+> **Note**: Functions that return a value (e.g., `create_element`) are implemented as **direct WASM imports** (synchronous calls). To ensure correct execution order, they automatically trigger a `flush()` before running, ensuring all pending buffered commands are executed first.
+
+### Event System
+WebCC uses a secondary shared memory buffer for sending events (like mouse clicks, key presses, or WebSocket messages) from JavaScript to C++.
+- **Zero-Copy**: Events are written directly into WASM memory by the JS runtime.
+- **Polling**: The C++ application polls this buffer (e.g., once per frame) to process pending events.
+
+### Schema Generation
+The toolchain generates `include/webcc_schema.h` which embeds command definitions directly into the binary. This avoids the need to parse `commands.def` at runtime.
+
+### Compilation & Linking
+WebCC acts as a wrapper around `clang++`. It:
+1.  **Scans** your code to determine which Web APIs are used.
+2.  **Generates** a tree-shaken `app.js` containing only the necessary JS glue code for the features you use.
+3.  **Compiles** your C++ code to WebAssembly.
+
 ### Resource Handles vs. Strings
 To maximize performance, WebCC uses **integer handles** to reference resources (like DOM elements, Canvases, Audio objects, and WebGL programs).
 - **Creation**: Functions like `create_element` or `create_canvas` return a unique `int` handle.
@@ -125,7 +161,7 @@ The entire API surface is defined in a single configuration file: `commands.def`
   1.  **C++ Headers**: Type-safe function prototypes (e.g., `webcc/canvas.h`).
   2.  **JavaScript Runtime**: The switch-case logic to execute commands in `app.js`.
 
-To add a new Web API feature, you simply add one line to `commands.def` and rebuild!
+To add a new Web API feature, simply add a line to `commands.def` and run `./webcc --headers` to regenerate the C++ interface.
 
 ## Contributing ✅
 
