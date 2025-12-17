@@ -20,25 +20,25 @@ namespace webcc::audio {
     }
 
     inline void play(int32_t handle){
-        push_command((uint8_t)OP_PLAY);
+        push_command((uint32_t)OP_PLAY);
         push_data<int32_t>(handle);
     }
 
     inline void pause(int32_t handle){
-        push_command((uint8_t)OP_PAUSE);
+        push_command((uint32_t)OP_PAUSE);
         push_data<int32_t>(handle);
     }
 
     inline void set_volume(int32_t handle, float vol){
-        push_command((uint8_t)OP_SET_VOLUME);
+        push_command((uint32_t)OP_SET_VOLUME);
         push_data<int32_t>(handle);
         push_data<float>(vol);
     }
 
     inline void set_loop(int32_t handle, uint8_t loop){
-        push_command((uint8_t)OP_SET_LOOP);
+        push_command((uint32_t)OP_SET_LOOP);
         push_data<int32_t>(handle);
-        push_data<uint8_t>(loop);
+        push_data<uint32_t>((uint32_t)loop);
     }
 
     extern "C" float webcc_audio_get_current_time(int32_t handle);

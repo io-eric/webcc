@@ -4,7 +4,7 @@ namespace webcc {
 
 namespace {
     constexpr size_t MAX_BUFFER_SIZE = 1024 * 1024; // 1MB
-    static uint8_t g_buffer[MAX_BUFFER_SIZE];
+    alignas(4) static uint8_t g_buffer[MAX_BUFFER_SIZE];
     static size_t g_offset = 0;
 
     struct StringCacheEntry {
@@ -16,19 +16,23 @@ namespace {
     static uint16_t g_string_count = 0;
 }
 
-void CommandBuffer::push_byte(uint8_t b){
-    if (g_offset < MAX_BUFFER_SIZE) {
-        g_buffer[g_offset++] = b;
+void CommandBuffer::push_u32(uint32_t v) {
+    if (g_offset + 4 <= MAX_BUFFER_SIZE) {
+        g_buffer[g_offset++] = v & 0xFF;
+        g_buffer[g_offset++] = (v >> 8) & 0xFF;
+        g_buffer[g_offset++] = (v >> 16) & 0xFF;
+        g_buffer[g_offset++] = (v >> 24) & 0xFF;
     }
 }
 
-void CommandBuffer::push_bytes(const uint8_t* data, size_t len){
-    if(!data || len==0) return;
-    if (g_offset + len <= MAX_BUFFER_SIZE) {
-        for(size_t i=0; i<len; ++i) {
-            g_buffer[g_offset++] = data[i];
-        }
-    }
+void CommandBuffer::push_i32(int32_t v) {
+    push_u32(static_cast<uint32_t>(v));
+}
+
+void CommandBuffer::push_float(float v) {
+    uint32_t u;
+    __builtin_memcpy(&u, &v, 4);
+    push_u32(u);
 }
 
 void CommandBuffer::push_string(const char* str, size_t len) {
@@ -40,19 +44,26 @@ void CommandBuffer::push_string(const char* str, size_t len) {
                 if (g_string_cache[i].ptr[j] != str[j]) { match = false; break; }
             }
             if (match) {
-                push_byte(0); // Tag: Cached
-                push_byte(g_string_cache[i].id & 0xFF);
-                push_byte(g_string_cache[i].id >> 8);
+                push_u32(0); // Tag: Cached
+                push_u32(g_string_cache[i].id);
                 return;
             }
         }
     }
 
     // Not found
-    push_byte(1); // Tag: New
-    push_byte(len & 0xFF);
-    push_byte(len >> 8);
-    push_bytes((const uint8_t*)str, len);
+    push_u32(1); // Tag: New
+    push_u32((uint32_t)len);
+    
+    if (g_offset + len <= MAX_BUFFER_SIZE) {
+        for(size_t k=0; k<len; ++k) g_buffer[g_offset++] = str[k];
+    }
+    
+    // Pad to 4 bytes
+    size_t pad = (4 - (len % 4)) % 4;
+    for(size_t k=0; k<pad; ++k) {
+        if(g_offset < MAX_BUFFER_SIZE) g_buffer[g_offset++] = 0;
+    }
 
     // Add to cache
     if (g_string_count < 512) {

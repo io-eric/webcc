@@ -91,6 +91,8 @@ const std::string JS_FLUSH_HEAD = R"(
     const decoder = new TextDecoder();
     let view = new DataView(memory.buffer);
     let u8 = new Uint8Array(memory.buffer);
+    let i32 = new Int32Array(memory.buffer);
+    let f32 = new Float32Array(memory.buffer);
     const string_cache = [];
 
     function flush(ptr, size) {
@@ -99,6 +101,8 @@ const std::string JS_FLUSH_HEAD = R"(
         if (view.buffer !== memory.buffer) {
             view = new DataView(memory.buffer);
             u8 = new Uint8Array(memory.buffer);
+            i32 = new Int32Array(memory.buffer);
+            f32 = new Float32Array(memory.buffer);
         }
 
         let pos = ptr;
@@ -107,8 +111,12 @@ const std::string JS_FLUSH_HEAD = R"(
 
         // Loop through the buffer
         while (pos < end) {
-            const opcode = u8[pos];
-            pos += 1;
+            if (pos + 4 > end) {
+                console.error("WebCC: Unexpected end of buffer reading opcode");
+                break;
+            }
+            const opcode = i32[pos >> 2];
+            pos += 4;
 
             switch (opcode) {
 )";
@@ -325,32 +333,36 @@ static std::string gen_js_case(const CommandDef &c)
     {
         const auto &p = c.params[i];
         std::string varName = p.name.empty() ? ("arg" + std::to_string(i)) : p.name;
-        if (p.type == "uint8")
+        if (p.type == "uint8" || p.type == "uint32")
         {
-            ss << "                const " << varName << " = u8[pos]; pos += 1;\n";
-        }
-        else if (p.type == "uint32")
-        {
-            ss << "                const " << varName << " = view.getUint32(pos, true); pos += 4;\n";
+            ss << "                if (pos + 4 > end) { console.error('WebCC: OOB " << varName << "'); break; }\n";
+            ss << "                const " << varName << " = i32[pos >> 2]; pos += 4;\n";
         }
         else if (p.type == "int32")
         {
-            ss << "                const " << varName << " = view.getInt32(pos, true); pos += 4;\n";
+            ss << "                if (pos + 4 > end) { console.error('WebCC: OOB " << varName << "'); break; }\n";
+            ss << "                const " << varName << " = i32[pos >> 2]; pos += 4;\n";
         }
         else if (p.type == "float32")
         {
-            ss << "                const " << varName << " = view.getFloat32(pos, true); pos += 4;\n";
+            ss << "                if (pos + 4 > end) { console.error('WebCC: OOB " << varName << "'); break; }\n";
+            ss << "                const " << varName << " = f32[pos >> 2]; pos += 4;\n";
         }
         else if (p.type == "string")
         {
-            ss << "                const " << varName << "_tag = u8[pos]; pos += 1;\n";
+            ss << "                if (pos + 4 > end) { console.error('WebCC: OOB " << varName << "_tag'); break; }\n";
+            ss << "                const " << varName << "_tag = i32[pos >> 2]; pos += 4;\n";
             ss << "                let " << varName << ";\n";
             ss << "                if (" << varName << "_tag === 0) {\n";
-            ss << "                    const " << varName << "_id = view.getUint16(pos, true); pos += 2;\n";
+            ss << "                    if (pos + 4 > end) { console.error('WebCC: OOB " << varName << "_id'); break; }\n";
+            ss << "                    const " << varName << "_id = i32[pos >> 2]; pos += 4;\n";
             ss << "                    " << varName << " = string_cache[" << varName << "_id];\n";
             ss << "                } else {\n";
-            ss << "                    const " << varName << "_len = view.getUint16(pos, true); pos += 2;\n";
-            ss << "                    " << varName << " = decoder.decode(u8.subarray(pos, pos + " << varName << "_len)); pos += " << varName << "_len;\n";
+            ss << "                    if (pos + 4 > end) { console.error('WebCC: OOB " << varName << "_len'); break; }\n";
+            ss << "                    const " << varName << "_len = i32[pos >> 2]; pos += 4;\n";
+            ss << "                    const " << varName << "_padded = (" << varName << "_len + 3) & ~3;\n";
+            ss << "                    if (pos + " << varName << "_padded > end) { console.error('WebCC: OOB " << varName << "_data'); break; }\n";
+            ss << "                    " << varName << " = decoder.decode(u8.subarray(pos, pos + " << varName << "_len)); pos += " << varName << "_padded;\n";
             ss << "                    string_cache.push(" << varName << ");\n";
             ss << "                }\n";
         }
@@ -587,13 +599,13 @@ static void emit_headers(const Defs &defs)
                     out << "/*unknown*/ void* " << name;
             }
             out << "){\n";
-            out << "        push_command((uint8_t)OP_" << d.name << ");\n";
+            out << "        push_command((uint32_t)OP_" << d.name << ");\n";
             for (size_t i = 0; i < d.params.size(); ++i)
             {
                 const auto &p = d.params[i];
                 std::string name = p.name.empty() ? ("arg" + std::to_string(i)) : p.name;
                 if (p.type == "uint8")
-                    out << "        push_data<uint8_t>(" << name << ");\n";
+                    out << "        push_data<uint32_t>((uint32_t)" << name << ");\n";
                 else if (p.type == "uint32")
                     out << "        push_data<uint32_t>(" << name << ");\n";
                 else if (p.type == "int32")
@@ -816,29 +828,29 @@ int main(int argc, char **argv)
 
     // Emit resource maps (e.g., for DOM elements, canvases) if they are used.
     if (used_maps.count("elements"))
-        js_builder << "    const elements = new Map(); elements.set('body', document.body);\n";
+        js_builder << "    const elements = []; elements[0] = document.body;\n";
     if (used_maps.count("canvases"))
-        js_builder << "    const canvases = new Map();\n";
+        js_builder << "    const canvases = [];\n";
     if (used_maps.count("contexts_2d"))
-        js_builder << "    const contexts_2d = new Map();\n";
+        js_builder << "    const contexts_2d = [];\n";
     if (used_maps.count("audios"))
-        js_builder << "    const audios = new Map();\n";
+        js_builder << "    const audios = [];\n";
     if (used_maps.count("websockets"))
-        js_builder << "    const websockets = new Map();\n";
+        js_builder << "    const websockets = [];\n";
     if (used_maps.count("images"))
-        js_builder << "    const images = new Map();\n";
+        js_builder << "    const images = [];\n";
     if (used_maps.count("contexts"))
-        js_builder << "    const contexts = new Map();\n";
+        js_builder << "    const contexts = [];\n";
     if (used_maps.count("shaders"))
-        js_builder << "    const shaders = new Map();\n";
+        js_builder << "    const shaders = [];\n";
     if (used_maps.count("programs"))
-        js_builder << "    const programs = new Map();\n";
+        js_builder << "    const programs = [];\n";
     if (used_maps.count("buffers"))
-        js_builder << "    const buffers = new Map();\n";
+        js_builder << "    const buffers = [];\n";
     if (used_maps.count("textures"))
-        js_builder << "    const textures = new Map();\n";
+        js_builder << "    const textures = [];\n";
     if (used_maps.count("uniforms"))
-        js_builder << "    const uniforms = new Map();\n";
+        js_builder << "    const uniforms = [];\n";
 
     // Assemble the final JavaScript file.
     std::stringstream final_js;
@@ -917,13 +929,14 @@ int main(int argc, char **argv)
     // We construct the clang command here.
     // Flags explanation:
     // --target=wasm32       : Output WebAssembly
+    // -nostdlib             : Don't link standard C++ library (WASM has no libc)
     // -Wl,--no-entry        : We don't have a standard C main() entry point immediately
     // -Wl,--export-all      : Export our functions (webcc_get_buffer, etc) to JS
     // -Wl,--allow-undefined : Allow 'webcc_js_flush' to be undefined (JS provides it)
     // Add both the top-level `include` (generated headers) and the
     // `webcc/include` path (packaged headers) so user code can include
     // either `webcc/...` or generated `include/...` headers.
-    std::string cmd = "clang++ --target=wasm32 -O3 "
+    std::string cmd = "clang++ --target=wasm32 -O3 -std=c++20 -nostdlib "
                       "-Wl,--no-entry -Wl,--export-all -Wl,--allow-undefined "
                       "-o app.wasm " +
                       source_files + " src/command_buffer.cc src/event_buffer.cc -I include";

@@ -10,18 +10,18 @@ namespace webcc::storage {
     };
 
     inline void set_item(const char* key, const char* value){
-        push_command((uint8_t)OP_SET_ITEM);
+        push_command((uint32_t)OP_SET_ITEM);
         webcc::CommandBuffer::push_string(key, strlen(key));
         webcc::CommandBuffer::push_string(value, strlen(value));
     }
 
     inline void remove_item(const char* key){
-        push_command((uint8_t)OP_REMOVE_ITEM);
+        push_command((uint32_t)OP_REMOVE_ITEM);
         webcc::CommandBuffer::push_string(key, strlen(key));
     }
 
     inline void clear(){
-        push_command((uint8_t)OP_CLEAR);
+        push_command((uint32_t)OP_CLEAR);
     }
 
 } // namespace webcc::storage

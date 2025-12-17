@@ -6,13 +6,12 @@
 namespace webcc {
 
 struct CommandBuffer {
-    // Append a single byte to the buffer
-    static void push_byte(uint8_t b);
+    // Append a 32-bit integer (aligned)
+    static void push_u32(uint32_t v);
+    static void push_i32(int32_t v);
+    static void push_float(float v);
 
-    // Append raw bytes to the buffer
-    static void push_bytes(const uint8_t* data, size_t len);
-
-    // Append a string with caching/interning support
+    // Append a string with caching/interning support (aligned)
     static void push_string(const char* str, size_t len);
 
     // Accessors used by the JS runtime (exported C symbols call these)

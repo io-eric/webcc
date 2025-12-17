@@ -29,49 +29,49 @@ namespace webcc::dom {
     }
 
     inline void set_attribute(int32_t handle, const char* name, const char* value){
-        push_command((uint8_t)OP_SET_ATTRIBUTE);
+        push_command((uint32_t)OP_SET_ATTRIBUTE);
         push_data<int32_t>(handle);
         webcc::CommandBuffer::push_string(name, strlen(name));
         webcc::CommandBuffer::push_string(value, strlen(value));
     }
 
     inline void get_attribute(int32_t handle, const char* name){
-        push_command((uint8_t)OP_GET_ATTRIBUTE);
+        push_command((uint32_t)OP_GET_ATTRIBUTE);
         push_data<int32_t>(handle);
         webcc::CommandBuffer::push_string(name, strlen(name));
     }
 
     inline void append_child(int32_t parent_handle, int32_t child_handle){
-        push_command((uint8_t)OP_APPEND_CHILD);
+        push_command((uint32_t)OP_APPEND_CHILD);
         push_data<int32_t>(parent_handle);
         push_data<int32_t>(child_handle);
     }
 
     inline void remove_element(int32_t handle){
-        push_command((uint8_t)OP_REMOVE_ELEMENT);
+        push_command((uint32_t)OP_REMOVE_ELEMENT);
         push_data<int32_t>(handle);
     }
 
     inline void set_inner_html(int32_t handle, const char* html){
-        push_command((uint8_t)OP_SET_INNER_HTML);
+        push_command((uint32_t)OP_SET_INNER_HTML);
         push_data<int32_t>(handle);
         webcc::CommandBuffer::push_string(html, strlen(html));
     }
 
     inline void set_inner_text(int32_t handle, const char* text){
-        push_command((uint8_t)OP_SET_INNER_TEXT);
+        push_command((uint32_t)OP_SET_INNER_TEXT);
         push_data<int32_t>(handle);
         webcc::CommandBuffer::push_string(text, strlen(text));
     }
 
     inline void add_class(int32_t handle, const char* cls){
-        push_command((uint8_t)OP_ADD_CLASS);
+        push_command((uint32_t)OP_ADD_CLASS);
         push_data<int32_t>(handle);
         webcc::CommandBuffer::push_string(cls, strlen(cls));
     }
 
     inline void remove_class(int32_t handle, const char* cls){
-        push_command((uint8_t)OP_REMOVE_CLASS);
+        push_command((uint32_t)OP_REMOVE_CLASS);
         push_data<int32_t>(handle);
         webcc::CommandBuffer::push_string(cls, strlen(cls));
     }

@@ -30,13 +30,13 @@ namespace webcc::websocket {
     }
 
     inline void send(int32_t handle, const char* msg){
-        push_command((uint8_t)OP_SEND);
+        push_command((uint32_t)OP_SEND);
         push_data<int32_t>(handle);
         webcc::CommandBuffer::push_string(msg, strlen(msg));
     }
 
     inline void close(int32_t handle){
-        push_command((uint8_t)OP_CLOSE);
+        push_command((uint32_t)OP_CLOSE);
         push_data<int32_t>(handle);
     }
 
