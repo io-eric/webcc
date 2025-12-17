@@ -92,6 +92,7 @@ float angle = 0.0f;
 int gl = 0;
 int prog = 0;
 int vbo = 0;
+int angle_loc = 0;
 
 float last_time = 0.0f;
 float fps = 0.0f;
@@ -118,7 +119,7 @@ extern "C" void update(float time_ms) {
     webcc::webgl::use_program(gl, prog);
     
     // Update uniform
-    webcc::webgl::uniform_1f(gl, prog, "angle", angle);
+    webcc::webgl::uniform_1f(gl, angle_loc, angle);
 
     webcc::webgl::bind_buffer(gl, 0x8892, vbo);
     
@@ -192,7 +193,12 @@ int main() {
     webcc::webgl::bind_attrib_location(gl, prog, 0, "position");
     webcc::webgl::bind_attrib_location(gl, prog, 1, "color");
     webcc::webgl::link_program(gl, prog);
-    
+
+    angle_loc = webcc::webgl::get_uniform_location(gl, prog, "angle");
+    if (angle_loc <= 0) {
+        webcc::system::error("Failed to get angle uniform location");
+    }
+
     // Create Buffer
     vbo = webcc::webgl::create_buffer(gl);
     webcc::webgl::bind_buffer(gl, 0x8892, vbo); // GL_ARRAY_BUFFER

@@ -40,7 +40,8 @@ namespace webcc::canvas {
 
     extern "C" int32_t webcc_canvas_create_canvas(const char* dom_id, uint32_t dom_id_len, float width, float height);
     inline int32_t create_canvas(const char* dom_id, float width, float height){
-        return webcc_canvas_create_canvas(dom_id, strlen(dom_id), width, height);
+        ::webcc::flush();
+        return webcc_canvas_create_canvas(dom_id, webcc::strlen(dom_id), width, height);
     }
 
     inline void set_size(int32_t handle, float width, float height){

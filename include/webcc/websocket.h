@@ -10,7 +10,8 @@ namespace webcc::websocket {
 
     extern "C" int32_t webcc_websocket_create(const char* url, uint32_t url_len);
     inline int32_t create(const char* url){
-        return webcc_websocket_create(url, strlen(url));
+        ::webcc::flush();
+        return webcc_websocket_create(url, webcc::strlen(url));
     }
 
     inline void send(int32_t handle, const char* msg){

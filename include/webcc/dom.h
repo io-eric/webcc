@@ -17,12 +17,14 @@ namespace webcc::dom {
 
     extern "C" int32_t webcc_dom_get_body();
     inline int32_t get_body(){
+        ::webcc::flush();
         return webcc_dom_get_body();
     }
 
     extern "C" int32_t webcc_dom_create_element(const char* tag, uint32_t tag_len);
     inline int32_t create_element(const char* tag){
-        return webcc_dom_create_element(tag, strlen(tag));
+        ::webcc::flush();
+        return webcc_dom_create_element(tag, webcc::strlen(tag));
     }
 
     inline void set_attribute(int32_t handle, const char* name, const char* value){

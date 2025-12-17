@@ -14,7 +14,8 @@ namespace webcc::audio {
 
     extern "C" int32_t webcc_audio_create_audio(const char* src, uint32_t src_len);
     inline int32_t create_audio(const char* src){
-        return webcc_audio_create_audio(src, strlen(src));
+        ::webcc::flush();
+        return webcc_audio_create_audio(src, webcc::strlen(src));
     }
 
     inline void play(int32_t handle){
@@ -41,11 +42,13 @@ namespace webcc::audio {
 
     extern "C" float webcc_audio_get_current_time(int32_t handle);
     inline float get_current_time(int32_t handle){
+        ::webcc::flush();
         return webcc_audio_get_current_time(handle);
     }
 
     extern "C" float webcc_audio_get_duration(int32_t handle);
     inline float get_duration(int32_t handle){
+        ::webcc::flush();
         return webcc_audio_get_duration(handle);
     }
 

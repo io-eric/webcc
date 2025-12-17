@@ -8,7 +8,8 @@ namespace webcc::image {
 
     extern "C" int32_t webcc_image_load(const char* src, uint32_t src_len);
     inline int32_t load(const char* src){
-        return webcc_image_load(src, strlen(src));
+        ::webcc::flush();
+        return webcc_image_load(src, webcc::strlen(src));
     }
 
 } // namespace webcc::image

@@ -272,13 +272,14 @@ static void emit_command_headers(const std::vector<CommandDef>& defs){
                     else out << "/*unknown*/ void* "<<name;
                 }
                 out << "){\n";
+                out << "        ::webcc::flush();\n";
                 out << "        return webcc_" << d.ns << "_" << d.func_name << "(";
                 for(size_t i=0;i<d.params.size();++i){
                     if(i) out << ", ";
                     const auto& p = d.params[i];
                     std::string name = p.name.empty() ? ("arg" + std::to_string(i)) : p.name;
                     out << name;
-                    if(p.type=="string") out << ", strlen(" << name << ")";
+                    if(p.type=="string") out << ", webcc::strlen(" << name << ")";
                 }
                 out << ");\n";
                 out << "    }\n\n";

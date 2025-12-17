@@ -18,13 +18,15 @@ namespace webcc::webgl {
         OP_BUFFER_DATA = 0x52,
         OP_ENABLE_VERTEX_ATTRIB_ARRAY = 0x53,
         OP_ENABLE = 0x54,
-        OP_UNIFORM_1F = 0x55,
-        OP_VERTEX_ATTRIB_POINTER = 0x56,
-        OP_DRAW_ARRAYS = 0x57
+        OP_GET_UNIFORM_LOCATION = 0x55,
+        OP_UNIFORM_1F = 0x56,
+        OP_VERTEX_ATTRIB_POINTER = 0x57,
+        OP_DRAW_ARRAYS = 0x58
     };
 
     extern "C" int32_t webcc_webgl_create_context(int32_t canvas_handle);
     inline int32_t create_context(int32_t canvas_handle){
+        ::webcc::flush();
         return webcc_webgl_create_context(canvas_handle);
     }
 
@@ -54,11 +56,13 @@ namespace webcc::webgl {
 
     extern "C" int32_t webcc_webgl_create_shader(int32_t ctx_handle, uint32_t type, const char* source, uint32_t source_len);
     inline int32_t create_shader(int32_t ctx_handle, uint32_t type, const char* source){
-        return webcc_webgl_create_shader(ctx_handle, type, source, strlen(source));
+        ::webcc::flush();
+        return webcc_webgl_create_shader(ctx_handle, type, source, webcc::strlen(source));
     }
 
     extern "C" int32_t webcc_webgl_create_program(int32_t ctx_handle);
     inline int32_t create_program(int32_t ctx_handle){
+        ::webcc::flush();
         return webcc_webgl_create_program(ctx_handle);
     }
 
@@ -91,6 +95,7 @@ namespace webcc::webgl {
 
     extern "C" int32_t webcc_webgl_create_buffer(int32_t ctx_handle);
     inline int32_t create_buffer(int32_t ctx_handle){
+        ::webcc::flush();
         return webcc_webgl_create_buffer(ctx_handle);
     }
 
@@ -122,11 +127,16 @@ namespace webcc::webgl {
         push_data<uint32_t>(cap);
     }
 
-    inline void uniform_1f(int32_t ctx_handle, int32_t prog_handle, const char* name, float val){
+    extern "C" int32_t webcc_webgl_get_uniform_location(int32_t ctx_handle, int32_t prog_handle, const char* name, uint32_t name_len);
+    inline int32_t get_uniform_location(int32_t ctx_handle, int32_t prog_handle, const char* name){
+        ::webcc::flush();
+        return webcc_webgl_get_uniform_location(ctx_handle, prog_handle, name, webcc::strlen(name));
+    }
+
+    inline void uniform_1f(int32_t ctx_handle, int32_t loc_handle, float val){
         push_command((uint8_t)OP_UNIFORM_1F);
         push_data<int32_t>(ctx_handle);
-        push_data<int32_t>(prog_handle);
-        webcc::CommandBuffer::push_string(name, strlen(name));
+        push_data<int32_t>(loc_handle);
         push_data<float>(val);
     }
 
