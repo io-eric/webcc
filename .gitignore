@@ -11,3 +11,8 @@ index.html
 .vscode/
 build/
 dist/
+
+# Generated C++ Headers
+include/webcc_schema.h
+include/webcc/*.h
+!include/webcc/webcc.h

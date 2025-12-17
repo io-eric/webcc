@@ -7,26 +7,56 @@
 #include <cstdint>
 #include <sys/stat.h>
 #include <set>
+#include <unistd.h>
+#include <limits.h>
 
-// Small helpers used by the CLI to read and write files
-static std::string read_file(const std::string& path){
+// Small helpers used by the CLI to read and write files.
+
+// Reads the entire contents of a file into a string.
+static std::string read_file(const std::string &path)
+{
     std::ifstream in(path, std::ios::in | std::ios::binary);
-    if(!in) return std::string();
+    if (!in)
+        return std::string();
     std::ostringstream ss;
     ss << in.rdbuf();
     return ss.str();
 }
 
-static bool write_file(const std::string& path, const std::string& contents){
+// Gets the full path to the currently running executable.
+static std::string get_executable_path() {
+    char result[PATH_MAX];
+    ssize_t count = readlink("/proc/self/exe", result, PATH_MAX);
+    if (count != -1) {
+        return std::string(result, count);
+    }
+    return "";
+}
+
+// Gets the directory where the currently running executable is located.
+static std::string get_executable_dir() {
+    std::string path = get_executable_path();
+    size_t pos = path.find_last_of("/");
+    if (pos != std::string::npos) {
+        return path.substr(0, pos);
+    }
+    return ".";
+}
+
+// Writes a string to a file, creating parent directories if they don't exist.
+static bool write_file(const std::string &path, const std::string &contents)
+{
     // Ensure parent directories exist roughly (best-effort)
     size_t pos = path.find_last_of("/");
-    if(pos != std::string::npos){
+    if (pos != std::string::npos)
+    {
         std::string dir = path.substr(0, pos);
         // try creating directory; ignore errors
         mkdir(dir.c_str(), 0755);
     }
     std::ofstream out(path, std::ios::out | std::ios::binary);
-    if(!out) return false;
+    if (!out)
+        return false;
     out << contents;
     return out.good();
 }
@@ -35,6 +65,7 @@ static bool write_file(const std::string& path, const std::string& contents){
 // 1. The Javascript Templates
 // -----------------------------------------------------------------------------
 
+// JS code to initialize the WebAssembly module and set up the environment.
 const std::string JS_INIT_HEAD = R"(
 const run = async () => {
     const response = await fetch('app.wasm');
@@ -45,6 +76,7 @@ const run = async () => {
             webcc_js_flush: (ptr, size) => flush(ptr, size)
 )";
 
+// JS code to finalize WASM instantiation and get exported functions.
 const std::string JS_INIT_TAIL = R"(
         }
     });
@@ -53,10 +85,12 @@ const std::string JS_INIT_TAIL = R"(
     const { memory, main } = mod.instance.exports;
 )";
 
+// JS code for the 'flush' function, which processes commands from C++.
 const std::string JS_FLUSH_HEAD = R"(
     // Reusable text decoder to avoid garbage collection overhead
     const decoder = new TextDecoder();
     let view = new DataView(memory.buffer);
+    let u8 = new Uint8Array(memory.buffer);
     const string_cache = [];
 
     function flush(ptr, size) {
@@ -64,6 +98,7 @@ const std::string JS_FLUSH_HEAD = R"(
 
         if (view.buffer !== memory.buffer) {
             view = new DataView(memory.buffer);
+            u8 = new Uint8Array(memory.buffer);
         }
 
         let pos = ptr;
@@ -72,7 +107,7 @@ const std::string JS_FLUSH_HEAD = R"(
 
         // Loop through the buffer
         while (pos < end) {
-            const opcode = view.getUint8(pos);
+            const opcode = u8[pos];
             pos += 1;
 
             switch (opcode) {
@@ -97,110 +132,231 @@ run();
 // 2. The Feature Database
 // -----------------------------------------------------------------------------
 
-// The Feature Database is driven by `webcc/commands.def`
+// The Feature Database is driven by `commands.def`.
+// It defines the available commands and events that can be used to communicate
+// between C++ and JavaScript.
 
-struct Param {
+// Represents a parameter for a command or event.
+struct Param
+{
     std::string type;
     std::string name; // optional; if empty we'll generate argN
 };
 
-struct CommandDef {
-    std::string ns; // Namespace
+// Represents a command definition from `commands.def`.
+struct CommandDef
+{
+    std::string ns;   // Namespace
     std::string name; // NAME token
     uint8_t opcode;
-    std::string func_name; // C++ function name to search for
+    std::string func_name;     // C++ function name to search for
     std::vector<Param> params; // list of parameters
-    std::string action; // JS action body (using arg0.. or custom names)
-    std::string return_type; // Optional return type
+    std::string action;        // JS action body (using arg0.. or custom names)
+    std::string return_type;   // Optional return type
 };
 
-static std::vector<CommandDef> load_command_defs(const std::string& path){
-    std::vector<CommandDef> out;
+// Represents an event definition from `commands.def`.
+struct EventDef
+{
+    std::string ns;
+    std::string name;
+    uint8_t opcode;
+    std::vector<Param> params;
+};
+
+// Holds all command and event definitions.
+struct Defs
+{
+    std::vector<CommandDef> commands;
+    std::vector<EventDef> events;
+};
+
+// Loads and parses the command and event definitions from a file (e.g., commands.def).
+// The file format is a pipe-separated list of fields per line.
+// For commands: NAMESPACE|[command]|NAME|FUNC_NAME|TYPES|ACTION
+// For events:   NAMESPACE|event|NAME|ARGS
+static Defs load_defs(const std::string &path)
+{
+    std::cout << "[WebCC] Loading definitions from " << path << std::endl;
+    Defs out;
     std::string contents = read_file(path);
+    if (contents.empty())
+    {
+        std::cerr << "[WebCC] Error: Definition file is empty or missing: " << path << std::endl;
+        exit(1);
+    }
     std::istringstream ss(contents);
     std::string line;
-    uint8_t current_opcode = 1;
+    uint8_t current_cmd_opcode = 1;
+    uint8_t current_event_opcode = 1;
+    int line_num = 0;
 
-    while(std::getline(ss, line)){
+    while (std::getline(ss, line))
+    {
+        line_num++;
         // trim
         size_t p = line.find_first_not_of(" \t\r\n");
-        if(p==std::string::npos) continue;
-        if(line[p] == '#') continue;
+        if (p == std::string::npos)
+            continue;
+        if (line[p] == '#')
+            continue;
         // split by '|'
         auto parts = std::vector<std::string>();
         size_t start = 0;
-        // We expect 4 separators for 5 parts
-        for(int i=0; i<4; ++i){
+        // We expect at least 4 separators
+        while (true)
+        {
             size_t pos = line.find('|', start);
-            if(pos == std::string::npos){
+            if (pos == std::string::npos)
+            {
+                parts.push_back(line.substr(start));
                 break;
             }
             parts.push_back(line.substr(start, pos - start));
             start = pos + 1;
         }
-        // The rest is the action
-        parts.push_back(line.substr(start));
 
-        if(parts.size() < 5) continue; // malformed (now 5 parts)
-        CommandDef c;
-        c.ns = parts[0];
-        c.name = parts[1];
-        c.opcode = current_opcode++;
-        c.func_name = parts[2];
-        // types are space-separated tokens that can be "type" or "type:name"
-        std::istringstream tss(parts[3]);
-        std::string tkn;
-        while(tss >> tkn){
-            Param p;
-            size_t colon = tkn.find(':');
-            if(colon == std::string::npos){
-                p.type = tkn;
-                p.name = ""; // will later become argN
-            } else {
-                p.type = tkn.substr(0, colon);
-                p.name = tkn.substr(colon+1);
-            }
-            
-            if (p.type == "RET") {
-                c.return_type = p.name;
-            } else {
-                c.params.push_back(p);
-            }
+        if (parts.size() < 4)
+        {
+            std::cerr << "[WebCC] Warning: Skipping malformed line " << line_num << ": " << line << std::endl;
+            continue;
         }
-        c.action = parts[4];
-        out.push_back(c);
+
+        std::string ns = parts[0];
+        std::string kind = "command";
+        int name_idx = 1;
+
+        // Check if second column is explicit kind
+        if (parts[1] == "event" || parts[1] == "command")
+        {
+            kind = parts[1];
+            name_idx = 2;
+        }
+
+        if (kind == "event")
+        {
+            // NAMESPACE|event|NAME|ARGS
+            if (parts.size() <= name_idx + 1)
+                continue;
+            EventDef e;
+            e.ns = ns;
+            e.name = parts[name_idx];
+            e.opcode = current_event_opcode++;
+
+            std::istringstream tss(parts[name_idx + 1]);
+            std::string tkn;
+            while (tss >> tkn)
+            {
+                Param p;
+                size_t colon = tkn.find(':');
+                if (colon == std::string::npos)
+                {
+                    p.type = tkn;
+                    p.name = "";
+                }
+                else
+                {
+                    p.type = tkn.substr(0, colon);
+                    p.name = tkn.substr(colon + 1);
+                }
+                e.params.push_back(p);
+            }
+            out.events.push_back(e);
+        }
+        else
+        {
+            // NAMESPACE|[command]|NAME|FUNC_NAME|TYPES|ACTION
+            if (parts.size() <= name_idx + 3)
+                continue;
+            CommandDef c;
+            c.ns = ns;
+            c.name = parts[name_idx];
+            c.opcode = current_cmd_opcode++;
+            c.func_name = parts[name_idx + 1];
+            // types
+            std::istringstream tss(parts[name_idx + 2]);
+            std::string tkn;
+            while (tss >> tkn)
+            {
+                Param p;
+                size_t colon = tkn.find(':');
+                if (colon == std::string::npos)
+                {
+                    p.type = tkn;
+                    p.name = "";
+                }
+                else
+                {
+                    p.type = tkn.substr(0, colon);
+                    p.name = tkn.substr(colon + 1);
+                }
+
+                if (p.type == "RET")
+                {
+                    c.return_type = p.name;
+                }
+                else
+                {
+                    c.params.push_back(p);
+                }
+            }
+            // Reconstruct action by finding the start position in the line
+            size_t action_pos = 0;
+            int pipes_needed = name_idx + 3;
+            for (int i = 0; i < pipes_needed; ++i)
+            {
+                action_pos = line.find('|', action_pos) + 1;
+            }
+            c.action = line.substr(action_pos);
+            out.commands.push_back(c);
+        }
     }
+    std::cout << "[WebCC] Loaded " << out.commands.size() << " commands and " << out.events.size() << " events." << std::endl;
     return out;
 }
 
-static std::string gen_js_case(const CommandDef& c){
+// Generates the JavaScript 'case' block for a single command's opcode.
+static std::string gen_js_case(const CommandDef &c)
+{
     std::stringstream ss;
     ss << "            case " << (int)c.opcode << ": {\n";
     // Declare typed variables using the parameter names from the def file
-    for(size_t i=0;i<c.params.size();++i){
-        const auto& p = c.params[i];
+    for (size_t i = 0; i < c.params.size(); ++i)
+    {
+        const auto &p = c.params[i];
         std::string varName = p.name.empty() ? ("arg" + std::to_string(i)) : p.name;
-        if(p.type == "uint8"){
-            ss << "                const "<<varName<<" = view.getUint8(pos); pos += 1;\n";
-        } else if(p.type == "uint32"){
-            ss << "                const "<<varName<<" = view.getUint32(pos, true); pos += 4;\n";
-        } else if(p.type == "int32"){
-            ss << "                const "<<varName<<" = view.getInt32(pos, true); pos += 4;\n";
-        } else if(p.type == "float32"){
-            ss << "                const "<<varName<<" = view.getFloat32(pos, true); pos += 4;\n";
-        } else if(p.type == "string"){
-            ss << "                const "<<varName<<"_tag = view.getUint8(pos); pos += 1;\n";
-            ss << "                let "<<varName<<";\n";
-            ss << "                if ("<<varName<<"_tag === 0) {\n";
-            ss << "                    const "<<varName<<"_id = view.getUint16(pos, true); pos += 2;\n";
-            ss << "                    "<<varName<<" = string_cache["<<varName<<"_id];\n";
+        if (p.type == "uint8")
+        {
+            ss << "                const " << varName << " = u8[pos]; pos += 1;\n";
+        }
+        else if (p.type == "uint32")
+        {
+            ss << "                const " << varName << " = view.getUint32(pos, true); pos += 4;\n";
+        }
+        else if (p.type == "int32")
+        {
+            ss << "                const " << varName << " = view.getInt32(pos, true); pos += 4;\n";
+        }
+        else if (p.type == "float32")
+        {
+            ss << "                const " << varName << " = view.getFloat32(pos, true); pos += 4;\n";
+        }
+        else if (p.type == "string")
+        {
+            ss << "                const " << varName << "_tag = u8[pos]; pos += 1;\n";
+            ss << "                let " << varName << ";\n";
+            ss << "                if (" << varName << "_tag === 0) {\n";
+            ss << "                    const " << varName << "_id = view.getUint16(pos, true); pos += 2;\n";
+            ss << "                    " << varName << " = string_cache[" << varName << "_id];\n";
             ss << "                } else {\n";
-            ss << "                    const "<<varName<<"_len = view.getUint16(pos, true); pos += 2;\n";
-            ss << "                    "<<varName<<" = decoder.decode(new Uint8Array(memory.buffer, pos, "<<varName<<"_len)); pos += "<<varName<<"_len;\n";
-            ss << "                    string_cache.push("<<varName<<");\n";
+            ss << "                    const " << varName << "_len = view.getUint16(pos, true); pos += 2;\n";
+            ss << "                    " << varName << " = decoder.decode(u8.subarray(pos, pos + " << varName << "_len)); pos += " << varName << "_len;\n";
+            ss << "                    string_cache.push(" << varName << ");\n";
             ss << "                }\n";
-        } else {
-            ss << "                // Unknown type: "<<p.type<<"\n";
+        }
+        else
+        {
+            ss << "                // Unknown type: " << p.type << "\n";
         }
     }
     ss << "                " << c.action << "\n";
@@ -208,159 +364,354 @@ static std::string gen_js_case(const CommandDef& c){
     return ss.str();
 }
 
-// Emit a generated C++ header to `include/webcc/commands_gen.h` so C++ API matches defs
-static void emit_command_headers(const std::vector<CommandDef>& defs){
-    // Emit per-namespace headers
-    std::vector<std::string> namespaces;
-    for(const auto& d : defs){
-        bool found = false;
-        for(const auto& ns : namespaces) if(ns == d.ns) found = true;
-        if(!found) namespaces.push_back(d.ns);
-    }
+// Generates the `webcc_schema.h` header file.
+// This file contains a C++ representation of the command schema, which can be
+// used for introspection or other tooling.
+static void emit_schema_header(const Defs &defs)
+{
+    std::stringstream out;
+    out << "// GENERATED FILE - DO NOT EDIT\n";
+    out << "#pragma once\n";
+    out << "#include <cstdint>\n\n";
+    out << "namespace webcc {\n\n";
 
-    for(const auto& ns : namespaces){
+    out << "struct SchemaParam {\n";
+    out << "    const char* type;\n";
+    out << "    const char* name;\n";
+    out << "};\n\n";
+
+    out << "struct SchemaCommand {\n";
+    out << "    const char* ns;\n";
+    out << "    const char* name;\n";
+    out << "    uint8_t opcode;\n";
+    out << "    const char* action;\n";
+    out << "    int num_params;\n";
+    out << "    SchemaParam params[8];\n";
+    out << "};\n\n";
+
+    out << "static const SchemaCommand SCHEMA_COMMANDS[] = {\n";
+    for (const auto &d : defs.commands)
+    {
+        out << "    { \"" << d.ns << "\", \"" << d.name << "\", " << (int)d.opcode << ", ";
+        out << "R\"JS_ACTION(" << d.action << ")JS_ACTION\", ";
+        out << d.params.size() << ", {";
+        for (size_t i = 0; i < d.params.size(); ++i)
+        {
+            if (i > 0) out << ", ";
+            std::string name = d.params[i].name.empty() ? ("arg" + std::to_string(i)) : d.params[i].name;
+            out << "{ \"" << d.params[i].type << "\", \"" << name << "\" }";
+        }
+        out << "} },\n";
+    }
+    out << "    { nullptr, nullptr, 0, nullptr, 0, {} }\n";
+    out << "};\n\n";
+
+    out << "} // namespace webcc\n";
+
+    write_file("include/webcc_schema.h", out.str());
+    std::cout << "[WebCC] Emitted include/webcc_schema.h" << std::endl;
+}
+
+// Generates the C++ header files for each namespace (e.g., webcc/dom.h).
+// These headers provide the C++ functions that send commands to JavaScript.
+static void emit_headers(const Defs &defs)
+{
+    std::cout << "[WebCC] Emitting headers..." << std::endl;
+    // Emit per-namespace headers
+    std::set<std::string> namespaces;
+    for (const auto &d : defs.commands)
+        namespaces.insert(d.ns);
+    for (const auto &d : defs.events)
+        namespaces.insert(d.ns);
+
+    std::cout << "[WebCC] Found namespaces: ";
+    for (const auto &ns : namespaces)
+        std::cout << ns << " ";
+    std::cout << std::endl;
+
+    for (const auto &ns : namespaces)
+    {
         std::stringstream out;
+        out << "// GENERATED FILE - DO NOT EDIT\n";
         out << "#pragma once\n";
         out << "#include \"webcc.h\"\n\n";
         out << "namespace webcc::" << ns << " {\n";
+
+        // Commands
         out << "    enum OpCode {\n";
         bool first = true;
-        for(const auto& d : defs){
-            if(d.ns != ns) continue;
-            if(!first) out << ",\n";
-            out << "        OP_"<<d.name<<" = 0x"<< std::hex << (int)d.opcode << std::dec;
+        for (const auto &d : defs.commands)
+        {
+            if (d.ns != ns)
+                continue;
+            if (!first)
+                out << ",\n";
+            out << "        OP_" << d.name << " = 0x" << std::hex << (int)d.opcode << std::dec;
             first = false;
         }
         out << "\n    };\n\n";
 
-        // Functions
-        for(const auto& d : defs){
-            if(d.ns != ns) continue;
+        // Events
+        bool has_events = false;
+        for (const auto &d : defs.events)
+            if (d.ns == ns)
+                has_events = true;
 
-            if (!d.return_type.empty()) {
+        if (has_events)
+        {
+            out << "    enum EventType {\n";
+            first = true;
+            for (const auto &d : defs.events)
+            {
+                if (d.ns != ns)
+                    continue;
+                if (!first)
+                    out << ",\n";
+                out << "        EVENT_" << d.name << " = 0x" << std::hex << (int)d.opcode << std::dec;
+                first = false;
+            }
+            out << "\n    };\n\n";
+
+            out << "    enum EventMask {\n";
+            int shift = 0;
+            first = true;
+            for (const auto &d : defs.events)
+            {
+                if (d.ns != ns)
+                    continue;
+                if (!first)
+                    out << ",\n";
+                out << "        MASK_" << d.name << " = 1 << " << shift++;
+                first = false;
+            }
+            out << "\n    };\n\n";
+        }
+
+        // Functions
+        for (const auto &d : defs.commands)
+        {
+            if (d.ns != ns)
+                continue;
+
+            if (!d.return_type.empty())
+            {
                 std::string ret_type = d.return_type;
-                if(ret_type == "int32") ret_type = "int32_t";
-                else if(ret_type == "uint32") ret_type = "uint32_t";
-                else if(ret_type == "float32") ret_type = "float";
+                if (ret_type == "int32")
+                    ret_type = "int32_t";
+                else if (ret_type == "uint32")
+                    ret_type = "uint32_t";
+                else if (ret_type == "float32")
+                    ret_type = "float";
 
                 // Generate extern "C" import
                 out << "    extern \"C\" " << ret_type << " webcc_" << d.ns << "_" << d.func_name << "(";
-                for(size_t i=0;i<d.params.size();++i){
-                    if(i) out << ", ";
-                    const auto& p = d.params[i];
+                for (size_t i = 0; i < d.params.size(); ++i)
+                {
+                    if (i)
+                        out << ", ";
+                    const auto &p = d.params[i];
                     std::string name = p.name.empty() ? ("arg" + std::to_string(i)) : p.name;
-                    if(p.type=="string") out << "const char* "<<name << ", uint32_t " << name << "_len";
-                    else if(p.type=="float32") out << "float "<<name;
-                    else if(p.type=="uint8") out << "uint8_t "<<name;
-                    else if(p.type=="uint32") out << "uint32_t "<<name;
-                    else if(p.type=="int32") out << "int32_t "<<name;
-                    else out << "/*unknown*/ void* "<<name;
+                    if (p.type == "string")
+                        out << "const char* " << name << ", uint32_t " << name << "_len";
+                    else if (p.type == "float32")
+                        out << "float " << name;
+                    else if (p.type == "uint8")
+                        out << "uint8_t " << name;
+                    else if (p.type == "uint32")
+                        out << "uint32_t " << name;
+                    else if (p.type == "int32")
+                        out << "int32_t " << name;
+                    else
+                        out << "/*unknown*/ void* " << name;
                 }
                 out << ");\n";
-                
+
                 // Generate inline wrapper
                 out << "    inline " << ret_type << " " << d.func_name << "(";
-                for(size_t i=0;i<d.params.size();++i){
-                    if(i) out << ", ";
-                    const auto& p = d.params[i];
+                for (size_t i = 0; i < d.params.size(); ++i)
+                {
+                    if (i)
+                        out << ", ";
+                    const auto &p = d.params[i];
                     std::string name = p.name.empty() ? ("arg" + std::to_string(i)) : p.name;
-                    if(p.type=="string") out << "const char* "<<name;
-                    else if(p.type=="float32") out << "float "<<name;
-                    else if(p.type=="uint8") out << "uint8_t "<<name;
-                    else if(p.type=="uint32") out << "uint32_t "<<name;
-                    else if(p.type=="int32") out << "int32_t "<<name;
-                    else out << "/*unknown*/ void* "<<name;
+                    if (p.type == "string")
+                        out << "const char* " << name;
+                    else if (p.type == "float32")
+                        out << "float " << name;
+                    else if (p.type == "uint8")
+                        out << "uint8_t " << name;
+                    else if (p.type == "uint32")
+                        out << "uint32_t " << name;
+                    else if (p.type == "int32")
+                        out << "int32_t " << name;
+                    else
+                        out << "/*unknown*/ void* " << name;
                 }
                 out << "){\n";
                 out << "        ::webcc::flush();\n";
                 out << "        return webcc_" << d.ns << "_" << d.func_name << "(";
-                for(size_t i=0;i<d.params.size();++i){
-                    if(i) out << ", ";
-                    const auto& p = d.params[i];
+                for (size_t i = 0; i < d.params.size(); ++i)
+                {
+                    if (i)
+                        out << ", ";
+                    const auto &p = d.params[i];
                     std::string name = p.name.empty() ? ("arg" + std::to_string(i)) : p.name;
                     out << name;
-                    if(p.type=="string") out << ", webcc::strlen(" << name << ")";
+                    if (p.type == "string")
+                        out << ", webcc::strlen(" << name << ")";
                 }
                 out << ");\n";
                 out << "    }\n\n";
                 continue;
             }
 
-            out << "    inline void "<<d.func_name<<"(";
+            out << "    inline void " << d.func_name << "(";
             // param list
-            for(size_t i=0;i<d.params.size();++i){
-                if(i) out << ", ";
-                const auto& p = d.params[i];
+            for (size_t i = 0; i < d.params.size(); ++i)
+            {
+                if (i)
+                    out << ", ";
+                const auto &p = d.params[i];
                 std::string name = p.name.empty() ? ("arg" + std::to_string(i)) : p.name;
-                if(p.type=="uint8") out << "uint8_t "<<name;
-                else if(p.type=="uint32") out << "uint32_t "<<name;
-                else if(p.type=="int32") out << "int32_t "<<name;
-                else if(p.type=="float32") out << "float "<<name;
-                else if(p.type=="string") out << "const char* "<<name;
-                else out << "/*unknown*/ void* "<<name;
+                if (p.type == "uint8")
+                    out << "uint8_t " << name;
+                else if (p.type == "uint32")
+                    out << "uint32_t " << name;
+                else if (p.type == "int32")
+                    out << "int32_t " << name;
+                else if (p.type == "float32")
+                    out << "float " << name;
+                else if (p.type == "string")
+                    out << "const char* " << name;
+                else
+                    out << "/*unknown*/ void* " << name;
             }
             out << "){\n";
-            out << "        push_command((uint8_t)OP_"<<d.name<<");\n";
-            for(size_t i=0;i<d.params.size();++i){
-                const auto& p = d.params[i];
+            out << "        push_command((uint8_t)OP_" << d.name << ");\n";
+            for (size_t i = 0; i < d.params.size(); ++i)
+            {
+                const auto &p = d.params[i];
                 std::string name = p.name.empty() ? ("arg" + std::to_string(i)) : p.name;
-                if(p.type=="uint8") out << "        push_data<uint8_t>("<<name<<");\n";
-                else if(p.type=="uint32") out << "        push_data<uint32_t>("<<name<<");\n";
-                else if(p.type=="int32") out << "        push_data<int32_t>("<<name<<");\n";
-                else if(p.type=="float32") out << "        push_data<float>("<<name<<");\n";
-                else if(p.type=="string") out << "        webcc::CommandBuffer::push_string("<<name<<", strlen("<<name<<"));\n";
-                else out << "        // unknown type: "<<p.type<<"\n";
+                if (p.type == "uint8")
+                    out << "        push_data<uint8_t>(" << name << ");\n";
+                else if (p.type == "uint32")
+                    out << "        push_data<uint32_t>(" << name << ");\n";
+                else if (p.type == "int32")
+                    out << "        push_data<int32_t>(" << name << ");\n";
+                else if (p.type == "float32")
+                    out << "        push_data<float>(" << name << ");\n";
+                else if (p.type == "string")
+                    out << "        webcc::CommandBuffer::push_string(" << name << ", strlen(" << name << "));\n";
+                else
+                    out << "        // unknown type: " << p.type << "\n";
             }
             out << "    }\n\n";
         }
         out << "} // namespace webcc::" << ns << "\n\n";
-        
-        write_file("webcc/include/webcc/" + ns + ".h", out.str());
+
+        write_file("include/webcc/" + ns + ".h", out.str());
         std::cout << "[WebCC] Emitted include/webcc/" << ns << ".h" << std::endl;
     }
+    emit_schema_header(defs);
 }
 
-// Helper to check if 'text' contains 'word' as a whole identifier
-static bool contains_whole_word(const std::string& text, const std::string& word) {
+// Helper to check if 'text' contains 'word' as a whole identifier.
+// This is used to avoid partial matches (e.g., 'draw' in 'drawString').
+static bool contains_whole_word(const std::string &text, const std::string &word)
+{
     size_t pos = 0;
-    while ((pos = text.find(word, pos)) != std::string::npos) {
+    while ((pos = text.find(word, pos)) != std::string::npos)
+    {
         // Check character before
         bool boundary_start = (pos == 0);
-        if (!boundary_start) {
+        if (!boundary_start)
+        {
             char c = text[pos - 1];
-            if (isalnum(c) || c == '_') boundary_start = false;
-            else boundary_start = true;
+            if (isalnum(c) || c == '_')
+                boundary_start = false;
+            else
+                boundary_start = true;
         }
 
         // Check character after
         bool boundary_end = (pos + word.length() == text.length());
-        if (!boundary_end) {
+        if (!boundary_end)
+        {
             char c = text[pos + word.length()];
-            if (isalnum(c) || c == '_') boundary_end = false;
-            else boundary_end = true;
+            if (isalnum(c) || c == '_')
+                boundary_end = false;
+            else
+                boundary_end = true;
         }
 
-        if (boundary_start && boundary_end) return true;
-        
+        if (boundary_start && boundary_end)
+            return true;
+
         pos += 1;
     }
     return false;
 }
 
-static std::set<std::string> get_maps_from_action(const std::string& action) {
+// Scans a JS action string to find which resource maps it uses (e.g., elements, canvases).
+static std::set<std::string> get_maps_from_action(const std::string &action)
+{
     std::set<std::string> maps;
-    std::vector<std::string> possible_maps = {"elements", "canvases", "audios", "websockets", "images", "contexts", "shaders", "programs", "buffers", "textures", "uniforms"};
-    for (const auto& map : possible_maps) {
-        if (contains_whole_word(action, map)) {
+    std::vector<std::string> possible_maps = {"elements", "canvases", "contexts_2d", "audios", "websockets", "images", "contexts", "shaders", "programs", "buffers", "textures", "uniforms"};
+    for (const auto &map : possible_maps)
+    {
+        if (contains_whole_word(action, map))
+        {
             maps.insert(map);
         }
     }
     return maps;
 }
 
-int main(int argc, char** argv){
-    if (argc < 2) {
-        std::cerr << "Usage: ./webcc <file1.cc> [file2.cc ...]" << std::endl;
+int main(int argc, char **argv)
+{
+    std::string defs_path = "commands.def";
+    std::vector<std::string> input_files;
+    bool generate_headers = false;
+
+    // Parse command-line arguments.
+    for (int i = 1; i < argc; ++i)
+    {
+        std::string arg = argv[i];
+        if (arg == "--defs")
+        {
+            if (i + 1 < argc)
+            {
+                defs_path = argv[++i];
+            }
+            else
+            {
+                std::cerr << "[WebCC] Error: --defs requires a path argument." << std::endl;
+                return 1;
+            }
+        }
+        else if (arg == "headers")
+        {
+            generate_headers = true;
+        }
+        else
+        {
+            input_files.push_back(arg);
+        }
+    }
+
+    // Load the command and event definitions.
+    auto defs = load_defs(defs_path);
+
+    // If 'headers' command is given, generate headers and exit.
+    if (generate_headers)
+    {
+        emit_headers(defs);
+        return 0;
+    }
+
+    if (input_files.empty())
+    {
+        std::cerr << "Usage: webcc [--defs <path>] <source.cc> ... or webcc headers" << std::endl;
         return 1;
     }
 
@@ -368,10 +719,12 @@ int main(int argc, char** argv){
     std::string source_files;
 
     // A. READ USER CODE (All files)
-    for(int i=1; i<argc; ++i) {
-        std::string path = argv[i];
+    // Concatenate all input source files into a single string for analysis.
+    for (const auto &path : input_files)
+    {
         std::string content = read_file(path);
-        if (content.empty()) {
+        if (content.empty())
+        {
             std::cerr << "Error: Could not read " << path << std::endl;
             return 1;
         }
@@ -385,83 +738,162 @@ int main(int argc, char** argv){
     std::cout << "[WebCC] Scanning source files for features..." << std::endl;
     // Load command defs and emit C++ helpers so `webcc::canvas::*` functions
     // are kept in sync with the command definitions.
-    auto defs = load_command_defs("webcc/commands.def");
-    emit_command_headers(defs);
+    // auto defs = load_defs("commands.def"); // Already loaded
+    // emit_headers(defs); // Not needed during build, headers should be pre-generated or included
 
     std::set<std::string> used_namespaces;
     std::set<std::string> used_maps;
     std::stringstream cases_builder;
     std::vector<std::string> generated_js_imports;
 
-    for(const auto& d : defs){
+    // Analyze user code to find which webcc commands are used.
+    for (const auto &d : defs.commands)
+    {
         bool used = false;
         // 1. Check for qualified usage: ns::func or webcc::ns::func
-        if (contains_whole_word(user_code, d.ns + "::" + d.func_name)) used = true;
-        else if (contains_whole_word(user_code, "webcc::" + d.ns + "::" + d.func_name)) used = true;
-        
+        if (contains_whole_word(user_code, d.ns + "::" + d.func_name))
+            used = true;
+        else if (contains_whole_word(user_code, "webcc::" + d.ns + "::" + d.func_name))
+            used = true;
+
         // 2. Check for using namespace
-        if (!used) {
-            bool ns_used = contains_whole_word(user_code, "using namespace webcc::" + d.ns) || 
+        if (!used)
+        {
+            bool ns_used = contains_whole_word(user_code, "using namespace webcc::" + d.ns) ||
                            contains_whole_word(user_code, "using namespace webcc");
-            if (ns_used && contains_whole_word(user_code, d.func_name)) used = true;
+            if (ns_used && contains_whole_word(user_code, d.func_name))
+                used = true;
         }
 
-        if(used){
+        if (used)
+        {
             std::cout << "  -> Found " << d.func_name << " (" << d.ns << "), embedding JS support." << std::endl;
-            
-            if (!d.return_type.empty()) {
+
+            // Handle commands that have a return value. These are implemented as JS imports.
+            if (!d.return_type.empty())
+            {
                 std::stringstream ss;
                 ss << "webcc_" << d.ns << "_" << d.func_name << ": (";
-                for(size_t i=0;i<d.params.size();++i){
-                    if(i) ss << ", ";
-                    const auto& p = d.params[i];
+                for (size_t i = 0; i < d.params.size(); ++i)
+                {
+                    if (i)
+                        ss << ", ";
+                    const auto &p = d.params[i];
                     std::string name = p.name.empty() ? ("arg" + std::to_string(i)) : p.name;
                     ss << name;
-                    if (p.type == "string") ss << "_ptr, " << name << "_len";
+                    if (p.type == "string")
+                        ss << "_ptr, " << name << "_len";
                 }
                 ss << ") => {\n";
-                
+
                 // Decode strings
-                for(size_t i=0;i<d.params.size();++i){
-                    const auto& p = d.params[i];
+                for (size_t i = 0; i < d.params.size(); ++i)
+                {
+                    const auto &p = d.params[i];
                     std::string name = p.name.empty() ? ("arg" + std::to_string(i)) : p.name;
-                    if (p.type == "string") {
+                    if (p.type == "string")
+                    {
                         ss << "                const " << name << " = decoder.decode(new Uint8Array(memory.buffer, " << name << "_ptr, " << name << "_len));\n";
                     }
                 }
-                
+
                 ss << "                " << d.action << "\n";
                 ss << "            }";
                 generated_js_imports.push_back(ss.str());
-            } else {
+            }
+            else
+            {
+                // For commands without a return value, generate a case in the flush switch.
                 cases_builder << gen_js_case(d);
             }
 
             used_namespaces.insert(d.ns);
             auto maps = get_maps_from_action(d.action);
-            for (const auto& m : maps) used_maps.insert(m);
+            for (const auto &m : maps)
+                used_maps.insert(m);
         }
     }
 
-    // Emit resource maps
-    if (used_maps.count("elements")) js_builder << "    const elements = new Map(); elements.set('body', document.body);\n";
-    if (used_maps.count("canvases")) js_builder << "    const canvases = new Map();\n";
-    if (used_maps.count("audios")) js_builder << "    const audios = new Map();\n";
-    if (used_maps.count("websockets")) js_builder << "    const websockets = new Map();\n";
-    if (used_maps.count("images")) js_builder << "    const images = new Map();\n";
-    if (used_maps.count("contexts")) js_builder << "    const contexts = new Map();\n";
-    if (used_maps.count("shaders")) js_builder << "    const shaders = new Map();\n";
-    if (used_maps.count("programs")) js_builder << "    const programs = new Map();\n";
-    if (used_maps.count("buffers")) js_builder << "    const buffers = new Map();\n";
-    if (used_maps.count("textures")) js_builder << "    const textures = new Map();\n";
-    if (used_maps.count("uniforms")) js_builder << "    const uniforms = new Map();\n";
+    // Emit resource maps (e.g., for DOM elements, canvases) if they are used.
+    if (used_maps.count("elements"))
+        js_builder << "    const elements = new Map(); elements.set('body', document.body);\n";
+    if (used_maps.count("canvases"))
+        js_builder << "    const canvases = new Map();\n";
+    if (used_maps.count("contexts_2d"))
+        js_builder << "    const contexts_2d = new Map();\n";
+    if (used_maps.count("audios"))
+        js_builder << "    const audios = new Map();\n";
+    if (used_maps.count("websockets"))
+        js_builder << "    const websockets = new Map();\n";
+    if (used_maps.count("images"))
+        js_builder << "    const images = new Map();\n";
+    if (used_maps.count("contexts"))
+        js_builder << "    const contexts = new Map();\n";
+    if (used_maps.count("shaders"))
+        js_builder << "    const shaders = new Map();\n";
+    if (used_maps.count("programs"))
+        js_builder << "    const programs = new Map();\n";
+    if (used_maps.count("buffers"))
+        js_builder << "    const buffers = new Map();\n";
+    if (used_maps.count("textures"))
+        js_builder << "    const textures = new Map();\n";
+    if (used_maps.count("uniforms"))
+        js_builder << "    const uniforms = new Map();\n";
 
+    // Assemble the final JavaScript file.
     std::stringstream final_js;
     final_js << JS_INIT_HEAD;
-    for(const auto& imp : generated_js_imports) {
+    for (const auto &imp : generated_js_imports)
+    {
         final_js << ",\n            " << imp;
     }
     final_js << JS_INIT_TAIL;
+
+    // Event System Setup: Set up buffers for JS to send events to C++.
+    final_js << "    const { webcc_event_buffer_ptr, webcc_event_offset_ptr } = mod.instance.exports;\n";
+    final_js << "    const event_buffer_ptr_val = webcc_event_buffer_ptr();\n";
+    final_js << "    const event_offset_ptr_val = webcc_event_offset_ptr();\n";
+    final_js << "    const event_offset_view = new Uint32Array(memory.buffer, event_offset_ptr_val, 1);\n";
+    final_js << "    const event_view = new DataView(memory.buffer, event_buffer_ptr_val);\n";
+    final_js << "    const text_encoder = new TextEncoder();\n\n";
+
+    // Generate push_event helpers in JS for each event type.
+    for (const auto &d : defs.events)
+    {
+        if (used_namespaces.find(d.ns) == used_namespaces.end()) continue;
+
+        final_js << "    function push_event_" << d.ns << "_" << d.name << "(";
+        for (size_t i = 0; i < d.params.size(); ++i)
+        {
+            if (i)
+                final_js << ", ";
+            final_js << (d.params[i].name.empty() ? ("arg" + std::to_string(i)) : d.params[i].name);
+        }
+        final_js << ") {\n";
+        final_js << "        let pos = event_offset_view[0];\n";
+        final_js << "        event_view.setUint8(pos, " << (int)d.opcode << "); pos += 1;\n";
+        for (size_t i = 0; i < d.params.size(); ++i)
+        {
+            const auto &p = d.params[i];
+            std::string name = p.name.empty() ? ("arg" + std::to_string(i)) : p.name;
+            if (p.type == "int32")
+                final_js << "        event_view.setInt32(pos, " << name << ", true); pos += 4;\n";
+            else if (p.type == "uint32")
+                final_js << "        event_view.setUint32(pos, " << name << ", true); pos += 4;\n";
+            else if (p.type == "float32")
+                final_js << "        event_view.setFloat32(pos, " << name << ", true); pos += 4;\n";
+            else if (p.type == "string")
+            {
+                final_js << "        const encoded_" << i << " = text_encoder.encode(" << name << ");\n";
+                final_js << "        event_view.setUint16(pos, encoded_" << i << ".length, true); pos += 2;\n";
+                final_js << "        new Uint8Array(memory.buffer, event_buffer_ptr_val + pos).set(encoded_" << i << ");\n";
+                final_js << "        pos += encoded_" << i << ".length;\n";
+            }
+        }
+        final_js << "        event_offset_view[0] = pos;\n";
+        final_js << "    }\n";
+    }
+
     final_js << js_builder.str();
     final_js << JS_FLUSH_HEAD;
     final_js << cases_builder.str();
@@ -485,23 +917,23 @@ int main(int argc, char** argv){
     // We construct the clang command here.
     // Flags explanation:
     // --target=wasm32       : Output WebAssembly
-    // -nostdlib             : Don't link standard libc (keeps it tiny)
     // -Wl,--no-entry        : We don't have a standard C main() entry point immediately
     // -Wl,--export-all      : Export our functions (webcc_get_buffer, etc) to JS
     // -Wl,--allow-undefined : Allow 'webcc_js_flush' to be undefined (JS provides it)
     // Add both the top-level `include` (generated headers) and the
     // `webcc/include` path (packaged headers) so user code can include
     // either `webcc/...` or generated `include/...` headers.
-    std::string cmd = "clang++ --target=wasm32 -O3 -nostdlib "
+    std::string cmd = "clang++ --target=wasm32 -O3 "
                       "-Wl,--no-entry -Wl,--export-all -Wl,--allow-undefined "
-                      "-o app.wasm "
-                      + source_files + " webcc/src/command_buffer.cc -I include -I webcc/include";
+                      "-o app.wasm " +
+                      source_files + " src/command_buffer.cc src/event_buffer.cc -I include";
 
     std::cout << "[WebCC] Compiling WASM..." << std::endl;
     std::cout << "  COMMAND: " << cmd << std::endl;
 
     int result = system(cmd.c_str());
-    if (result != 0) {
+    if (result != 0)
+    {
         std::cerr << "[WebCC] Compilation failed!" << std::endl;
         return result;
     }

@@ -1,3 +1,4 @@
+// GENERATED FILE - DO NOT EDIT
 #pragma once
 #include "webcc.h"
 
@@ -8,10 +9,24 @@ namespace webcc::websocket {
         OP_CLOSE = 0x44
     };
 
-    extern "C" int32_t webcc_websocket_create(const char* url, uint32_t url_len);
-    inline int32_t create(const char* url){
+    enum EventType {
+        EVENT_MESSAGE = 0x6,
+        EVENT_OPEN = 0x7,
+        EVENT_CLOSE = 0x8,
+        EVENT_ERROR = 0x9
+    };
+
+    enum EventMask {
+        MASK_MESSAGE = 1 << 0,
+        MASK_OPEN = 1 << 1,
+        MASK_CLOSE = 1 << 2,
+        MASK_ERROR = 1 << 3
+    };
+
+    extern "C" int32_t webcc_websocket_create(const char* url, uint32_t url_len, uint32_t events);
+    inline int32_t create(const char* url, uint32_t events){
         ::webcc::flush();
-        return webcc_websocket_create(url, webcc::strlen(url));
+        return webcc_websocket_create(url, webcc::strlen(url), events);
     }
 
     inline void send(int32_t handle, const char* msg){

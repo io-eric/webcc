@@ -6,13 +6,13 @@ set -e
 
 # Get the directory where this script is located
 SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
-REPO_ROOT="$SCRIPT_DIR/../../.."
+REPO_ROOT="$SCRIPT_DIR/../.."
 
 echo "Building webcc_dom example..."
 
 # Run webcc from the repo root (webcc expects to be run from there)
 cd "$REPO_ROOT"
-./webcc/webcc webcc/examples/webcc_audio/example.cc
+./webcc examples/webcc_audio/example.cc
 
 # Create output directory
 cd "$SCRIPT_DIR"

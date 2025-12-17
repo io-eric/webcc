@@ -6,123 +6,133 @@
 # ------------------------------------------------------------------------------
 # DOM
 # ------------------------------------------------------------------------------
-dom|GET_BODY|get_body|RET:int32|{ if(!elements.has(0)) elements.set(0, document.body); return 0; }
-dom|CREATE_ELEMENT|create_element|string:tag RET:int32|{ const handle = (window.webcc_next_id = (window.webcc_next_id || 0) + 1); const el = document.createElement(tag); elements.set(handle, el); return handle; }
-dom|SET_ATTRIBUTE|set_attribute|int32:handle string:name string:value|{ const el = elements.get(handle); if(!el){ console.warn('set_attribute: unknown element handle', handle); continue; } el.setAttribute(name, value); }
-dom|GET_ATTRIBUTE|get_attribute|int32:handle string:name|{ /* TODO: Return values not supported yet */ }
-dom|APPEND_CHILD|append_child|int32:parent_handle int32:child_handle|{ const parent = elements.get(parent_handle); const child = elements.get(child_handle); if(!parent || !child){ console.warn('append_child: unknown handles', parent_handle, child_handle); continue; } parent.appendChild(child); }
-dom|REMOVE_ELEMENT|remove_element|int32:handle|{ const el = elements.get(handle); if(!el){ console.warn('remove_element: unknown element handle', handle); continue; } el.remove(); elements.delete(handle); }
-dom|SET_INNER_HTML|set_inner_html|int32:handle string:html|{ const el = elements.get(handle); if(el) el.innerHTML = html; }
-dom|SET_INNER_TEXT|set_inner_text|int32:handle string:text|{ const el = elements.get(handle); if(el) el.innerText = text; }
-dom|ADD_CLASS|add_class|int32:handle string:cls|{ const el = elements.get(handle); if(el) el.classList.add(cls); }
-dom|REMOVE_CLASS|remove_class|int32:handle string:cls|{ const el = elements.get(handle); if(el) el.classList.remove(cls); }
+dom|command|GET_BODY|get_body|RET:int32|{ if(!elements.has(0)) elements.set(0, document.body); return 0; }
+dom|command|CREATE_ELEMENT|create_element|string:tag RET:int32|{ const handle = (window.webcc_next_id = (window.webcc_next_id || 0) + 1); const el = document.createElement(tag); elements.set(handle, el); return handle; }
+dom|command|SET_ATTRIBUTE|set_attribute|int32:handle string:name string:value|{ const el = elements.get(handle); if(!el){ console.warn('set_attribute: unknown element handle', handle); continue; } el.setAttribute(name, value); }
+dom|command|GET_ATTRIBUTE|get_attribute|int32:handle string:name|{ /* TODO: Return values not supported yet */ }
+dom|command|APPEND_CHILD|append_child|int32:parent_handle int32:child_handle|{ const parent = elements.get(parent_handle); const child = elements.get(child_handle); if(!parent || !child){ console.warn('append_child: unknown handles', parent_handle, child_handle); continue; } parent.appendChild(child); }
+dom|command|REMOVE_ELEMENT|remove_element|int32:handle|{ const el = elements.get(handle); if(!el){ console.warn('remove_element: unknown element handle', handle); continue; } el.remove(); elements.delete(handle); }
+dom|command|SET_INNER_HTML|set_inner_html|int32:handle string:html|{ const el = elements.get(handle); if(el) el.innerHTML = html; }
+dom|command|SET_INNER_TEXT|set_inner_text|int32:handle string:text|{ const el = elements.get(handle); if(el) el.innerText = text; }
+dom|command|ADD_CLASS|add_class|int32:handle string:cls|{ const el = elements.get(handle); if(el) el.classList.add(cls); }
+dom|command|REMOVE_CLASS|remove_class|int32:handle string:cls|{ const el = elements.get(handle); if(el) el.classList.remove(cls); }
 
 # ------------------------------------------------------------------------------
 # CANVAS 2D
 # ------------------------------------------------------------------------------
-canvas|CREATE_CANVAS|create_canvas|string:dom_id float32:width float32:height RET:int32|{ const handle = (window.webcc_next_id = (window.webcc_next_id || 0) + 1); const c = document.createElement('canvas'); c.id = dom_id; c.width = width; c.height = height; canvases.set(handle, c); elements.set(dom_id, c); elements.set(handle, c); return handle; }
-canvas|SET_SIZE|set_size|int32:handle float32:width float32:height|{ const c = canvases.get(handle); if(c) { c.width = width; c.height = height; } }
-canvas|SET_FILL_STYLE|set_fill_style|int32:handle uint8:r uint8:g uint8:b|{ const cv = canvases.get(handle); if(!cv){ console.warn('set_fill_style: unknown canvas handle', handle); continue; } cv.getContext('2d').fillStyle = `rgb(${r},${g},${b})`; }
-canvas|SET_FILL_STYLE_STR|set_fill_style_str|int32:handle string:color|{ const cv = canvases.get(handle); if(cv) cv.getContext('2d').fillStyle = color; }
-canvas|FILL_RECT|fill_rect|int32:handle float32:x float32:y float32:w float32:h|{ const cv = canvases.get(handle); if(!cv){ console.warn('fill_rect: unknown canvas handle', handle); continue; } cv.getContext('2d').fillRect(x, y, w, h); }
-canvas|CLEAR_RECT|clear_rect|int32:handle float32:x float32:y float32:w float32:h|{ const cv = canvases.get(handle); if(!cv){ console.warn('clear_canvas: unknown canvas handle', handle); continue; } cv.getContext('2d').clearRect(x, y, w, h); }
-canvas|STROKE_RECT|stroke_rect|int32:handle float32:x float32:y float32:w float32:h|{ const cv = canvases.get(handle); if(!cv){ console.warn('stroke_rect: unknown canvas handle', handle); continue; } cv.getContext('2d').strokeRect(x, y, w, h); }
-canvas|SET_STROKE_STYLE|set_stroke_style|int32:handle uint8:r uint8:g uint8:b|{ const cv = canvases.get(handle); if(!cv){ console.warn('set_stroke_style: unknown canvas handle', handle); continue; } cv.getContext('2d').strokeStyle = `rgb(${r},${g},${b})`; }
-canvas|SET_STROKE_STYLE_STR|set_stroke_style_str|int32:handle string:color|{ const cv = canvases.get(handle); if(cv) cv.getContext('2d').strokeStyle = color; }
-canvas|SET_LINE_WIDTH|set_line_width|int32:handle float32:width|{ const cv = canvases.get(handle); if(cv) cv.getContext('2d').lineWidth = width; }
-canvas|BEGIN_PATH|begin_path|int32:handle|{ const cv = canvases.get(handle); if(!cv){ console.warn('begin_path: unknown canvas handle', handle); continue; } cv.getContext('2d').beginPath(); }
-canvas|CLOSE_PATH|close_path|int32:handle|{ const cv = canvases.get(handle); if(cv) cv.getContext('2d').closePath(); }
-canvas|MOVE_TO|move_to|int32:handle float32:x float32:y|{ const cv = canvases.get(handle); if(!cv){ console.warn('move_to: unknown canvas handle', handle); continue; } cv.getContext('2d').moveTo(x, y); }
-canvas|LINE_TO|line_to|int32:handle float32:x float32:y|{ const cv = canvases.get(handle); if(!cv){ console.warn('line_to: unknown canvas handle', handle); continue; } cv.getContext('2d').lineTo(x, y); }
-canvas|STROKE|stroke|int32:handle|{ const cv = canvases.get(handle); if(!cv){ console.warn('stroke: unknown canvas handle', handle); continue; } cv.getContext('2d').stroke(); }
-canvas|FILL|fill|int32:handle|{ const cv = canvases.get(handle); if(!cv){ console.warn('fill: unknown canvas handle', handle); continue; } cv.getContext('2d').fill(); }
-canvas|ARC|arc|int32:handle float32:x float32:y float32:radius float32:start_angle float32:end_angle|{ const cv = canvases.get(handle); if(!cv){ console.warn('arc: unknown canvas handle', handle); continue; } cv.getContext('2d').arc(x, y, radius, start_angle, end_angle); }
-canvas|FILL_TEXT|fill_text|int32:handle string:text float32:x float32:y|{ const cv = canvases.get(handle); if(cv) cv.getContext('2d').fillText(text, x, y); }
-canvas|FILL_TEXT_F|fill_text_f|int32:handle string:fmt float32:val float32:x float32:y|{ const cv = canvases.get(handle); if(cv) cv.getContext('2d').fillText(fmt.replace('%f', val.toFixed(2)), x, y); }
-canvas|FILL_TEXT_I|fill_text_i|int32:handle string:fmt int32:val float32:x float32:y|{ const cv = canvases.get(handle); if(cv) cv.getContext('2d').fillText(fmt.replace('%d', val), x, y); }
-canvas|SET_FONT|set_font|int32:handle string:font|{ const cv = canvases.get(handle); if(cv) cv.getContext('2d').font = font; }
-canvas|SET_TEXT_ALIGN|set_text_align|int32:handle string:align|{ const cv = canvases.get(handle); if(cv) cv.getContext('2d').textAlign = align; }
-canvas|DRAW_IMAGE|draw_image|int32:handle int32:img_handle float32:x float32:y|{ const cv = canvases.get(handle); const img = images.get(img_handle); if(cv && img) cv.getContext('2d').drawImage(img, x, y); }
-canvas|TRANSLATE|translate|int32:handle float32:x float32:y|{ const cv = canvases.get(handle); if(cv) cv.getContext('2d').translate(x, y); }
-canvas|ROTATE|rotate|int32:handle float32:angle|{ const cv = canvases.get(handle); if(cv) cv.getContext('2d').rotate(angle); }
-canvas|SCALE|scale|int32:handle float32:x float32:y|{ const cv = canvases.get(handle); if(cv) cv.getContext('2d').scale(x, y); }
-canvas|SAVE|save|int32:handle|{ const cv = canvases.get(handle); if(cv) cv.getContext('2d').save(); }
-canvas|RESTORE|restore|int32:handle|{ const cv = canvases.get(handle); if(cv) cv.getContext('2d').restore(); }
-canvas|LOG_CANVAS_INFO|log_canvas_info|int32:handle|{ const cv = canvases.get(handle); if(!cv){ console.warn('log_canvas_info: unknown canvas handle', handle); continue; } console.log('Canvas', handle, 'size:', cv.width, 'x', cv.height); }
-canvas|SET_GLOBAL_ALPHA|set_global_alpha|int32:handle float32:alpha|{ const cv = canvases.get(handle); if(cv) cv.getContext('2d').globalAlpha = alpha; }
-canvas|SET_LINE_CAP|set_line_cap|int32:handle string:cap|{ const cv = canvases.get(handle); if(cv) cv.getContext('2d').lineCap = cap; }
-canvas|SET_LINE_JOIN|set_line_join|int32:handle string:join|{ const cv = canvases.get(handle); if(cv) cv.getContext('2d').lineJoin = join; }
-canvas|SET_SHADOW|set_shadow|int32:handle float32:blur float32:off_x float32:off_y string:color|{ const cv = canvases.get(handle); if(cv) { const ctx = cv.getContext('2d'); ctx.shadowBlur = blur; ctx.shadowOffsetX = off_x; ctx.shadowOffsetY = off_y; ctx.shadowColor = color; } }
+canvas|command|CREATE_CANVAS|create_canvas|string:dom_id float32:width float32:height RET:int32|{ const handle = (window.webcc_next_id = (window.webcc_next_id || 0) + 1); const c = document.createElement('canvas'); c.id = dom_id; c.width = width; c.height = height; canvases.set(handle, c); contexts_2d.set(handle, c.getContext('2d')); elements.set(dom_id, c); elements.set(handle, c); return handle; }
+canvas|command|SET_SIZE|set_size|int32:handle float32:width float32:height|{ const c = canvases.get(handle); if(c) { c.width = width; c.height = height; } }
+canvas|command|SET_FILL_STYLE|set_fill_style|int32:handle uint8:r uint8:g uint8:b|{ const ctx = contexts_2d.get(handle); if(!ctx){ console.warn('set_fill_style: unknown context', handle); continue; } ctx.fillStyle = `rgb(${r},${g},${b})`; }
+canvas|command|SET_FILL_STYLE_STR|set_fill_style_str|int32:handle string:color|{ const ctx = contexts_2d.get(handle); if(ctx) ctx.fillStyle = color; }
+canvas|command|FILL_RECT|fill_rect|int32:handle float32:x float32:y float32:w float32:h|{ const ctx = contexts_2d.get(handle); if(!ctx){ console.warn('fill_rect: unknown context', handle); continue; } ctx.fillRect(x, y, w, h); }
+canvas|command|CLEAR_RECT|clear_rect|int32:handle float32:x float32:y float32:w float32:h|{ const ctx = contexts_2d.get(handle); if(!ctx){ console.warn('clear_canvas: unknown context', handle); continue; } ctx.clearRect(x, y, w, h); }
+canvas|command|STROKE_RECT|stroke_rect|int32:handle float32:x float32:y float32:w float32:h|{ const ctx = contexts_2d.get(handle); if(!ctx){ console.warn('stroke_rect: unknown context', handle); continue; } ctx.strokeRect(x, y, w, h); }
+canvas|command|SET_STROKE_STYLE|set_stroke_style|int32:handle uint8:r uint8:g uint8:b|{ const ctx = contexts_2d.get(handle); if(!ctx){ console.warn('set_stroke_style: unknown context', handle); continue; } ctx.strokeStyle = `rgb(${r},${g},${b})`; }
+canvas|command|SET_STROKE_STYLE_STR|set_stroke_style_str|int32:handle string:color|{ const ctx = contexts_2d.get(handle); if(ctx) ctx.strokeStyle = color; }
+canvas|command|SET_LINE_WIDTH|set_line_width|int32:handle float32:width|{ const ctx = contexts_2d.get(handle); if(ctx) ctx.lineWidth = width; }
+canvas|command|BEGIN_PATH|begin_path|int32:handle|{ const ctx = contexts_2d.get(handle); if(!ctx){ console.warn('begin_path: unknown context', handle); continue; } ctx.beginPath(); }
+canvas|command|CLOSE_PATH|close_path|int32:handle|{ const ctx = contexts_2d.get(handle); if(ctx) ctx.closePath(); }
+canvas|command|MOVE_TO|move_to|int32:handle float32:x float32:y|{ const ctx = contexts_2d.get(handle); if(!ctx){ console.warn('move_to: unknown context', handle); continue; } ctx.moveTo(x, y); }
+canvas|command|LINE_TO|line_to|int32:handle float32:x float32:y|{ const ctx = contexts_2d.get(handle); if(!ctx){ console.warn('line_to: unknown context', handle); continue; } ctx.lineTo(x, y); }
+canvas|command|STROKE|stroke|int32:handle|{ const ctx = contexts_2d.get(handle); if(!ctx){ console.warn('stroke: unknown context', handle); continue; } ctx.stroke(); }
+canvas|command|FILL|fill|int32:handle|{ const ctx = contexts_2d.get(handle); if(!ctx){ console.warn('fill: unknown context', handle); continue; } ctx.fill(); }
+canvas|command|ARC|arc|int32:handle float32:x float32:y float32:radius float32:start_angle float32:end_angle|{ const ctx = contexts_2d.get(handle); if(!ctx){ console.warn('arc: unknown context', handle); continue; } ctx.arc(x, y, radius, start_angle, end_angle); }
+canvas|command|FILL_TEXT|fill_text|int32:handle string:text float32:x float32:y|{ const ctx = contexts_2d.get(handle); if(ctx) ctx.fillText(text, x, y); }
+canvas|command|FILL_TEXT_F|fill_text_f|int32:handle string:fmt float32:val float32:x float32:y|{ const ctx = contexts_2d.get(handle); if(ctx) ctx.fillText(fmt.replace('%f', val.toFixed(2)), x, y); }
+canvas|command|FILL_TEXT_I|fill_text_i|int32:handle string:fmt int32:val float32:x float32:y|{ const ctx = contexts_2d.get(handle); if(ctx) ctx.fillText(fmt.replace('%d', val), x, y); }
+canvas|command|SET_FONT|set_font|int32:handle string:font|{ const ctx = contexts_2d.get(handle); if(ctx) ctx.font = font; }
+canvas|command|SET_TEXT_ALIGN|set_text_align|int32:handle string:align|{ const ctx = contexts_2d.get(handle); if(ctx) ctx.textAlign = align; }
+canvas|command|DRAW_IMAGE|draw_image|int32:handle int32:img_handle float32:x float32:y|{ const ctx = contexts_2d.get(handle); const img = images.get(img_handle); if(ctx && img) ctx.drawImage(img, x, y); }
+canvas|command|TRANSLATE|translate|int32:handle float32:x float32:y|{ const ctx = contexts_2d.get(handle); if(ctx) ctx.translate(x, y); }
+canvas|command|ROTATE|rotate|int32:handle float32:angle|{ const ctx = contexts_2d.get(handle); if(ctx) ctx.rotate(angle); }
+canvas|command|SCALE|scale|int32:handle float32:x float32:y|{ const ctx = contexts_2d.get(handle); if(ctx) ctx.scale(x, y); }
+canvas|command|SAVE|save|int32:handle|{ const ctx = contexts_2d.get(handle); if(ctx) ctx.save(); }
+canvas|command|RESTORE|restore|int32:handle|{ const ctx = contexts_2d.get(handle); if(ctx) ctx.restore(); }
+canvas|command|LOG_CANVAS_INFO|log_canvas_info|int32:handle|{ const cv = canvases.get(handle); if(!cv){ console.warn('log_canvas_info: unknown canvas handle', handle); continue; } console.log('Canvas', handle, 'size:', cv.width, 'x', cv.height); }
+canvas|command|SET_GLOBAL_ALPHA|set_global_alpha|int32:handle float32:alpha|{ const cv = canvases.get(handle); if(cv) cv.getContext('2d').globalAlpha = alpha; }
+canvas|command|SET_LINE_CAP|set_line_cap|int32:handle string:cap|{ const cv = canvases.get(handle); if(cv) cv.getContext('2d').lineCap = cap; }
+canvas|command|SET_LINE_JOIN|set_line_join|int32:handle string:join|{ const cv = canvases.get(handle); if(cv) cv.getContext('2d').lineJoin = join; }
+canvas|command|SET_SHADOW|set_shadow|int32:handle float32:blur float32:off_x float32:off_y string:color|{ const cv = canvases.get(handle); if(cv) { const ctx = cv.getContext('2d'); ctx.shadowBlur = blur; ctx.shadowOffsetX = off_x; ctx.shadowOffsetY = off_y; ctx.shadowColor = color; } }
 
 # ------------------------------------------------------------------------------
 # INPUT
 # ------------------------------------------------------------------------------
-input|INIT_KEYBOARD|init_keyboard||{ window.addEventListener('keydown', e => { if(mod.instance.exports.webcc_on_keydown) mod.instance.exports.webcc_on_keydown(e.keyCode); }); window.addEventListener('keyup', e => { if(mod.instance.exports.webcc_on_keyup) mod.instance.exports.webcc_on_keyup(e.keyCode); }); }
-input|INIT_MOUSE|init_mouse|int32:handle|{ const el = elements.get(handle) || canvases.get(handle) || document; el.addEventListener('mousedown', e => { if(mod.instance.exports.webcc_on_mousedown) mod.instance.exports.webcc_on_mousedown(e.button, e.offsetX, e.offsetY); }); el.addEventListener('mouseup', e => { if(mod.instance.exports.webcc_on_mouseup) mod.instance.exports.webcc_on_mouseup(e.button, e.offsetX, e.offsetY); }); el.addEventListener('mousemove', e => { if(mod.instance.exports.webcc_on_mousemove) mod.instance.exports.webcc_on_mousemove(e.offsetX, e.offsetY); }); }
-input|REQUEST_POINTER_LOCK|request_pointer_lock|int32:handle|{ const el = elements.get(handle) || document.body; el.requestPointerLock(); }
-input|EXIT_POINTER_LOCK|exit_pointer_lock||{ document.exitPointerLock(); }
+input|event|KEY_DOWN|int32:key_code
+input|event|KEY_UP|int32:key_code
+input|event|MOUSE_DOWN|int32:button int32:x int32:y
+input|event|MOUSE_UP|int32:button int32:x int32:y
+input|event|MOUSE_MOVE|int32:x int32:y
+input|command|INIT_KEYBOARD|init_keyboard||{ window.addEventListener('keydown', e => push_event_input_KEY_DOWN(e.keyCode)); window.addEventListener('keyup', e => push_event_input_KEY_UP(e.keyCode)); }
+input|command|INIT_MOUSE|init_mouse|int32:handle|{ const el = elements.get(handle) || canvases.get(handle) || document; el.addEventListener('mousedown', e => push_event_input_MOUSE_DOWN(e.button, e.offsetX, e.offsetY)); el.addEventListener('mouseup', e => push_event_input_MOUSE_UP(e.button, e.offsetX, e.offsetY)); el.addEventListener('mousemove', e => push_event_input_MOUSE_MOVE(e.offsetX, e.offsetY)); }
+input|command|REQUEST_POINTER_LOCK|request_pointer_lock|int32:handle|{ const el = elements.get(handle) || document.body; el.requestPointerLock(); }
+input|command|EXIT_POINTER_LOCK|exit_pointer_lock||{ document.exitPointerLock(); }
 
 # ------------------------------------------------------------------------------
 # SYSTEM
 # ------------------------------------------------------------------------------
-system|LOG|log|string:msg|{ console.log(msg); }
-system|WARN|warn|string:msg|{ console.warn(msg); }
-system|ERROR|error|string:msg|{ console.error(msg); }
-system|SET_MAIN_LOOP|set_main_loop|string:func_name|{ const fn = mod.instance.exports[func_name]; if(!fn){ console.error('set_main_loop: export not found', func_name); continue; } const loop = (t) => { fn(t); requestAnimationFrame(loop); }; requestAnimationFrame(loop); }
-system|SET_TITLE|set_title|string:title|{ document.title = title; }
-system|RELOAD|reload||{ location.reload(); }
-system|OPEN_URL|open_url|string:url|{ window.open(url, '_blank'); }
-system|REQUEST_FULLSCREEN|request_fullscreen|int32:handle|{ const el = elements.get(handle) || document.body; el.requestFullscreen().catch(console.error); }
+system|command|LOG|log|string:msg|{ console.log(msg); }
+system|command|WARN|warn|string:msg|{ console.warn(msg); }
+system|command|ERROR|error|string:msg|{ console.error(msg); }
+system|command|SET_MAIN_LOOP|set_main_loop|string:func_name|{ const fn = mod.instance.exports[func_name]; if(!fn){ console.error('set_main_loop: export not found', func_name); continue; } const loop = (t) => { fn(t); requestAnimationFrame(loop); }; requestAnimationFrame(loop); }
+system|command|SET_TITLE|set_title|string:title|{ document.title = title; }
+system|command|RELOAD|reload||{ location.reload(); }
+system|command|OPEN_URL|open_url|string:url|{ window.open(url, '_blank'); }
+system|command|REQUEST_FULLSCREEN|request_fullscreen|int32:handle|{ const el = elements.get(handle) || document.body; el.requestFullscreen().catch(console.error); }
 
 # ------------------------------------------------------------------------------
 # STORAGE (LocalStorage)
 # ------------------------------------------------------------------------------
-storage|SET_ITEM|set_item|string:key string:value|{ localStorage.setItem(key, value); }
-storage|REMOVE_ITEM|remove_item|string:key|{ localStorage.removeItem(key); }
-storage|CLEAR|clear||{ localStorage.clear(); }
+storage|command|SET_ITEM|set_item|string:key string:value|{ localStorage.setItem(key, value); }
+storage|command|REMOVE_ITEM|remove_item|string:key|{ localStorage.removeItem(key); }
+storage|command|CLEAR|clear||{ localStorage.clear(); }
 
 # ------------------------------------------------------------------------------
 # AUDIO
 # ------------------------------------------------------------------------------
-audio|CREATE_AUDIO|create_audio|string:src RET:int32|{ const handle = (window.webcc_next_id = (window.webcc_next_id || 0) + 1); const a = new Audio(src); audios.set(handle, a); elements.set(handle, a); return handle; }
-audio|PLAY|play|int32:handle|{ const a = audios.get(handle); if(a) a.play().catch(e => console.warn(e)); }
-audio|PAUSE|pause|int32:handle|{ const a = audios.get(handle); if(a) a.pause(); }
-audio|SET_VOLUME|set_volume|int32:handle float32:vol|{ const a = audios.get(handle); if(a) a.volume = vol; }
-audio|SET_LOOP|set_loop|int32:handle uint8:loop|{ const a = audios.get(handle); if(a) a.loop = (loop !== 0); }
-audio|GET_CURRENT_TIME|get_current_time|int32:handle RET:float|{ const a = audios.get(handle); return (a ? (a.currentTime || 0) : 0); }
-audio|GET_DURATION|get_duration|int32:handle RET:float|{ const a = audios.get(handle); return (a ? (a.duration || 0) : 0); }
+audio|command|CREATE_AUDIO|create_audio|string:src RET:int32|{ const handle = (window.webcc_next_id = (window.webcc_next_id || 0) + 1); const a = new Audio(src); audios.set(handle, a); elements.set(handle, a); return handle; }
+audio|command|PLAY|play|int32:handle|{ const a = audios.get(handle); if(a) a.play().catch(e => console.warn(e)); }
+audio|command|PAUSE|pause|int32:handle|{ const a = audios.get(handle); if(a) a.pause(); }
+audio|command|SET_VOLUME|set_volume|int32:handle float32:vol|{ const a = audios.get(handle); if(a) a.volume = vol; }
+audio|command|SET_LOOP|set_loop|int32:handle uint8:loop|{ const a = audios.get(handle); if(a) a.loop = (loop !== 0); }
+audio|command|GET_CURRENT_TIME|get_current_time|int32:handle RET:float|{ const a = audios.get(handle); return (a ? (a.currentTime || 0) : 0); }
+audio|command|GET_DURATION|get_duration|int32:handle RET:float|{ const a = audios.get(handle); return (a ? (a.duration || 0) : 0); }
 
 # ------------------------------------------------------------------------------
 # WEBSOCKETS
 # ------------------------------------------------------------------------------
-websocket|CREATE|create|string:url RET:int32|{ const handle = (window.webcc_next_id = (window.webcc_next_id || 0) + 1); const ws = new WebSocket(url); websockets.set(handle, ws); ws.onopen = () => console.log('WS Open', handle); ws.onmessage = (e) => console.log('WS Msg', handle, e.data); return handle; }
-websocket|SEND|send|int32:handle string:msg|{ const ws = websockets.get(handle); if(ws && ws.readyState === 1) ws.send(msg); }
-websocket|CLOSE|close|int32:handle|{ const ws = websockets.get(handle); if(ws) ws.close(); }
+websocket|event|MESSAGE|int32:handle string:data
+websocket|event|OPEN|int32:handle
+websocket|event|CLOSE|int32:handle
+websocket|event|ERROR|int32:handle
+
+websocket|command|CREATE|create|string:url uint32:events RET:int32|{ const handle = (window.webcc_next_id = (window.webcc_next_id || 0) + 1); const ws = new WebSocket(url); websockets.set(handle, ws); if(events & 1) ws.onmessage = (e) => push_event_websocket_MESSAGE(handle, e.data); if(events & 2) ws.onopen = () => push_event_websocket_OPEN(handle); if(events & 4) ws.onclose = () => push_event_websocket_CLOSE(handle); if(events & 8) ws.onerror = () => push_event_websocket_ERROR(handle); return handle; }
+websocket|command|SEND|send|int32:handle string:msg|{ const ws = websockets.get(handle); if(ws && ws.readyState === 1) ws.send(msg); }
+websocket|command|CLOSE|close|int32:handle|{ const ws = websockets.get(handle); if(ws) ws.close(); }
 
 # ------------------------------------------------------------------------------
 # IMAGES
 # ------------------------------------------------------------------------------
-image|LOAD|load|string:src RET:int32|{ const handle = (window.webcc_next_id = (window.webcc_next_id || 0) + 1); const img = new Image(); img.src = src; images.set(handle, img); elements.set(handle, img); return handle; }
+image|command|LOAD|load|string:src RET:int32|{ const handle = (window.webcc_next_id = (window.webcc_next_id || 0) + 1); const img = new Image(); img.src = src; images.set(handle, img); elements.set(handle, img); return handle; }
 
 # ------------------------------------------------------------------------------
 # WEBGL
 # ------------------------------------------------------------------------------
-webgl|CREATE_CONTEXT|create_context|int32:canvas_handle RET:int32|{ const handle = (window.webcc_next_id = (window.webcc_next_id || 0) + 1); const c = canvases.get(canvas_handle) || elements.get(canvas_handle); if(c) { const gl = c.getContext('webgl'); contexts.set(handle, gl); } return handle; }
-webgl|VIEWPORT|viewport|int32:ctx_handle int32:x int32:y int32:width int32:height|{ const gl = contexts.get(ctx_handle); if(gl) gl.viewport(x, y, width, height); }
-webgl|CLEAR_COLOR|clear_color|int32:ctx_handle float32:r float32:g float32:b float32:a|{ const gl = contexts.get(ctx_handle); if(gl) gl.clearColor(r, g, b, a); }
-webgl|CLEAR|clear|int32:ctx_handle uint32:mask|{ const gl = contexts.get(ctx_handle); if(gl) gl.clear(mask); }
-webgl|CREATE_SHADER|create_shader|int32:ctx_handle uint32:type string:source RET:int32|{ const handle = (window.webcc_next_id = (window.webcc_next_id || 0) + 1); const gl = contexts.get(ctx_handle); if(gl) { const s = gl.createShader(type); gl.shaderSource(s, source); gl.compileShader(s); if(!gl.getShaderParameter(s, gl.COMPILE_STATUS)) console.error(gl.getShaderInfoLog(s)); shaders.set(handle, s); } return handle; }
-webgl|CREATE_PROGRAM|create_program|int32:ctx_handle RET:int32|{ const handle = (window.webcc_next_id = (window.webcc_next_id || 0) + 1); const gl = contexts.get(ctx_handle); if(gl) { const p = gl.createProgram(); programs.set(handle, p); } return handle; }
-webgl|ATTACH_SHADER|attach_shader|int32:ctx_handle int32:prog_handle int32:shader_handle|{ const gl = contexts.get(ctx_handle); const p = programs.get(prog_handle); const s = shaders.get(shader_handle); if(gl && p && s) gl.attachShader(p, s); }
-webgl|LINK_PROGRAM|link_program|int32:ctx_handle int32:prog_handle|{ const gl = contexts.get(ctx_handle); const p = programs.get(prog_handle); if(gl && p) { gl.linkProgram(p); if(!gl.getProgramParameter(p, gl.LINK_STATUS)) console.error(gl.getProgramInfoLog(p)); } }
-webgl|BIND_ATTRIB_LOCATION|bind_attrib_location|int32:ctx_handle int32:prog_handle uint32:index string:name|{ const gl = contexts.get(ctx_handle); const p = programs.get(prog_handle); if(gl && p) gl.bindAttribLocation(p, index, name); }
-webgl|USE_PROGRAM|use_program|int32:ctx_handle int32:prog_handle|{ const gl = contexts.get(ctx_handle); const p = programs.get(prog_handle); if(gl && p) gl.useProgram(p); }
-webgl|CREATE_BUFFER|create_buffer|int32:ctx_handle RET:int32|{ const handle = (window.webcc_next_id = (window.webcc_next_id || 0) + 1); const gl = contexts.get(ctx_handle); if(gl) { const b = gl.createBuffer(); buffers.set(handle, b); } return handle; }
-webgl|BIND_BUFFER|bind_buffer|int32:ctx_handle uint32:target int32:buf_handle|{ const gl = contexts.get(ctx_handle); const b = buffers.get(buf_handle); if(gl && b) gl.bindBuffer(target, b); }
-webgl|BUFFER_DATA|buffer_data|int32:ctx_handle uint32:target uint32:data_ptr uint32:data_len uint32:usage|{ const gl = contexts.get(ctx_handle); if(gl) { const data = new Uint8Array(memory.buffer, data_ptr, data_len); gl.bufferData(target, data, usage); } }
-webgl|ENABLE_VERTEX_ATTRIB_ARRAY|enable_vertex_attrib_array|int32:ctx_handle uint32:index|{ const gl = contexts.get(ctx_handle); if(gl) gl.enableVertexAttribArray(index); }
-webgl|ENABLE|enable|int32:ctx_handle uint32:cap|{ const gl = contexts.get(ctx_handle); if(gl) gl.enable(cap); }
-webgl|GET_UNIFORM_LOCATION|get_uniform_location|int32:ctx_handle int32:prog_handle string:name RET:int32|{ const handle = (window.webcc_next_id = (window.webcc_next_id || 0) + 1); const gl = contexts.get(ctx_handle); const p = programs.get(prog_handle); if(gl && p) { const loc = gl.getUniformLocation(p, name); if(!loc) console.warn('getUniformLocation failed:', name); uniforms.set(handle, loc); } return handle; }
-webgl|UNIFORM_1F|uniform_1f|int32:ctx_handle int32:loc_handle float32:val|{ const gl = contexts.get(ctx_handle); const loc = uniforms.get(loc_handle); if(loc === undefined) console.warn('uniform_1f: loc undefined', loc_handle); if(gl && loc !== undefined) gl.uniform1f(loc, val); }
-webgl|VERTEX_ATTRIB_POINTER|vertex_attrib_pointer|int32:ctx_handle uint32:index int32:size uint32:type uint8:normalized int32:stride int32:offset|{ const gl = contexts.get(ctx_handle); if(gl) gl.vertexAttribPointer(index, size, type, normalized !== 0, stride, offset); }
-webgl|DRAW_ARRAYS|draw_arrays|int32:ctx_handle uint32:mode int32:first int32:count|{ const gl = contexts.get(ctx_handle); if(gl) gl.drawArrays(mode, first, count); }
+webgl|command|CREATE_CONTEXT|create_context|int32:canvas_handle RET:int32|{ const handle = (window.webcc_next_id = (window.webcc_next_id || 0) + 1); const c = canvases.get(canvas_handle) || elements.get(canvas_handle); if(c) { const gl = c.getContext('webgl'); contexts.set(handle, gl); } return handle; }
+webgl|command|VIEWPORT|viewport|int32:ctx_handle int32:x int32:y int32:width int32:height|{ const gl = contexts.get(ctx_handle); if(gl) gl.viewport(x, y, width, height); }
+webgl|command|CLEAR_COLOR|clear_color|int32:ctx_handle float32:r float32:g float32:b float32:a|{ const gl = contexts.get(ctx_handle); if(gl) gl.clearColor(r, g, b, a); }
+webgl|command|CLEAR|clear|int32:ctx_handle uint32:mask|{ const gl = contexts.get(ctx_handle); if(gl) gl.clear(mask); }
+webgl|command|CREATE_SHADER|create_shader|int32:ctx_handle uint32:type string:source RET:int32|{ const handle = (window.webcc_next_id = (window.webcc_next_id || 0) + 1); const gl = contexts.get(ctx_handle); if(gl) { const s = gl.createShader(type); gl.shaderSource(s, source); gl.compileShader(s); if(!gl.getShaderParameter(s, gl.COMPILE_STATUS)) console.error(gl.getShaderInfoLog(s)); shaders.set(handle, s); } return handle; }
+webgl|command|CREATE_PROGRAM|create_program|int32:ctx_handle RET:int32|{ const handle = (window.webcc_next_id = (window.webcc_next_id || 0) + 1); const gl = contexts.get(ctx_handle); if(gl) { const p = gl.createProgram(); programs.set(handle, p); } return handle; }
+webgl|command|ATTACH_SHADER|attach_shader|int32:ctx_handle int32:prog_handle int32:shader_handle|{ const gl = contexts.get(ctx_handle); const p = programs.get(prog_handle); const s = shaders.get(shader_handle); if(gl && p && s) gl.attachShader(p, s); }
+webgl|command|LINK_PROGRAM|link_program|int32:ctx_handle int32:prog_handle|{ const gl = contexts.get(ctx_handle); const p = programs.get(prog_handle); if(gl && p) { gl.linkProgram(p); if(!gl.getProgramParameter(p, gl.LINK_STATUS)) console.error(gl.getProgramInfoLog(p)); } }
+webgl|command|BIND_ATTRIB_LOCATION|bind_attrib_location|int32:ctx_handle int32:prog_handle uint32:index string:name|{ const gl = contexts.get(ctx_handle); const p = programs.get(prog_handle); if(gl && p) gl.bindAttribLocation(p, index, name); }
+webgl|command|USE_PROGRAM|use_program|int32:ctx_handle int32:prog_handle|{ const gl = contexts.get(ctx_handle); const p = programs.get(prog_handle); if(gl && p) gl.useProgram(p); }
+webgl|command|CREATE_BUFFER|create_buffer|int32:ctx_handle RET:int32|{ const handle = (window.webcc_next_id = (window.webcc_next_id || 0) + 1); const gl = contexts.get(ctx_handle); if(gl) { const b = gl.createBuffer(); buffers.set(handle, b); } return handle; }
+webgl|command|BIND_BUFFER|bind_buffer|int32:ctx_handle uint32:target int32:buf_handle|{ const gl = contexts.get(ctx_handle); const b = buffers.get(buf_handle); if(gl && b) gl.bindBuffer(target, b); }
+webgl|command|BUFFER_DATA|buffer_data|int32:ctx_handle uint32:target uint32:data_ptr uint32:data_len uint32:usage|{ const gl = contexts.get(ctx_handle); if(gl) { const data = new Uint8Array(memory.buffer, data_ptr, data_len); gl.bufferData(target, data, usage); } }
+webgl|command|ENABLE_VERTEX_ATTRIB_ARRAY|enable_vertex_attrib_array|int32:ctx_handle uint32:index|{ const gl = contexts.get(ctx_handle); if(gl) gl.enableVertexAttribArray(index); }
+webgl|command|ENABLE|enable|int32:ctx_handle uint32:cap|{ const gl = contexts.get(ctx_handle); if(gl) gl.enable(cap); }
+webgl|command|GET_UNIFORM_LOCATION|get_uniform_location|int32:ctx_handle int32:prog_handle string:name RET:int32|{ const handle = (window.webcc_next_id = (window.webcc_next_id || 0) + 1); const gl = contexts.get(ctx_handle); const p = programs.get(prog_handle); if(gl && p) { const loc = gl.getUniformLocation(p, name); if(!loc) console.warn('getUniformLocation failed:', name); uniforms.set(handle, loc); } return handle; }
+webgl|command|UNIFORM_1F|uniform_1f|int32:ctx_handle int32:loc_handle float32:val|{ const gl = contexts.get(ctx_handle); const loc = uniforms.get(loc_handle); if(loc === undefined) console.warn('uniform_1f: loc undefined', loc_handle); if(gl && loc !== undefined) gl.uniform1f(loc, val); }
+webgl|command|VERTEX_ATTRIB_POINTER|vertex_attrib_pointer|int32:ctx_handle uint32:index int32:size uint32:type uint8:normalized int32:stride int32:offset|{ const gl = contexts.get(ctx_handle); if(gl) gl.vertexAttribPointer(index, size, type, normalized !== 0, stride, offset); }
+webgl|command|DRAW_ARRAYS|draw_arrays|int32:ctx_handle uint32:mode int32:first int32:count|{ const gl = contexts.get(ctx_handle); if(gl) gl.drawArrays(mode, first, count); }
