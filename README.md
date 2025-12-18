@@ -111,7 +111,7 @@ A rotating 3D cube using raw WebGL calls.
 <img src="docs/images/webgl_demo.gif" width="400" alt="WebGL Demo">
 
 ### 3. WebGPU (`webcc_webgpu`)
-A triangle rendered using the modern WebGPU API.
+A triangle rendered using the WebGPU API.
 
 ### 4. DOM Manipulation (`webcc_dom`)
 Creating and styling HTML elements from C++.
