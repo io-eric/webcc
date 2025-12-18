@@ -8,11 +8,11 @@
 
 ## Features
 
-- **🚀 Lightweight**: Generates minimal WASM binaries and glue code.
-- **📦 Zero Dependency**: No heavy runtimes or external libraries required.
-- **⚡ Fast**: Uses a binary command buffer to batch API calls, minimizing the C++/JS boundary overhead.
-- **🌐 Web APIs**: First-class support for DOM, Canvas 2D, WebGL, Audio, Input, WebSockets, and more.
-- **🛠️ Simple Toolchain**: A single CLI tool handles code generation and compilation.
+- Generates minimal WASM binaries and glue code.
+- No heavy runtimes or external libraries required.
+- Uses a binary command buffer to batch API calls, minimizing C++/JS boundary overhead.
+- Supports DOM, Canvas 2D, WebGL, WebGPU, Audio, Input, WebSockets, and more.
+- A single CLI tool handles code generation and compilation.
 
 ## Quick Start
 
@@ -34,20 +34,23 @@ int main() {
     // Append the canvas to the body
     webcc::dom::append_child(body, canvas);
 
+    // Get 2D context
+    int ctx = webcc::canvas::get_context(canvas, "2d");
+
     // Draw a blue **background**
-    webcc::canvas::set_fill_style(canvas, 52, 152, 219); // RGB
-    webcc::canvas::fill_rect(canvas, 0, 0, 800, 600);
+    webcc::canvas::set_fill_style(ctx, 52, 152, 219); // RGB
+    webcc::canvas::fill_rect(ctx, 0, 0, 800, 600);
 
     // Draw a yellow circle in the center
-    webcc::canvas::begin_path(canvas);
-    webcc::canvas::arc(canvas, 400, 300, 50, 0, 6.28318f);
-    webcc::canvas::set_fill_style(canvas, 241, 196, 15);
-    webcc::canvas::fill(canvas);
+    webcc::canvas::begin_path(ctx);
+    webcc::canvas::arc(ctx, 400, 300, 50, 0, 6.28318f);
+    webcc::canvas::set_fill_style(ctx, 241, 196, 15);
+    webcc::canvas::fill(ctx);
 
     // Draw some text
-    webcc::canvas::set_font(canvas, "30px Arial");
-    webcc::canvas::set_fill_style(canvas, 255, 255, 255);
-    webcc::canvas::fill_text(canvas, "Hello WebCC!", 310, 500);
+    webcc::canvas::set_font(ctx, "30px Arial");
+    webcc::canvas::set_fill_style(ctx, 255, 255, 255);
+    webcc::canvas::fill_text(ctx, "Hello WebCC!", 310, 500);
 
     // Flush commands to JS
     webcc::flush();
@@ -107,7 +110,10 @@ A rotating 3D cube using raw WebGL calls.
 
 <img src="docs/images/webgl_demo.gif" width="400" alt="WebGL Demo">
 
-### 3. DOM Manipulation (`webcc_dom`)
+### 3. WebGPU (`webcc_webgpu`)
+A triangle rendered using the modern WebGPU API.
+
+### 4. DOM Manipulation (`webcc_dom`)
 Creating and styling HTML elements from C++.
 
 <img src="docs/images/dom_demo.gif" width="400" alt="DOM Demo">
@@ -175,6 +181,7 @@ To add a new Web API feature, simply add a line to `commands.def` and run `./web
 - **`webcc/dom.h`**: DOM manipulation (create, append, remove, attributes).
 - **`webcc/canvas.h`**: HTML5 Canvas 2D context.
 - **`webcc/webgl.h`**: WebGL context.
+- **`webcc/wgpu.h`**: WebGPU context.
 - **`webcc/audio.h`**: Audio playback and control.
 - **`webcc/input.h`**: Mouse and keyboard input.
 - **`webcc/system.h`**: System utilities.
