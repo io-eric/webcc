@@ -13,6 +13,7 @@
 - Uses a binary command buffer to batch API calls, minimizing C++/JS boundary overhead.
 - Supports DOM, Canvas 2D, WebGL, WebGPU, Audio, Input, WebSockets, and more.
 - A single CLI tool handles code generation and compilation.
+- Incremental compilation using `.webcc_cache` for faster rebuilds.
 
 ## Quick Start
 
@@ -117,8 +118,9 @@ Generates the C++ header files in `include/webcc/` from `schema.def`.
 
 ### 2. Compile Application
 Compiles your C++ source files into `app.wasm`, and generates the optimized `app.js` and `index.html`.
+Use the `--out <dir>` flag to specify the output directory (defaults to the current directory).
 ```bash
-./webcc main.cc [other_sources.cc ...]
+./webcc main.cc [other_sources.cc ...] [--out dist]
 ```
 
 ## Examples
@@ -170,13 +172,14 @@ WebCC uses a secondary shared memory buffer for sending events (like mouse click
 - **Polling**: The C++ application polls this buffer (e.g., once per frame) to process pending events.
 
 ### Schema Generation
-The toolchain generates `src/webcc_schema.h` which embeds command definitions directly into the binary. This avoids the need to parse `schema.def` at runtime.
+The toolchain generates `src/cli/webcc_schema.h` which embeds command definitions directly into the binary. This avoids the need to parse `schema.def` at runtime.
 
 ### Compilation & Linking
 WebCC acts as a wrapper around `clang++`. It:
 1.  **Scans** your code to determine which Web APIs are used.
 2.  **Generates** a tree-shaken `app.js` containing only the necessary JS glue code for the features you use.
 3.  **Compiles** your C++ code to WebAssembly.
+4.  **Caches** compiled object files in a `.webcc_cache` directory (located inside the output directory) to speed up subsequent builds.
 
 ### Resource Handles vs. Strings
 To maximize performance, WebCC uses **integer handles** to reference resources (like DOM elements, Canvases, Audio objects, and WebGL programs).
