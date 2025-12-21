@@ -2,8 +2,8 @@
 
 #include <stdint.h>
 #include <stddef.h>
-#include "../../src/command_buffer.h"
-#include "../../src/event_buffer.h"
+#include "../../src/core/command_buffer.h"
+#include "../../src/core/event_buffer.h"
 
 namespace webcc{
 

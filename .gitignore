@@ -13,6 +13,6 @@ build/
 dist/
 
 # Generated C++ Headers
-src/webcc_schema.h
+src/cli/webcc_schema.h
 include/webcc/*.h
 !include/webcc/webcc.h

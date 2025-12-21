@@ -527,8 +527,8 @@ static void emit_schema_header(const Defs &defs)
 
     out << "} // namespace webcc\n";
 
-    write_file("src/webcc_schema.h", out.str());
-    std::cout << "[WebCC] Emitted src/webcc_schema.h" << std::endl;
+    write_file("src/cli/webcc_schema.h", out.str());
+    std::cout << "[WebCC] Emitted src/cli/webcc_schema.h" << std::endl;
 }
 
 // Generates the C++ header files for each namespace (e.g., webcc/dom.h).
@@ -1149,8 +1149,8 @@ int main(int argc, char **argv)
     std::vector<std::string> all_sources = input_files;
     
     // Add internal sources using absolute paths relative to the compiler executable
-    all_sources.push_back(exe_dir + "/src/command_buffer.cc");
-    all_sources.push_back(exe_dir + "/src/event_buffer.cc");
+    all_sources.push_back(exe_dir + "/src/core/command_buffer.cc");
+    all_sources.push_back(exe_dir + "/src/core/event_buffer.cc");
 
     std::string object_files_str;
     bool compilation_failed = false;
@@ -1192,7 +1192,7 @@ int main(int argc, char **argv)
             // Compile to object file
             // -c : Compile and assemble, but do not link
             std::string cc_cmd = "clang++ --target=wasm32 -O3 -std=c++20 -nostdlib -c -o " + obj + " " + src + 
-                                 " -I " + exe_dir + "/include -I " + exe_dir + "/src";
+                                 " -I " + exe_dir + "/include -I " + exe_dir + "/src/core";
             if (system(cc_cmd.c_str()) != 0)
             {
                 compilation_failed = true;
