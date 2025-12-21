@@ -12,14 +12,7 @@ echo "Building webcc_canvas example..."
 
 # Run webcc from the repo root (webcc expects to be run from there)
 cd "$REPO_ROOT"
-./webcc examples/webcc_canvas/example.cc
-
-# Create output directory
-cd "$SCRIPT_DIR"
-mkdir -p dist
-
-# Move generated files to dist/
-mv "$REPO_ROOT/app.js" "$REPO_ROOT/index.html" "$REPO_ROOT/app.wasm" dist/
+./webcc examples/webcc_canvas/example.cc --out "$SCRIPT_DIR/dist"
 
 echo "Build complete! Files are in ./dist/"
 echo "To view the demo, run: cd dist && python3 -m http.server"
