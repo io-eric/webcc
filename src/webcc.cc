@@ -11,6 +11,10 @@
 #include <limits.h>
 #include <cctype>
 
+#ifdef __APPLE__
+#include <mach-o/dyld.h>
+#endif
+
 #if __has_include("webcc_schema.h")
 #include "webcc_schema.h"
 #define WEBCC_HAS_SCHEMA 1
@@ -34,6 +38,16 @@ static std::string read_file(const std::string &path)
 // Gets the full path to the currently running executable.
 static std::string get_executable_path()
 {
+#ifdef __APPLE__
+    char path[PATH_MAX];
+    uint32_t size = sizeof(path);
+    if (_NSGetExecutablePath(path, &size) == 0)
+    {
+        return std::string(path);
+    }
+    return "";
+#else
+    // Linux and WSL (Windows Subsystem for Linux)
     char result[PATH_MAX];
     ssize_t count = readlink("/proc/self/exe", result, PATH_MAX);
     if (count != -1)
@@ -41,6 +55,7 @@ static std::string get_executable_path()
         return std::string(result, count);
     }
     return "";
+#endif
 }
 
 // Gets the directory where the currently running executable is located.
