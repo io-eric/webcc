@@ -1070,8 +1070,8 @@ int main(int argc, char **argv)
     final_js << "    const { webcc_event_buffer_ptr, webcc_event_offset_ptr, webcc_event_buffer_capacity } = mod.instance.exports;\n";
     final_js << "    const event_buffer_ptr_val = webcc_event_buffer_ptr();\n";
     final_js << "    const event_offset_ptr_val = webcc_event_offset_ptr();\n";
-    final_js << "    const event_offset_view = new Uint32Array(memory.buffer, event_offset_ptr_val, 1);\n";
-    final_js << "    const event_view = new DataView(memory.buffer, event_buffer_ptr_val);\n";
+    final_js << "    let event_offset_view = new Uint32Array(memory.buffer, event_offset_ptr_val, 1);\n";
+    final_js << "    let event_view = new DataView(memory.buffer, event_buffer_ptr_val);\n";
     final_js << "    const text_encoder = new TextEncoder();\n";
     final_js << "    const EVENT_BUFFER_SIZE = webcc_event_buffer_capacity();\n\n";
 
@@ -1089,6 +1089,10 @@ int main(int argc, char **argv)
             final_js << (d.params[i].name.empty() ? ("arg" + std::to_string(i)) : d.params[i].name);
         }
         final_js << ") {\n";
+        final_js << "        if (event_view.buffer !== memory.buffer) {\n";
+        final_js << "            event_view = new DataView(memory.buffer, event_buffer_ptr_val);\n";
+        final_js << "            event_offset_view = new Uint32Array(memory.buffer, event_offset_ptr_val, 1);\n";
+        final_js << "        }\n";
         final_js << "        if (event_offset_view[0] + 4096 > EVENT_BUFFER_SIZE) { console.warn('WebCC: Event buffer full, dropping event " << d.name << "'); return; }\n";
         final_js << "        let pos = event_offset_view[0];\n";
         final_js << "        const start_pos = pos;\n";
