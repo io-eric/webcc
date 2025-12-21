@@ -3,13 +3,10 @@
 #include "webcc/input.h"
 
 int item_count = 0;
-int last_clicked_x = 0;
-int last_clicked_y = 0;
 
 // Global handles
 int box_container = 0;
 int counter_el = 0;
-int click_pos_el = 0;
 int add_btn = 0;
 
 // Helper for int to string
@@ -77,15 +74,14 @@ void update(float time_ms) {
     uint32_t len;
     while (webcc::poll_event(opcode, &data, len)) {
         switch (opcode) {
-            case webcc::input::EVENT_MOUSE_DOWN: {
-                auto event = webcc::parse_event<webcc::input::MouseDownEvent>(data, len);
-                int button = event.button;
-                int x = event.x;
-                int y = event.y;
+            case webcc::dom::EVENT_CLICK: {
+                auto event = webcc::parse_event<webcc::dom::ClickEvent>(data, len);
+                if (event.handle != add_btn) break;
 
                 item_count++;
-                last_clicked_x = x;
-                last_clicked_y = y;
+                // Note: Click event doesn't provide x/y, so we'll just use 0,0 or keep last known
+                // For this demo, we don't strictly need x/y for the button click logic itself
+                // but we were displaying it. We can just update the count.
                 
                 char num[16];
                 int i;
@@ -129,21 +125,6 @@ void update(float time_ms) {
                 for(int k=0; num[k]; ++k) counter_text[i++] = num[k];
                 counter_text[i] = '\0';
                 webcc::dom::set_inner_text(counter_el, counter_text);
-
-                // Update click position
-                char click_text[64];
-                i = 0;
-                const char* cl = "Last Click: (";
-                for(int k=0; cl[k]; ++k) click_text[i++] = cl[k];
-                int_to_str(last_clicked_x, num);
-                for(int k=0; num[k]; ++k) click_text[i++] = num[k];
-                click_text[i++] = ',';
-                click_text[i++] = ' ';
-                int_to_str(last_clicked_y, num);
-                for(int k=0; num[k]; ++k) click_text[i++] = num[k];
-                click_text[i++] = ')';
-                click_text[i] = '\0';
-                webcc::dom::set_inner_text(click_pos_el, click_text);
                 break;
             }
         }
@@ -185,10 +166,6 @@ int main() {
     webcc::dom::set_inner_text(counter_el, "Total Boxes: 0");
     webcc::dom::append_child(stats, counter_el);
 
-    click_pos_el = webcc::dom::create_element("div");
-    webcc::dom::set_inner_text(click_pos_el, "Last Click: (0, 0)");
-    webcc::dom::append_child(stats, click_pos_el);
-
     // Create a button
     add_btn = webcc::dom::create_element("button");
     webcc::dom::set_inner_text(add_btn, "Create Box");
@@ -200,7 +177,7 @@ int main() {
     webcc::dom::set_attribute(box_container, "style", "display: flex; flex-wrap: wrap; justify-content: center; gap: 5px; max-width: 600px; padding: 20px; background: #1a1a1a; border-radius: 10px; min-height: 100px;");
     webcc::dom::append_child(game_container, box_container);
 
-    webcc::input::init_mouse(add_btn);
+    webcc::dom::add_click_listener(add_btn);
 
     webcc::system::set_main_loop(update);
 

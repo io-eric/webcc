@@ -56,15 +56,18 @@ void update(float time_ms) {
     uint32_t len;
     while (webcc::poll_event(opcode, &data, len)) {
         switch (opcode) {
-            case webcc::input::EVENT_MOUSE_DOWN: {
-                if (is_playing) {
-                    webcc::audio::pause(bg_music);
-                    webcc::dom::set_inner_text(play_btn, "Play Music");
-                    is_playing = false;
-                } else {
-                    webcc::audio::play(bg_music);
-                    webcc::dom::set_inner_text(play_btn, "Pause Music");
-                    is_playing = true;
+            case webcc::dom::EVENT_CLICK: {
+                auto event = webcc::parse_event<webcc::dom::ClickEvent>(data, len);
+                if (event.handle == play_btn) {
+                    if (is_playing) {
+                        webcc::audio::pause(bg_music);
+                        webcc::dom::set_inner_text(play_btn, "Play Music");
+                        is_playing = false;
+                    } else {
+                        webcc::audio::play(bg_music);
+                        webcc::dom::set_inner_text(play_btn, "Pause Music");
+                        is_playing = true;
+                    }
                 }
                 break;
             }
@@ -140,7 +143,7 @@ int main() {
     webcc::dom::set_attribute(play_btn, "style", "padding: 15px 30px; font-size: 18px; cursor: pointer; background: #4CAF50; color: white; border: none; border-radius: 5px; transition: background 0.3s;");
     webcc::dom::append_child(game_container, play_btn);
 
-    webcc::input::init_mouse(play_btn);
+    webcc::dom::add_click_listener(play_btn);
     
     webcc::system::set_main_loop(update);
 
