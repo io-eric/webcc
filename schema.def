@@ -16,6 +16,8 @@ dom|command|SET_INNER_HTML|set_inner_html|int32:handle string:html|{ const el = 
 dom|command|SET_INNER_TEXT|set_inner_text|int32:handle string:text|{ const el = elements[handle]; if(el) el.innerText = text; }
 dom|command|ADD_CLASS|add_class|int32:handle string:cls|{ const el = elements[handle]; if(el) el.classList.add(cls); }
 dom|command|REMOVE_CLASS|remove_class|int32:handle string:cls|{ const el = elements[handle]; if(el) el.classList.remove(cls); }
+dom|event|CLICK|int32:handle
+dom|command|ADD_CLICK_LISTENER|add_click_listener|int32:handle|{ const el = elements[handle]; if(el) el.addEventListener('click', () => push_event_dom_CLICK(handle)); }
 
 # ------------------------------------------------------------------------------
 # CANVAS 2D
