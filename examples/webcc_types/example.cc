@@ -11,20 +11,20 @@
 #include "webcc/core/allocator.h"
 
 // Global handles
-int log_container = 0;
-int canvas_ctx = 0;
-int button_string = 0;
-int button_array = 0;
-int button_unique = 0;
-int button_optional = 0;
-int button_delegate = 0;
-int button_custom = 0;
-int button_allocate = 0;
-int button_clear = 0;
+webcc::handle log_container;
+webcc::handle canvas_ctx;
+webcc::handle button_string;
+webcc::handle button_array;
+webcc::handle button_unique;
+webcc::handle button_optional;
+webcc::handle button_delegate;
+webcc::handle button_custom;
+webcc::handle button_allocate;
+webcc::handle button_clear;
 
 // Helper to log to DOM
 void log(const char* msg) {
-    int p = webcc::dom::create_element("div");
+    webcc::handle p = webcc::dom::create_element("div");
     webcc::dom::set_inner_text(p, msg);
     webcc::dom::set_attribute(p, "style", "font-family: monospace; margin: 2px 0; color: #ddd; border-bottom: 1px solid #333; padding: 2px;");
     webcc::dom::append_child(log_container, p);

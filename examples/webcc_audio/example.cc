@@ -5,9 +5,9 @@
 
 // Global state
 bool is_playing = false;
-int bg_music = 0;
-int play_btn = 0;
-int progress_bar_fill = 0;
+webcc::handle bg_music;
+webcc::handle play_btn;
+webcc::handle progress_bar_fill;
 
 // Helper for int to string
 void int_to_str(int v, char* buf) {
@@ -101,24 +101,24 @@ void update(float time_ms) {
 int main() {
     webcc::system::set_title("WebCC Audio Demo");
     
-    int body = webcc::dom::get_body();
+    webcc::handle body = webcc::dom::get_body();
 
     // Style the body to center content
     webcc::dom::set_attribute(body, "style", "margin: 0; height: 100vh; display: flex; justify-content: center; align-items: center; background: #111; color: #eee; font-family: sans-serif;");
 
     // Create a container for the game
-    int game_container = webcc::dom::create_element("div");
+    webcc::handle game_container = webcc::dom::create_element("div");
     webcc::dom::set_attribute(game_container, "style", "position: relative; border: 2px solid #444; box-shadow: 0 0 20px rgba(0,0,0,0.5); display: flex; flex-direction: column; align-items: center; background: #222; padding: 20px; min-width: 300px;");
     webcc::dom::append_child(body, game_container);
 
     // Add a title via DOM
-    int game_title = webcc::dom::create_element("h1");
+    webcc::handle game_title = webcc::dom::create_element("h1");
     webcc::dom::set_inner_text(game_title, "WebCC Audio Demo");
     webcc::dom::set_attribute(game_title, "style", "color: #fff; margin: 10px 0; font-family: monospace;");
     webcc::dom::append_child(game_container, game_title);
 
     // Add some description text
-    int game_desc = webcc::dom::create_element("p");
+    webcc::handle game_desc = webcc::dom::create_element("p");
     webcc::dom::set_inner_text(game_desc, "This demo shows how to play audio from C++ via WebCC. Click the button to toggle playback.");
     webcc::dom::set_attribute(game_desc, "style", "color: #aaa; margin-bottom: 20px; font-size: 14px; text-align: center;");
     webcc::dom::append_child(game_container, game_desc);
