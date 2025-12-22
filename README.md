@@ -25,8 +25,9 @@ Here is a complete example of creating a Canvas, handling mouse input, and runni
 #include "webcc/system.h"
 #include "webcc/input.h"
 
-// Global state
-int ctx = 0;
+// Global handles
+webcc::handle canvas;
+webcc::handle ctx;
 int mouse_x = 400.0f;
 int mouse_y = 300.0f;
 
@@ -66,8 +67,8 @@ void update(float time_ms) {
 
 int main() {
     // Setup DOM
-    int body = webcc::dom::get_body();
-    int canvas = webcc::canvas::create_canvas("game-canvas", 800, 600);
+    webcc::handle body = webcc::dom::get_body();
+    canvas = webcc::canvas::create_canvas("game-canvas", 800, 600);
     webcc::dom::append_child(body, canvas);
     
     // Get Context
