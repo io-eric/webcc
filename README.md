@@ -138,10 +138,15 @@ A rotating 3D cube using raw WebGL calls.
 
 <img src="docs/images/webgl_demo.gif" width="400" alt="WebGL Demo">
 
-### 3. WebGPU (`webcc_webgpu`)
+### 3. WebGL Waves (`webcc_webgl_waves`)
+Animated wave terrain using WebGL shaders.
+
+<img src="docs/images/webgl_waves_demo.gif" width="400" alt="WebGL Waves Demo">
+
+### 4. WebGPU (`webcc_webgpu`)
 A triangle rendered using the WebGPU API.
 
-### 4. DOM Manipulation (`webcc_dom`)
+### 5. DOM Manipulation (`webcc_dom`)
 Creating and styling HTML elements from C++.
 
 <img src="docs/images/dom_demo.gif" width="400" alt="DOM Demo">
