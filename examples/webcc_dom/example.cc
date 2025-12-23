@@ -88,7 +88,7 @@ void update(float time_ms) {
                 
                 int_to_str(item_count, num);
                 
-                int item = webcc::dom::create_element("div");
+                webcc::handle item = webcc::dom::create_element("div");
                 
                 // Build text: "Box #X"
                 char text[64];
@@ -158,7 +158,7 @@ int main() {
     webcc::dom::append_child(game_container, game_desc);
 
     // Stats container
-    int stats = webcc::dom::create_element("div");
+    webcc::handle stats = webcc::dom::create_element("div");
     webcc::dom::set_attribute(stats, "style", "display: flex; gap: 20px; margin-bottom: 20px; font-size: 14px; color: #4CAF50;");
     webcc::dom::append_child(game_container, stats);
 

@@ -89,27 +89,27 @@ void update(float time_ms) {
         }
     }
 
-    if (!ready) return;
+    if (ready) {
+        webcc::handle encoder = webcc::wgpu::create_command_encoder(device);
+        webcc::handle view = webcc::wgpu::get_current_texture_view(wgpu_ctx);
+        
+        // Clear to dark blue
+        webcc::handle pass = webcc::wgpu::begin_render_pass(encoder, view, 0.0f, 0.0f, 0.2f, 1.0f);
+        
+        webcc::wgpu::set_pipeline(pass, pipeline);
+        webcc::wgpu::draw(pass, 3, 1, 0, 0);
+        
+        webcc::wgpu::end_pass(pass);
+        
+        webcc::handle cmd_buffer = webcc::wgpu::finish_encoder(encoder);
+        webcc::wgpu::queue_submit(queue, cmd_buffer);
 
-    webcc::handle encoder = webcc::wgpu::create_command_encoder(device);
-    webcc::handle view = webcc::wgpu::get_current_texture_view(wgpu_ctx);
-    
-    // Clear to dark blue
-    webcc::handle pass = webcc::wgpu::begin_render_pass(encoder, view, 0.0f, 0.0f, 0.2f, 1.0f);
-    
-    webcc::wgpu::set_pipeline(pass, pipeline);
-    webcc::wgpu::draw(pass, 3, 1, 0, 0);
-    
-    webcc::wgpu::end_pass(pass);
-    
-    webcc::handle cmd_buffer = webcc::wgpu::finish_encoder(encoder);
-    webcc::wgpu::queue_submit(queue, cmd_buffer);
-
-    // Draw FPS text via Canvas 2D overlay
-    webcc::canvas::clear_rect(hud_ctx, 0, 0, 200, 40);
-    webcc::canvas::set_font(hud_ctx, "20px Arial");
-    webcc::canvas::set_fill_style(hud_ctx, 0, 255, 0);
-    webcc::canvas::fill_text_f(hud_ctx, "FPS: %f", fps, 10, 25);
+        // Draw FPS text via Canvas 2D overlay
+        webcc::canvas::clear_rect(hud_ctx, 0, 0, 200, 40);
+        webcc::canvas::set_font(hud_ctx, "20px Arial");
+        webcc::canvas::set_fill_style(hud_ctx, 0, 255, 0);
+        webcc::canvas::fill_text_f(hud_ctx, "FPS: %f", fps, 10, 25);
+    }
 
     webcc::flush();
 }

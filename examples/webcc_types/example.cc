@@ -33,7 +33,7 @@ void log(const char* msg) {
 
 // Heap visualization
 void draw_heap_viz() {
-    if (canvas_ctx == 0) return;
+    if (!canvas_ctx.is_valid()) return;
 
     uintptr_t base = (uintptr_t)&webcc::__heap_base;
     uintptr_t current = webcc::heap_ptr;
@@ -213,24 +213,24 @@ void update(float time_ms) {
 int main() {
     webcc::system::set_title("WebCC Types Demo");
     
-    int body = webcc::dom::get_body();
+    webcc::handle body = webcc::dom::get_body();
     webcc::dom::set_attribute(body, "style", "background: #1e1e1e; color: #eee; font-family: 'Segoe UI', sans-serif; padding: 20px; max-width: 800px; margin: 0 auto;");
 
-    int h1 = webcc::dom::create_element("h1");
+    webcc::handle h1 = webcc::dom::create_element("h1");
     webcc::dom::set_inner_text(h1, "WebCC Types & Allocator");
     webcc::dom::set_attribute(h1, "style", "border-bottom: 2px solid #4caf50; padding-bottom: 10px;");
     webcc::dom::append_child(body, h1);
 
-    int desc = webcc::dom::create_element("p");
+    webcc::handle desc = webcc::dom::create_element("p");
     webcc::dom::set_inner_text(desc, "This example demonstrates the custom C++ types (string, array, unique_ptr, optional, delegate) and visualizes the bump allocator heap usage. Click the buttons on the left to run individual demos.");
     webcc::dom::append_child(body, desc);
 
     // Canvas for heap viz
-    int canvas_container = webcc::dom::create_element("div");
+    webcc::handle canvas_container = webcc::dom::create_element("div");
     webcc::dom::set_attribute(canvas_container, "style", "margin: 20px 0; border: 1px solid #555; box-shadow: 0 4px 8px rgba(0,0,0,0.3);");
     webcc::dom::append_child(body, canvas_container);
 
-    int canvas = webcc::canvas::create_canvas("heap-viz", 600, 150);
+    webcc::handle canvas = webcc::canvas::create_canvas("heap-viz", 600, 150);
     canvas_ctx = webcc::canvas::get_context(canvas, "2d");
     webcc::dom::append_child(canvas_container, canvas);
     

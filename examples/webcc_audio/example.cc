@@ -129,7 +129,7 @@ int main() {
     webcc::audio::set_volume(bg_music, 0.5f);
 
     // Create a progress bar
-    int progress_bar_container = webcc::dom::create_element("div");
+    webcc::handle progress_bar_container = webcc::dom::create_element("div");
     webcc::dom::set_attribute(progress_bar_container, "style", "width: 80%; height: 10px; background: #111; border: 1px solid #444; border-radius: 5px; margin-bottom: 20px;");
     webcc::dom::append_child(game_container, progress_bar_container);
 
