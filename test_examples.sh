@@ -20,6 +20,7 @@ STATS_HTML='<div id="stats" style="position:fixed;top:0;left:0;background:rgba(0
 
 for ex in "${EXAMPLES[@]}"; do
     echo "Building example: $ex"
+    rm -rf examples/$ex/dist
     ./examples/$ex/build.sh
 
     # Inject stats overlay into generated index.html
