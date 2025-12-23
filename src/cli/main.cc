@@ -542,6 +542,7 @@ static std::string map_cpp_type(const std::string& type, const std::string& name
     if (type == "uint32") return "uint32_t";
     if (type == "float32") return "float";
     if (type == "uint8") return "uint8_t";
+    if (type == "func_ptr") return "void*";
     return "void*";
 }
 
@@ -763,15 +764,39 @@ static void emit_headers(const Defs &defs)
                 continue;
             }
 
+            // Check if we need templates for func_ptr
+            std::vector<std::string> t_params;
+            for (size_t i = 0; i < d.params.size(); ++i) {
+                if (d.params[i].type == "func_ptr") {
+                    std::string pname = d.params[i].name.empty() ? ("arg" + std::to_string(i)) : d.params[i].name;
+                    std::string tname = "T_" + pname;
+                    t_params.push_back(tname);
+                }
+            }
+
+            if (!t_params.empty()) {
+                out << "    template <";
+                for (size_t i = 0; i < t_params.size(); ++i) {
+                    if (i > 0) out << ", ";
+                    out << "typename " << t_params[i];
+                }
+                out << ">\n";
+            }
+
             out << "    inline void " << d.func_name << "(";
             // param list
+            int t_idx = 0;
             for (size_t i = 0; i < d.params.size(); ++i)
             {
                 if (i)
                     out << ", ";
                 const auto &p = d.params[i];
                 std::string name = p.name.empty() ? ("arg" + std::to_string(i)) : p.name;
-                out << map_cpp_type(p.type, p.name) << " " << name;
+                if (p.type == "func_ptr") {
+                    out << t_params[t_idx++] << " " << name;
+                } else {
+                    out << map_cpp_type(p.type, p.name) << " " << name;
+                }
             }
             out << "){\n";
             out << "        push_command((uint32_t)OP_" << d.name << ");\n";
