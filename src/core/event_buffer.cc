@@ -4,7 +4,8 @@ namespace webcc
 {
 
     constexpr size_t EVENT_BUFFER_SIZE = 1024 * 1024; // 1MB
-    static uint8_t g_event_buffer[EVENT_BUFFER_SIZE];
+    // Align to 4 bytes so that JS Int32Array/Float32Array can access it directly
+    alignas(4) static uint8_t g_event_buffer[EVENT_BUFFER_SIZE];
     static uint32_t g_event_offset = 0;
     static uint32_t g_read_offset = 0;
 
@@ -46,15 +47,15 @@ namespace webcc
             return false;
         }
         
-        // Format: [Opcode:1][Size:2][Data...]
-        if (g_read_offset + 3 > size) {
+        // Format: [Opcode:1][Pad:1][Size:2][Data...]
+        if (g_read_offset + 4 > size) {
              // Malformed or incomplete? Reset.
             reset_event_buffer();
             return false;
         }
 
         opcode = g_event_buffer[g_read_offset];
-        uint16_t event_len = (uint16_t)g_event_buffer[g_read_offset + 1] | ((uint16_t)g_event_buffer[g_read_offset + 2] << 8);
+        uint16_t event_len = (uint16_t)g_event_buffer[g_read_offset + 2] | ((uint16_t)g_event_buffer[g_read_offset + 3] << 8);
         
         if (g_read_offset + event_len > size) {
              // Incomplete event?
@@ -62,8 +63,8 @@ namespace webcc
             return false;
         }
 
-        *data_ptr = g_event_buffer + g_read_offset + 3;
-        data_len = event_len - 3;
+        *data_ptr = g_event_buffer + g_read_offset + 4;
+        data_len = event_len - 4;
 
         g_read_offset += event_len;
         return true;

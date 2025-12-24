@@ -5,15 +5,8 @@
 #include "../../src/core/command_buffer.h"
 #include "../../src/core/event_buffer.h"
 
-namespace webcc{
-
-    // Simple strlen for WASM
-    static inline size_t strlen(const char* s) {
-        size_t len = 0;
-        while (s[len]) ++len;
-        return len;
-    }
-
+namespace webcc
+{
     // The trigger. This calls a JS function (imported)
     void flush();
 

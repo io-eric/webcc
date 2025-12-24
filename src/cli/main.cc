@@ -116,7 +116,6 @@ const std::string JS_INIT_TAIL = R"(
 const std::string JS_FLUSH_HEAD = R"(
     // Reusable text decoder to avoid garbage collection overhead
     const decoder = new TextDecoder();
-    let view = new DataView(memory.buffer);
     let u8 = new Uint8Array(memory.buffer);
     let i32 = new Int32Array(memory.buffer);
     let f32 = new Float32Array(memory.buffer);
@@ -125,8 +124,7 @@ const std::string JS_FLUSH_HEAD = R"(
     function flush(ptr, size) {
         if (size === 0) return;
 
-        if (view.buffer !== memory.buffer) {
-            view = new DataView(memory.buffer);
+        if (u8.buffer !== memory.buffer) {
             u8 = new Uint8Array(memory.buffer);
             i32 = new Int32Array(memory.buffer);
             f32 = new Float32Array(memory.buffer);
@@ -669,11 +667,11 @@ static void emit_headers(const Defs &defs)
                     } else if (p.type == "float32") {
                         out << "            res." << p.name << " = *(float*)(data + offset); offset += 4;\n";
                     } else if (p.type == "uint8") {
-                        out << "            res." << p.name << " = *(uint8_t*)(data + offset); offset += 1;\n";
+                        out << "            res." << p.name << " = *(uint8_t*)(data + offset); offset += 4;\n";
                     } else if (p.type == "string") {
-                        out << "            uint16_t " << p.name << "_len = *(uint16_t*)(data + offset); offset += 2;\n";
+                        out << "            uint32_t " << p.name << "_len = *(uint32_t*)(data + offset); offset += 4;\n";
                         out << "            res." << p.name << " = webcc::string_view((const char*)(data + offset), " << p.name << "_len);\n";
-                        out << "            offset += " << p.name << "_len;\n";
+                        out << "            offset += (" << p.name << "_len + 3) & ~3;\n";
                     }
                 }
                 out << "            return res;\n";
@@ -1106,7 +1104,9 @@ int main(int argc, char **argv)
     final_js << "    const event_buffer_ptr_val = webcc_event_buffer_ptr();\n";
     final_js << "    const event_offset_ptr_val = webcc_event_offset_ptr();\n";
     final_js << "    let event_offset_view = new Uint32Array(memory.buffer, event_offset_ptr_val, 1);\n";
-    final_js << "    let event_view = new DataView(memory.buffer, event_buffer_ptr_val);\n";
+    final_js << "    let event_u8 = new Uint8Array(memory.buffer, event_buffer_ptr_val);\n";
+    final_js << "    let event_i32 = new Int32Array(memory.buffer, event_buffer_ptr_val);\n";
+    final_js << "    let event_f32 = new Float32Array(memory.buffer, event_buffer_ptr_val);\n";
     final_js << "    const text_encoder = new TextEncoder();\n";
     final_js << "    const EVENT_BUFFER_SIZE = webcc_event_buffer_capacity();\n\n";
 
@@ -1124,37 +1124,41 @@ int main(int argc, char **argv)
             final_js << (d.params[i].name.empty() ? ("arg" + std::to_string(i)) : d.params[i].name);
         }
         final_js << ") {\n";
-        final_js << "        if (event_view.buffer !== memory.buffer) {\n";
-        final_js << "            event_view = new DataView(memory.buffer, event_buffer_ptr_val);\n";
+        final_js << "        if (event_u8.buffer !== memory.buffer) {\n";
+        final_js << "            event_u8 = new Uint8Array(memory.buffer, event_buffer_ptr_val);\n";
+        final_js << "            event_i32 = new Int32Array(memory.buffer, event_buffer_ptr_val);\n";
+        final_js << "            event_f32 = new Float32Array(memory.buffer, event_buffer_ptr_val);\n";
         final_js << "            event_offset_view = new Uint32Array(memory.buffer, event_offset_ptr_val, 1);\n";
         final_js << "        }\n";
         final_js << "        if (event_offset_view[0] + 4096 > EVENT_BUFFER_SIZE) { console.warn('WebCC: Event buffer full, dropping event " << d.name << "'); return; }\n";
         final_js << "        let pos = event_offset_view[0];\n";
         final_js << "        const start_pos = pos;\n";
-        final_js << "        event_view.setUint8(pos, " << (int)d.opcode << "); pos += 1;\n";
-        final_js << "        pos += 2; // Skip size\n";
+        final_js << "        event_u8[pos] = " << (int)d.opcode << ";\n";
+        final_js << "        pos += 4; // Skip header (opcode + pad + size)\n";
         for (size_t i = 0; i < d.params.size(); ++i)
         {
             const auto &p = d.params[i];
             std::string name = p.name.empty() ? ("arg" + std::to_string(i)) : p.name;
             if (p.type == "int32")
-                final_js << "        event_view.setInt32(pos, " << name << ", true); pos += 4;\n";
+                final_js << "        event_i32[pos >> 2] = " << name << "; pos += 4;\n";
             else if (p.type == "uint32")
-                final_js << "        event_view.setUint32(pos, " << name << ", true); pos += 4;\n";
+                final_js << "        event_i32[pos >> 2] = " << name << "; pos += 4;\n";
+            else if (p.type == "uint8")
+                final_js << "        event_i32[pos >> 2] = " << name << "; pos += 4;\n";
             else if (p.type == "float32")
-                final_js << "        event_view.setFloat32(pos, " << name << ", true); pos += 4;\n";
+                final_js << "        event_f32[pos >> 2] = " << name << "; pos += 4;\n";
             else if (p.type == "string")
             {
                 final_js << "        const encoded_" << i << " = text_encoder.encode(" << name << ");\n";
                 final_js << "        const len_" << i << " = encoded_" << i << ".length;\n";
-                final_js << "        event_view.setUint16(pos, len_" << i << " + 1, true); pos += 2;\n";
+                final_js << "        event_i32[pos >> 2] = len_" << i << "; pos += 4;\n";
                 final_js << "        new Uint8Array(memory.buffer, event_buffer_ptr_val + pos).set(encoded_" << i << ");\n";
-                final_js << "        event_view.setUint8(pos + len_" << i << ", 0);\n";
-                final_js << "        pos += len_" << i << " + 1;\n";
+                final_js << "        pos += (len_" << i << " + 3) & ~3;\n";
             }
         }
         final_js << "        const len = pos - start_pos;\n";
-        final_js << "        event_view.setUint16(start_pos + 1, len, true);\n";
+        final_js << "        event_u8[start_pos + 2] = len & 0xFF;\n";
+        final_js << "        event_u8[start_pos + 3] = (len >> 8) & 0xFF;\n";
         final_js << "        event_offset_view[0] = pos;\n";
         final_js << "    }\n";
     }
