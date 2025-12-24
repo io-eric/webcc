@@ -2,9 +2,9 @@
 #include <iostream>
 #include <fstream>
 #include <sstream>
+#include <filesystem>
 #include <cstdlib>
 #include <cstdint>
-#include <sys/stat.h>
 #include <unistd.h>
 #include <limits.h>
 
@@ -14,12 +14,19 @@
 
 std::string read_file(const std::string &path)
 {
+    std::error_code ec;
+    if (!std::filesystem::exists(path, ec) || !std::filesystem::is_regular_file(path, ec))
+        return {};
+
+    auto file_size = std::filesystem::file_size(path, ec);
+    if (ec) return {};
+
+    std::string content(file_size, '\0');
     std::ifstream in(path, std::ios::in | std::ios::binary);
-    if (!in)
-        return std::string();
-    std::ostringstream ss;
-    ss << in.rdbuf();
-    return ss.str();
+    if (!in.read(content.data(), file_size))
+        return {};
+        
+    return content;
 }
 
 std::string get_executable_path()
@@ -47,27 +54,23 @@ std::string get_executable_path()
 std::string get_executable_dir()
 {
     std::string path = get_executable_path();
-    size_t pos = path.find_last_of("/");
-    if (pos != std::string::npos)
-    {
-        return path.substr(0, pos);
-    }
-    return ".";
+    if (path.empty()) return ".";
+    return std::filesystem::path(path).parent_path().string();
 }
 
 bool write_file(const std::string &path, const std::string &contents)
 {
-    // Ensure parent directories exist roughly (best-effort)
-    size_t pos = path.find_last_of("/");
-    if (pos != std::string::npos)
+    std::filesystem::path p(path);
+    if (p.has_parent_path())
     {
-        std::string dir = path.substr(0, pos);
-        // try creating directory; ignore errors
-        mkdir(dir.c_str(), 0755);
+        std::error_code ec;
+        std::filesystem::create_directories(p.parent_path(), ec);
+        if (ec) return false;
     }
+
     std::ofstream out(path, std::ios::out | std::ios::binary);
     if (!out)
         return false;
-    out << contents;
+    out.write(contents.data(), contents.size());
     return out.good();
 }
