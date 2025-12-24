@@ -9,6 +9,9 @@ echo "[WebCC] 1/3 Compiling bootstrap compiler..."
 # Compile without schema support first
 g++ -std=c++20 -O3 -o webcc_bootstrap \
     src/cli/main.cc \
+    src/cli/utils.cc \
+    src/cli/schema.cc \
+    src/cli/generators.cc \
     -I include -I src/cli -I src/core
 
 echo "[WebCC] 2/3 Generating headers..."
@@ -19,6 +22,9 @@ echo "[WebCC] 3/3 Compiling final compiler..."
 # Compile final version which will now include the generated webcc_schema.h
 g++ -std=c++20 -O3 -o webcc \
     src/cli/main.cc \
+    src/cli/utils.cc \
+    src/cli/schema.cc \
+    src/cli/generators.cc \
     -I include -I src/cli -I src/core
 
 # Cleanup
