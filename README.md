@@ -14,6 +14,14 @@
 - Supports DOM, Canvas 2D, WebGL, WebGPU, Audio, Input, WebSockets, and more.
 - A single CLI tool handles code generation and compilation.
 - Incremental compilation using `.webcc_cache` for faster rebuilds.
+- Easily extensible API: generates headers and glue code based on a schema definition.
+
+## Documentation
+
+Full documentation is available in the [docs/](docs/index.md) directory.
+- [**Getting Started Guide**](docs/getting_started.md): A step-by-step tutorial for your first project.
+- [**API Reference**](docs/index.md#api-reference): Detailed documentation for all modules.
+- [**Architecture**](docs/architecture.md): Deep dive into how WebCC works.
 
 ## Quick Start
 
@@ -165,12 +173,6 @@ A triangle rendered using the WebGPU API.
 Creating and styling HTML elements from C++.
 
 <img src="docs/images/dom_demo.gif" width="400" alt="DOM Demo">
-
-## Architecture
-
-WebCC works by serializing API calls into a linear memory buffer (the **Command Buffer**) to minimize C++/JS boundary overhead.
-
-For a deep dive into how WebCC works, including the Event System, Compilation process, and Resource Handles, see the [Architecture Documentation](docs/architecture.md).
 
 ## Contributing ✅
 
