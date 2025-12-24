@@ -56,6 +56,16 @@ canvas|command|SET_GLOBAL_ALPHA|set_global_alpha|int32:handle float32:alpha|{ co
 canvas|command|SET_LINE_CAP|set_line_cap|int32:handle string:cap|{ const cv = elements[handle]; if(cv) cv.getContext('2d').lineCap = cap; }
 canvas|command|SET_LINE_JOIN|set_line_join|int32:handle string:join|{ const cv = elements[handle]; if(cv) cv.getContext('2d').lineJoin = join; }
 canvas|command|SET_SHADOW|set_shadow|int32:handle float32:blur float32:off_x float32:off_y string:color|{ const cv = elements[handle]; if(cv) { const ctx = cv.getContext('2d'); ctx.shadowBlur = blur; ctx.shadowOffsetX = off_x; ctx.shadowOffsetY = off_y; ctx.shadowColor = color; } }
+canvas|command|BEZIER_CURVE_TO|bezier_curve_to|int32:handle float32:cp1x float32:cp1y float32:cp2x float32:cp2y float32:x float32:y|{ const ctx = contexts[handle]; if(ctx) ctx.bezierCurveTo(cp1x, cp1y, cp2x, cp2y, x, y); }
+canvas|command|QUADRATIC_CURVE_TO|quadratic_curve_to|int32:handle float32:cpx float32:cpy float32:x float32:y|{ const ctx = contexts[handle]; if(ctx) ctx.quadraticCurveTo(cpx, cpy, x, y); }
+canvas|command|RECT|rect|int32:handle float32:x float32:y float32:w float32:h|{ const ctx = contexts[handle]; if(ctx) ctx.rect(x, y, w, h); }
+canvas|command|CLIP|clip|int32:handle|{ const ctx = contexts[handle]; if(ctx) ctx.clip(); }
+canvas|command|STROKE_TEXT|stroke_text|int32:handle string:text float32:x float32:y|{ const ctx = contexts[handle]; if(ctx) ctx.strokeText(text, x, y); }
+canvas|command|SET_TEXT_BASELINE|set_text_baseline|int32:handle string:baseline|{ const ctx = contexts[handle]; if(ctx) ctx.textBaseline = baseline; }
+canvas|command|SET_GLOBAL_COMPOSITE_OPERATION|set_global_composite_operation|int32:handle string:op|{ const ctx = contexts[handle]; if(ctx) ctx.globalCompositeOperation = op; }
+canvas|command|DRAW_IMAGE_SCALED|draw_image_scaled|int32:handle int32:img_handle float32:x float32:y float32:w float32:h|{ const ctx = contexts[handle]; const img = images[img_handle]; if(ctx && img) ctx.drawImage(img, x, y, w, h); }
+canvas|command|DRAW_IMAGE_FULL|draw_image_full|int32:handle int32:img_handle float32:sx float32:sy float32:sw float32:sh float32:dx float32:dy float32:dw float32:dh|{ const ctx = contexts[handle]; const img = images[img_handle]; if(ctx && img) ctx.drawImage(img, sx, sy, sw, sh, dx, dy, dw, dh); }
+canvas|command|RESET_TRANSFORM|reset_transform|int32:handle|{ const ctx = contexts[handle]; if(ctx) ctx.resetTransform(); }
 
 # ------------------------------------------------------------------------------
 # INPUT
