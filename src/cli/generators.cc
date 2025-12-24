@@ -44,7 +44,7 @@ void emit_schema_header(const Defs &defs)
     out << "    const char* return_type;\n";
     out << "    const char* action;\n";
     out << "    int num_params;\n";
-    out << "    SchemaParam params[8];\n";
+    out << "    SchemaParam params[16];\n";
     out << "};\n\n";
 
     out << "struct SchemaEvent {\n";
@@ -52,7 +52,7 @@ void emit_schema_header(const Defs &defs)
     out << "    const char* name;\n";
     out << "    uint8_t opcode;\n";
     out << "    int num_params;\n";
-    out << "    SchemaParam params[8];\n";
+    out << "    SchemaParam params[16];\n";
     out << "};\n\n";
 
     out << "static const SchemaCommand SCHEMA_COMMANDS[] = {\n";
