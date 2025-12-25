@@ -696,6 +696,7 @@ bool compile_wasm(const std::vector<std::string> &input_files, const std::string
     // Add internal sources using absolute paths relative to the compiler executable
     all_sources.push_back(exe_dir + "/src/core/command_buffer.cc");
     all_sources.push_back(exe_dir + "/src/core/event_buffer.cc");
+    all_sources.push_back(exe_dir + "/src/core/libc.cc");
 
     std::string object_files_str;
     bool compilation_failed = false;
