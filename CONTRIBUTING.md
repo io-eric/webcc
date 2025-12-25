@@ -38,15 +38,21 @@ This section guides you through submitting an enhancement suggestion for WebCC, 
 
 ## Style Guide
 
-- We use C++20.
-- Indentation is 4 spaces.
-- Keep headers minimal.
-- Prefer `webcc::handle` for resource management.
+- **Naming**: Use `snake_case` for variables and functions. Use `PascalCase` for classes and structs.
+- **C++ Standard**: We use C++20.
+- **Consistency**: Follow the style of the surrounding code.
+- **Generated Files**: Generated files (like headers) must start with a comment indicating they are generated (e.g., `// GENERATED FILE - DO NOT EDIT`).
 
 ## Development Setup
 
 1.  Clone the repo.
 2.  Run `./build.sh` to bootstrap the compiler.
+    - This compiles the `webcc` tool itself.
+    - It generates headers in `include/webcc/` from `schema.def`.
 3.  Make your changes.
-4.  Run `./build.sh` again to rebuild with your changes.
-5.  Test with `./test_examples.sh`.
+    - If you modify `schema.def`, run `./build.sh` again to regenerate headers and the tool.
+    - If you modify C++ source files in `src/`, run `./build.sh` to rebuild the tool.
+4.  Test with `./test_examples.sh`.
+    - This builds all examples in `examples/`.
+    - It starts a local server at `http://localhost:8000`.
+
