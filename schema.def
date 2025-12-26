@@ -66,6 +66,13 @@ canvas|command|SET_GLOBAL_COMPOSITE_OPERATION|set_global_composite_operation|int
 canvas|command|DRAW_IMAGE_SCALED|draw_image_scaled|int32:handle int32:img_handle float32:x float32:y float32:w float32:h|{ const ctx = contexts[handle]; const img = images[img_handle]; if(ctx && img) ctx.drawImage(img, x, y, w, h); }
 canvas|command|DRAW_IMAGE_FULL|draw_image_full|int32:handle int32:img_handle float32:sx float32:sy float32:sw float32:sh float32:dx float32:dy float32:dw float32:dh|{ const ctx = contexts[handle]; const img = images[img_handle]; if(ctx && img) ctx.drawImage(img, sx, sy, sw, sh, dx, dy, dw, dh); }
 canvas|command|RESET_TRANSFORM|reset_transform|int32:handle|{ const ctx = contexts[handle]; if(ctx) ctx.resetTransform(); }
+canvas|command|ELLIPSE|ellipse|int32:handle float32:x float32:y float32:radius_x float32:radius_y float32:rotation float32:start_angle float32:end_angle uint8:counter_clockwise|{ const ctx = contexts[handle]; if(ctx) ctx.ellipse(x, y, radius_x, radius_y, rotation, start_angle, end_angle, counter_clockwise !== 0); }
+canvas|command|ARC_TO|arc_to|int32:handle float32:x1 float32:y1 float32:x2 float32:y2 float32:radius|{ const ctx = contexts[handle]; if(ctx) ctx.arcTo(x1, y1, x2, y2, radius); }
+canvas|command|SET_TRANSFORM|set_transform|int32:handle float32:a float32:b float32:c float32:d float32:e float32:f|{ const ctx = contexts[handle]; if(ctx) ctx.setTransform(a, b, c, d, e, f); }
+canvas|command|TRANSFORM|transform|int32:handle float32:a float32:b float32:c float32:d float32:e float32:f|{ const ctx = contexts[handle]; if(ctx) ctx.transform(a, b, c, d, e, f); }
+canvas|command|SET_MITER_LIMIT|set_miter_limit|int32:handle float32:limit|{ const ctx = contexts[handle]; if(ctx) ctx.miterLimit = limit; }
+canvas|command|SET_IMAGE_SMOOTHING_ENABLED|set_image_smoothing_enabled|int32:handle uint8:enabled|{ const ctx = contexts[handle]; if(ctx) ctx.imageSmoothingEnabled = (enabled !== 0); }
+canvas|command|MEASURE_TEXT_WIDTH|measure_text_width|int32:handle string:text RET:float32|{ const ctx = contexts[handle]; return (ctx ? ctx.measureText(text).width : 0); }
 
 # ------------------------------------------------------------------------------
 # INPUT
