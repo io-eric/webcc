@@ -57,20 +57,20 @@ int main(int argc, char **argv)
     std::string build_dir = out_dir + "/.webcc_cache";
 
     // Load the command and event definitions.
-    Defs defs;
+    webcc::SchemaDefs defs;
 
     // If 'headers' command is given, generate headers and exit.
     if (generate_headers)
     {
-        defs = load_defs(defs_path);
-        emit_headers(defs);
+        defs = webcc::load_defs(defs_path);
+        webcc::emit_headers(defs);
         return 0;
     }
 
 #if WEBCC_HAS_SCHEMA
-    defs = load_defs_from_schema();
+    defs = webcc::load_defs_from_schema();
 #else
-    defs = load_defs(defs_path);
+    defs = webcc::load_defs(defs_path);
 #endif
 
     if (input_files.empty())
@@ -86,7 +86,7 @@ int main(int argc, char **argv)
     // Concatenate all input source files into a single string for analysis.
     for (const auto &path : input_files)
     {
-        std::string content = read_file(path);
+        std::string content = webcc::read_file(path);
         if (content.empty())
         {
             std::cerr << "Error: Could not read " << path << std::endl;
@@ -97,13 +97,13 @@ int main(int argc, char **argv)
     }
 
     // B. GENERATE JS RUNTIME
-    generate_js_runtime(defs, user_code, out_dir);
+    webcc::generate_js_runtime(defs, user_code, out_dir);
 
     // C. GENERATE HTML (Basic scaffolding)
-    generate_html(out_dir);
+    webcc::generate_html(out_dir);
 
     // D. COMPILE C++ TO WASM (Incremental)
-    if (!compile_wasm(input_files, out_dir, build_dir))
+    if (!webcc::compile_wasm(input_files, out_dir, build_dir))
     {
         return 1;
     }

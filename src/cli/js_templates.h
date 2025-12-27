@@ -1,8 +1,11 @@
 #pragma once
 #include <string>
 
-// JS code to initialize the WebAssembly module and set up the environment.
-const std::string JS_INIT_HEAD = R"(
+namespace webcc
+{
+
+    // JS code to initialize the WebAssembly module and set up the environment.
+    const std::string JS_INIT_HEAD = R"(
 const run = async () => {
     const response = await fetch('app.wasm');
     const bytes = await response.arrayBuffer();
@@ -12,8 +15,8 @@ const run = async () => {
             webcc_js_flush: (ptr, size) => flush(ptr, size)
 )";
 
-// JS code to finalize WASM instantiation and get exported functions.
-const std::string JS_INIT_TAIL = R"(
+    // JS code to finalize WASM instantiation and get exported functions.
+    const std::string JS_INIT_TAIL = R"(
         }
     });
 
@@ -21,8 +24,8 @@ const std::string JS_INIT_TAIL = R"(
     const { memory, main, __indirect_function_table: table } = mod.instance.exports;
 )";
 
-// JS code for the 'flush' function, which processes commands from C++.
-const std::string JS_FLUSH_HEAD = R"(
+    // JS code for the 'flush' function, which processes commands from C++.
+    const std::string JS_FLUSH_HEAD = R"(
     // Reusable text decoder to avoid garbage collection overhead
     const decoder = new TextDecoder();
     let u8 = new Uint8Array(memory.buffer);
@@ -53,8 +56,8 @@ const std::string JS_FLUSH_HEAD = R"(
             switch (opcode) {
 )";
 
-// The constant "footer" for the generated JS file.
-const std::string JS_TAIL = R"(
+    // The constant "footer" for the generated JS file.
+    const std::string JS_TAIL = R"(
                 default:
                     console.error("Unknown opcode:", opcode);
                     return;
@@ -67,3 +70,5 @@ const std::string JS_TAIL = R"(
 };
 run();
 )";
+
+} // namespace webcc
