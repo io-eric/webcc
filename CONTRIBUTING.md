@@ -38,7 +38,7 @@ This section guides you through submitting an enhancement suggestion for WebCC, 
 
 ## Style Guide
 
-- **Naming**: Use `snake_case` for variables and functions. Use `PascalCase` for classes and structs.
+- **Naming**: Use `snake_case` for variables and functions. Use `PascalCase` for classes and structs, except for core library types that mimic the standard library (e.g., `string`, `unique_ptr`), which use `snake_case`.
 - **C++ Standard**: We use C++20.
 - **Consistency**: Follow the style of the surrounding code.
 - **Generated Files**: Generated files (like headers) must start with a comment indicating they are generated (e.g., `// GENERATED FILE - DO NOT EDIT`).
