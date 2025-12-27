@@ -32,6 +32,10 @@ WebCC is designed to be lightweight. In a [Canvas 2D benchmark](benchmark/) rend
 - **Performance**: WebCC achieves higher FPS by minimizing overhead at the C++/JS boundary.
 - **Memory**: Lower JS and WASM heap usage.
 
+<p align="center">
+  <img src="benchmark/benchmark_results.svg" alt="Benchmark Results" width="400">
+</p>
+
 See the [benchmark/](benchmark/) directory for details and to run it yourself.
 
 ## Documentation

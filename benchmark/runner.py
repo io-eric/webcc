@@ -171,7 +171,7 @@ def generate_svg_report(results, file_sizes, browser_name):
     # Emscripten Colors (Indigo/Blue)
     c_em = "#5c7cfa"
 
-    svg = [f'<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 {width} {height}" style="font-family: \'Segoe UI\', Roboto, Helvetica, Arial, sans-serif; background: {bg_color};">']
+    svg = [f'<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 {width} {height}" width="100%" style="font-family: \'Segoe UI\', Roboto, Helvetica, Arial, sans-serif; background: {bg_color};">']
     
     # Background
     svg.append(f'<rect width="100%" height="100%" fill="{bg_color}"/>')
