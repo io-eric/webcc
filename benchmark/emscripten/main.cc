@@ -107,7 +107,7 @@ int main() {
     val canvas = document.call<val>("createElement", std::string("canvas"));
     canvas.set("width", 800);
     canvas.set("height", 600);
-    document.call<val>("getElementById", std::string("body")); // Usually we append to body
+    document.call<val>("getElementById", std::string("body"));
     document.call<val>("querySelector", std::string("body")).call<void>("appendChild", canvas);
 
     ctx = canvas.call<val>("getContext", std::string("2d"));
