@@ -120,16 +120,14 @@ namespace webcc {
 
             // Commands
             w.write("enum OpCode {");
-            bool first = true;
             for (const auto &d : defs.commands)
             {
                 if (d.ns != ns)
                     continue;
-                std::string line = (first ? "" : ",") + std::string("OP_") + d.name + " = 0x";
+                std::string line = std::string("OP_") + d.name + " = 0x";
                 std::stringstream ss;
                 ss << std::hex << (int)d.opcode << std::dec;
-                w.write(line + ss.str());
-                first = false;
+                w.write(line + ss.str() + ",");
             }
             w.write("};");
             w.write("");
@@ -143,29 +141,25 @@ namespace webcc {
             if (has_events)
             {
                 w.write("enum EventType {");
-                first = true;
                 for (const auto &d : defs.events)
                 {
                     if (d.ns != ns)
                         continue;
-                    std::string line = (first ? "" : ",") + std::string("EVENT_") + d.name + " = 0x";
+                    std::string line = std::string("EVENT_") + d.name + " = 0x";
                     std::stringstream ss;
                     ss << std::hex << (int)d.opcode << std::dec;
-                    w.write(line + ss.str());
-                    first = false;
+                    w.write(line + ss.str() + ",");
                 }
                 w.write("};");
                 w.write("");
 
                 w.write("enum EventMask {");
                 int shift = 0;
-                first = true;
                 for (const auto &d : defs.events)
                 {
                     if (d.ns != ns)
                         continue;
-                    w.write((first ? "" : ",") + std::string("MASK_") + d.name + " = 1 << " + std::to_string(shift++));
-                    first = false;
+                    w.write(std::string("MASK_") + d.name + " = 1 << " + std::to_string(shift++) + ",");
                 }
                 w.write("};");
                 w.write("");
