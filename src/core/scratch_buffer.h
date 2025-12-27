@@ -14,8 +14,7 @@ namespace webcc
     // 2. JS returns the length of the string.
     // 3. C++ immediately reads the data from the scratch buffer and copies it.
     //
-    // This avoids dynamic memory allocation (malloc/free) for temporary return values,
-    // preventing memory leaks in our simple bump-allocator system.
+    // This avoids dynamic memory allocation (malloc/free) for temporary return values.
     //
     // WARNING: This buffer is ephemeral. Data is only valid until the next JS call
     // that uses the scratch buffer.
