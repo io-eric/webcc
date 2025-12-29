@@ -51,25 +51,19 @@ void make_width_style(int percent, char* buf) {
 
 void update(float time_ms) {
     // Poll events
-    uint8_t opcode;
-    const uint8_t* data;
-    uint32_t len;
-    while (webcc::poll_event(opcode, &data, len)) {
-        switch (opcode) {
-            case webcc::dom::EVENT_CLICK: {
-                auto event = webcc::parse_event<webcc::dom::ClickEvent>(data, len);
-                if (event.handle == play_btn) {
-                    if (is_playing) {
-                        webcc::audio::pause(bg_music);
-                        webcc::dom::set_inner_text(play_btn, "Play Music");
-                        is_playing = false;
-                    } else {
-                        webcc::audio::play(bg_music);
-                        webcc::dom::set_inner_text(play_btn, "Pause Music");
-                        is_playing = true;
-                    }
+    webcc::Event e;
+    while (webcc::poll_event(e)) {
+        if (auto event = e.as<webcc::dom::ClickEvent>()) {
+            if (event->handle == play_btn) {
+                if (is_playing) {
+                    webcc::audio::pause(bg_music);
+                    webcc::dom::set_inner_text(play_btn, "Play Music");
+                    is_playing = false;
+                } else {
+                    webcc::audio::play(bg_music);
+                    webcc::dom::set_inner_text(play_btn, "Pause Music");
+                    is_playing = true;
                 }
-                break;
             }
         }
     }

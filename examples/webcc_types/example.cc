@@ -170,38 +170,32 @@ void demo_delegate() {
 
 void update(float time_ms) {
     // Poll events
-    uint8_t opcode;
-    const uint8_t* data;
-    uint32_t len;
-    while (webcc::poll_event(opcode, &data, len)) {
-        switch (opcode) {
-            case webcc::dom::EVENT_CLICK: {
-                auto event = webcc::parse_event<webcc::dom::ClickEvent>(data, len);
-                if (event.handle == button_string) {
-                    demo_string();
-                } else if (event.handle == button_array) {
-                    demo_array();
-                } else if (event.handle == button_unique) {
-                    demo_unique_ptr();
-                } else if (event.handle == button_optional) {
-                    demo_optional();
-                } else if (event.handle == button_delegate) {
-                    demo_delegate();
-                } else if (event.handle == button_custom) {
-                    log("--- Custom Concat Demo ---");
-                    webcc::string custom = webcc::string::concat("Custom", " ", "Concat", " ", "Example", "!");
+    webcc::Event e;
+    while (webcc::poll_event(e)) {
+        if (auto event = e.as<webcc::dom::ClickEvent>()) {
+            if (event->handle == button_string) {
+                demo_string();
+            } else if (event->handle == button_array) {
+                demo_array();
+            } else if (event->handle == button_unique) {
+                demo_unique_ptr();
+            } else if (event->handle == button_optional) {
+                demo_optional();
+            } else if (event->handle == button_delegate) {
+                demo_delegate();
+            } else if (event->handle == button_custom) {
+                log("--- Custom Concat Demo ---");
+                webcc::string custom = webcc::string::concat("Custom", " ", "Concat", " ", "Example", "!");
                     log(custom.c_str());
-                } else if (event.handle == button_allocate) {
-                    log("--- Manual Memory Allocation ---");
-                    webcc::malloc(1024 * 32);
-                    webcc::string msg = webcc::string::concat("Allocated 32KB chunk");
-                    log(msg.c_str());
-                } else if (event.handle == button_clear) {
-                    webcc::dom::set_inner_html(log_container, "");
-                }
-                draw_heap_viz();
-                break;
+            } else if (event->handle == button_allocate) {
+                log("--- Manual Memory Allocation ---");
+                webcc::malloc(1024 * 32);
+                webcc::string msg = webcc::string::concat("Allocated 32KB chunk");
+                log(msg.c_str());
+            } else if (event->handle == button_clear) {
+                webcc::dom::set_inner_html(log_container, "");
             }
+            draw_heap_viz();
         }
     }
     webcc::flush();

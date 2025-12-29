@@ -5,6 +5,7 @@
 #include "../../src/core/command_buffer.h"
 #include "../../src/core/event_buffer.h"
 #include "../../src/core/scratch_buffer.h"
+#include "core/optional.h"
 
 namespace webcc
 {
@@ -34,8 +35,26 @@ namespace webcc
         CommandBuffer::push_u32(opcode);
     }
 
+    struct Event {
+        uint8_t opcode;
+        const uint8_t* data;
+        uint32_t len;
+
+        template <typename T>
+        webcc::optional<T> as() const {
+            if (opcode == T::OPCODE) {
+                return T::parse(data, len);
+            }
+            return {};
+        }
+    };
+
     inline bool poll_event(uint8_t& opcode, const uint8_t** data_ptr, uint32_t& data_len) {
         return next_event(opcode, data_ptr, data_len);
+    }
+
+    inline bool poll_event(Event& event) {
+        return next_event(event.opcode, &event.data, event.len);
     }
 
     template <typename T>

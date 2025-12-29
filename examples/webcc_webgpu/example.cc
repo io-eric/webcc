@@ -45,47 +45,39 @@ void update(float time_ms) {
         fps = 1.0f / delta_time;
     }
 
-    uint8_t opcode;
-    const uint8_t* data;
-    uint32_t len;
-    while (webcc::poll_event(opcode, &data, len)) {
-        switch (opcode) {
-            case webcc::wgpu::EVENT_ADAPTER_READY: {
-                auto event = webcc::parse_event<webcc::wgpu::AdapterReadyEvent>(data, len);
-                webcc::handle handle(event.handle);
-                
-                if (!handle.is_valid()) {
-                    webcc::system::error("WebGPU adapter request failed.");
-                    webcc::handle body = webcc::dom::get_body();
-                    webcc::handle msg = webcc::dom::create_element("div");
-                    webcc::dom::set_attribute(msg, "style", "position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); background: rgba(255, 0, 0, 0.8); color: white; padding: 20px; border-radius: 8px; font-family: sans-serif; font-weight: bold; z-index: 1000;");
-                    webcc::dom::set_inner_text(msg, "WebGPU is not supported or enabled in this browser.");
-                    webcc::dom::append_child(body, msg);
-                } else {
-                    webcc::system::log("Adapter ready!");
-                    webcc::wgpu::request_device(handle);
-                }
-                break;
+    webcc::Event e;
+    while (webcc::poll_event(e)) {
+        if (auto event = e.as<webcc::wgpu::AdapterReadyEvent>()) {
+            webcc::handle handle(event->handle);
+            
+            if (!handle.is_valid()) {
+                webcc::system::error("WebGPU adapter request failed.");
+                webcc::handle body = webcc::dom::get_body();
+                webcc::handle msg = webcc::dom::create_element("div");
+                webcc::dom::set_attribute(msg, "style", "position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); background: rgba(255, 0, 0, 0.8); color: white; padding: 20px; border-radius: 8px; font-family: sans-serif; font-weight: bold; z-index: 1000;");
+                webcc::dom::set_inner_text(msg, "WebGPU is not supported or enabled in this browser.");
+                webcc::dom::append_child(body, msg);
+            } else {
+                webcc::system::log("Adapter ready!");
+                webcc::wgpu::request_device(handle);
             }
-            case webcc::wgpu::EVENT_DEVICE_READY: {
-                auto event = webcc::parse_event<webcc::wgpu::DeviceReadyEvent>(data, len);
-                webcc::handle handle(event.handle);
-                
-                webcc::system::log("Device ready!");
-                device = handle;
-                queue = webcc::wgpu::get_queue(device);
-                
-                wgpu_ctx = webcc::canvas::get_context(canvas_handle, "webgpu");
-                webcc::wgpu::configure(wgpu_ctx, device, "preferred");
+        } else if (auto event = e.as<webcc::wgpu::DeviceReadyEvent>()) {
+            webcc::handle handle(event->handle);
+            
+            webcc::system::log("Device ready!");
+            device = handle;
+            queue = webcc::wgpu::get_queue(device);
+            
+            wgpu_ctx = webcc::canvas::get_context(canvas_handle, "webgpu");
+            webcc::wgpu::configure(wgpu_ctx, device, "preferred");
 
-                webcc::handle shader_module = webcc::wgpu::create_shader_module(device, shader_code);
+            webcc::handle shader_module = webcc::wgpu::create_shader_module(device, shader_code);
                 
                 // Create a simple pipeline
                 pipeline = webcc::wgpu::create_render_pipeline_simple(device, shader_module, shader_module, "vs_main", "fs_main", "preferred");
                 
                 ready = true;
-                break;
-            }
+            ready = true;
         }
     }
 

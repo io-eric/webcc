@@ -194,6 +194,7 @@ namespace webcc {
                     struct_name += "Event";
 
                     w.write("struct " + struct_name + " {");
+                    w.write("static constexpr uint8_t OPCODE = EVENT_" + d.name + ";");
                     for (const auto &p : d.params)
                     {
                         std::string type = map_cpp_type(p.type, p.name);

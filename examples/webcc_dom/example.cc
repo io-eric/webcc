@@ -69,26 +69,22 @@ void get_random_color(char* buf) {
 
 void update(float time_ms) {
     // Poll events
-    uint8_t opcode;
-    const uint8_t* data;
-    uint32_t len;
-    while (webcc::poll_event(opcode, &data, len)) {
-        switch (opcode) {
-            case webcc::dom::EVENT_CLICK: {
-                auto event = webcc::parse_event<webcc::dom::ClickEvent>(data, len);
-                if (event.handle != add_btn) break;
+    webcc::Event e;
+    while (webcc::poll_event(e)) {
+        if (auto event = e.as<webcc::dom::ClickEvent>()) {
+            if (event->handle != add_btn) continue;
 
-                item_count++;
-                // Note: Click event doesn't provide x/y, so we'll just use 0,0 or keep last known
-                // For this demo, we don't strictly need x/y for the button click logic itself
-                // but we were displaying it. We can just update the count.
-                
-                char num[16];
-                int i;
-                
-                int_to_str(item_count, num);
-                
-                webcc::handle item = webcc::dom::create_element("div");
+            item_count++;
+            // Note: Click event doesn't provide x/y, so we'll just use 0,0 or keep last known
+            // For this demo, we don't strictly need x/y for the button click logic itself
+            // but we were displaying it. We can just update the count.
+            
+            char num[16];
+            int i;
+            
+            int_to_str(item_count, num);
+            
+            webcc::handle item = webcc::dom::create_element("div");
                 
                 // Build text: "Box #X"
                 char text[64];
@@ -125,10 +121,8 @@ void update(float time_ms) {
                 for(int k=0; num[k]; ++k) counter_text[i++] = num[k];
                 counter_text[i] = '\0';
                 webcc::dom::set_inner_text(counter_el, counter_text);
-                break;
             }
         }
-    }
     webcc::flush();
 }
 

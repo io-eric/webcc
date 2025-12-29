@@ -21,25 +21,15 @@ float fps = 0.0f;
 
 void update(float time_ms) {
     // Poll events
-    uint8_t opcode;
-    const uint8_t* data;
-    uint32_t len;
-    while (webcc::poll_event(opcode, &data, len)) {
-        switch (opcode) {
-            case webcc::input::EVENT_MOUSE_MOVE: {
-                auto event = webcc::parse_event<webcc::input::MouseMoveEvent>(data, len);
-                mouse_x = event.x;
-                mouse_y = event.y;
-                break;
-            }
-            case webcc::input::EVENT_MOUSE_DOWN: {
-                is_clicking = true;
-                break;
-            }
-            case webcc::input::EVENT_MOUSE_UP: {
-                is_clicking = false;
-                break;
-            }
+    webcc::Event e;
+    while (webcc::poll_event(e)) {
+        if (auto event = e.as<webcc::input::MouseMoveEvent>()) {
+            mouse_x = event->x;
+            mouse_y = event->y;
+        } else if (e.opcode == webcc::input::EVENT_MOUSE_DOWN) {
+            is_clicking = true;
+        } else if (e.opcode == webcc::input::EVENT_MOUSE_UP) {
+            is_clicking = false;
         }
     }
 

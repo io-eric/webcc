@@ -66,15 +66,11 @@ int mouse_y = 300.0f;
 // Main loop function called every frame
 void update(float time_ms) {
     // Poll events
-    uint8_t opcode;
-    const uint8_t* data;
-    uint32_t len;
-    while (webcc::poll_event(opcode, &data, len)) {
-        if (opcode == webcc::input::EVENT_MOUSE_MOVE) {
-            // Parse event data safely
-            auto event = webcc::parse_event<webcc::input::MouseMoveEvent>(data, len);
-            mouse_x = event.x;
-            mouse_y = event.y;
+    webcc::Event e;
+    while (webcc::poll_event(e)) {
+        if (auto event = e.as<webcc::input::MouseMoveEvent>()) {
+            mouse_x = event->x;
+            mouse_y = event->y;
         }
     }
 
