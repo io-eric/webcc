@@ -12,7 +12,11 @@ const run = async () => {
     const mod = await WebAssembly.instantiate(bytes, {
         env: {
             // C++ calls this function to tell JS "I wrote commands, please execute them"
-            webcc_js_flush: (ptr, size) => flush(ptr, size)
+            webcc_js_flush: (ptr, size) => flush(ptr, size),
+            // C++ runtime
+            __cxa_atexit: () => 0,
+            __cxa_thread_atexit: () => 0,
+            __cxa_finalize: () => {}
 )";
 
     // JS code to finalize WASM instantiation and get exported functions.
