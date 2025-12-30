@@ -117,7 +117,9 @@ namespace webcc
             // 1. We use a formatter on the stack to build the string first
             // This avoids multiple heap allocations
             webcc::formatter<1024> temp;
-            (temp << ... << args); // C++17 Fold Expression
+            if constexpr (sizeof...(Args) > 0) {
+                (temp << ... << args); // C++17 Fold Expression
+            }
 
             // 2. Now we allocate the exact size needed once
             return string(temp.c_str());
