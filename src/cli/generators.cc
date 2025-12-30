@@ -749,7 +749,7 @@ namespace webcc {
         std::string html = R"(
 <!DOCTYPE html>
 <html>
-<body style="margin:0; overflow:hidden;">
+<body>
     <script src="app.js"></script>
 </body>
 </html>
