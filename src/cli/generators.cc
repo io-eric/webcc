@@ -579,6 +579,18 @@ namespace webcc {
                     used = true;
             }
 
+            // 3. Special check for iostream which uses system::log and system::error implicitly
+            if (!used && d.ns == "system" && (d.func_name == "log" || d.func_name == "error"))
+            {
+                if (user_code.find("#include <iostream>") != std::string::npos || 
+                    user_code.find("#include \"webcc/compat/iostream\"") != std::string::npos ||
+                    contains_whole_word(user_code, "std::cout") ||
+                    contains_whole_word(user_code, "std::cerr"))
+                {
+                    used = true;
+                }
+            }
+
             if (used)
             {
                 std::cout << "  -> Found " << d.func_name << " (" << d.ns << "), embedding JS support." << std::endl;
