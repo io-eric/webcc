@@ -80,6 +80,24 @@ python3 -m http.server 8000
 
 Open your browser and navigate to `http://localhost:8000`. You should see "Hello from WebCC!" displayed on the page.
 
+## Using the C++ Standard Library
+
+WebCC includes a lightweight compatibility layer for common C++ Standard Library headers. This allows you to use familiar types like `std::vector`, `std::string`, and `std::cout` while keeping the binary size a fraction of what it would be with a full STL implementation.
+
+Example using `std::cout`:
+```cpp
+#include <iostream>
+#include "webcc/dom.h"
+
+int main() {
+    std::cout << "Initializing application..." << std::endl;
+    // ...
+    return 0;
+}
+```
+
+The `webcc` tool automatically configures the include paths to use these optimized headers. Note that for the absolute minimum binary size, you can still use the underlying `webcc::` core types directly.
+
 ## Next Steps
 
 - Explore the [API Reference](index.md) to learn about available modules.

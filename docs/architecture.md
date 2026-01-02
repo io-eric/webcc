@@ -26,6 +26,18 @@ To maximize performance, WebCC uses **integer handles** to reference resources (
 - **Creation**: Functions like `create_element` or `create_canvas` return a unique `int` handle.
 - **Usage**: Subsequent commands use this integer handle, avoiding expensive string lookups or map queries on the JavaScript side during hot code paths (like rendering loops).
 
+## C++ Standard Library Compatibility
+WebCC provides a lightweight compatibility layer for common C++ Standard Library headers (located in `include/webcc/compat/`). 
+
+Standard libraries provided by toolchains like Emscripten or even the default LLVM `libc++` can be quite large, often adding hundreds of kilobytes to the WASM binary. WebCC's compat layer provides minimal, header-only implementations of essential types like `std::vector`, `std::string`, and `std::iostream` (e.g., `std::cout`) that are:
+- **Optimized for Size**: They avoid complex features like locales, exceptions, and heavy template nesting.
+- **Zero-Dependency**: They build directly on top of WebCC's core types and allocators.
+- **WASM-Friendly**: Designed to work efficiently within the WebAssembly environment.
+
+**Note on Binary Size**: While these headers are significantly smaller than a full STL (often adding only a few KB instead of hundreds), they still introduce more overhead than using the raw `webcc::core` types directly. For the absolute smallest binaries, prefer `webcc::string_view` and direct `webcc::system::log` calls.
+
+To use them, simply include the standard header name (e.g., `#include <vector>`) and ensure the `include/webcc/compat` directory is in your include path (which the `webcc` tool handles automatically).
+
 ## Easy Extensibility
 The entire API surface is defined in a single configuration file: `schema.def`.
 - **Format**: `NAMESPACE|TYPE|NAME|FUNC_NAME|ARG_TYPES|JS_ACTION`

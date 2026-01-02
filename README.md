@@ -20,6 +20,7 @@
 - No heavy runtimes or external libraries required.
 - Uses a binary command buffer to batch API calls, minimizing C++/JS boundary overhead.
 - Supports DOM, Canvas 2D, WebGL, WebGPU, Audio, Input, WebSockets, and more.
+- **Lightweight STL Compat**: Includes a minimal compatibility layer for common STL headers (`vector`, `string`, `iostream`, etc.) designed to be a fraction of the size of standard implementations.
 - A single CLI tool handles code generation and compilation.
 - Incremental compilation using `.webcc_cache` for faster rebuilds.
 - Easily extensible API: generates headers and glue code based on a schema definition.
