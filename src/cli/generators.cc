@@ -814,8 +814,13 @@ namespace webcc {
                 std::cout << "  [CC] " << src << std::endl;
                 // Compile to object file
                 // -c : Compile and assemble, but do not link
-                std::string cc_cmd = "clang++ --target=wasm32 -O3 -std=c++20 -nostdlib -c -o " + obj + " " + src +
-                                     " -I " + exe_dir + "/include -I " + exe_dir + "/src/core";
+               std::string cc_cmd = "clang++ --target=wasm32 -O3 -std=c++20 "
+                     "-nostdlib -nostdinc++ " // No standard library, no standard headers
+                     "-fno-exceptions -fno-rtti " // Smaller WASM binary
+                     "-c -o " + obj + " " + src + " "
+                     "-isystem " + exe_dir + "/include/webcc/compat " // Make <vector> work
+                     "-I " + exe_dir + "/include"; // Make #include "webcc/core/vector.h" work
+                     
                 if (system(cc_cmd.c_str()) != 0)
                 {
                     compilation_failed = true;
