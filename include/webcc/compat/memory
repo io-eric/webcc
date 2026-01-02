@@ -1,0 +1,10 @@
+#pragma once
+#include "../core/unique_ptr.h"
+
+namespace std
+{
+    template <typename T>
+    using unique_ptr = webcc::unique_ptr<T>;
+
+    using webcc::make_unique;
+} // namespace std

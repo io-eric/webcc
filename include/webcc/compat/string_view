@@ -1,0 +1,7 @@
+#pragma once
+#include "../core/string_view.h"
+
+namespace std
+{
+    using string_view = webcc::string_view;
+} // namespace std

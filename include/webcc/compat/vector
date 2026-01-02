@@ -1,0 +1,7 @@
+#pragma once
+#include "../core/vector.h"
+
+namespace std {
+    template <typename T>
+    using vector = webcc::vector<T>;
+} // namespace std

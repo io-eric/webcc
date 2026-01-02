@@ -1,0 +1,8 @@
+#pragma once
+#include "../core/array.h"
+
+namespace std
+{
+    template <typename T, size_t N>
+    using array = webcc::array<T, N>;
+} // namespace std

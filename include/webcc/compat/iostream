@@ -1,0 +1,117 @@
+#pragma once
+#include "../core/string.h"
+#include "../core/string_view.h"
+#include "../core/format.h"
+#include "../core/allocator.h"
+#include "../system.h"
+
+namespace std {
+
+    class ostream {
+    private:
+        char* m_data = nullptr;
+        uint32_t m_len = 0;
+        uint32_t m_capacity = 0;
+        bool m_is_error;
+
+        void ensure_capacity(uint32_t required_len) {
+            if (required_len <= m_capacity) return;
+
+            uint32_t new_capacity = m_capacity == 0 ? 64 : m_capacity * 2;
+            while (new_capacity < required_len) {
+                new_capacity *= 2;
+            }
+
+            char* new_data = (char*)webcc::malloc(new_capacity + 1);
+            
+            if (m_data) {
+                for(uint32_t i=0; i<m_len; ++i) new_data[i] = m_data[i];
+                webcc::free(m_data);
+            }
+            
+            m_data = new_data;
+            m_capacity = new_capacity;
+        }
+
+        void append_raw(const char* s, uint32_t len) {
+            if (len == 0) return;
+            
+            ensure_capacity(m_len + len);
+            
+            for(uint32_t i=0; i<len; ++i) m_data[m_len + i] = s[i];
+            m_len += len;
+            m_data[m_len] = '\0';
+        }
+
+    public:
+        ostream(bool is_error) : m_is_error(is_error) {}
+        
+        // Delete copy to avoid double free issues
+        ostream(const ostream&) = delete;
+        ostream& operator=(const ostream&) = delete;
+
+        ~ostream() { webcc::free(m_data); }
+
+        // String types - bypass formatter to avoid truncation
+        ostream& operator<<(const char* val) {
+            uint32_t len = 0;
+            if (val) while(val[len]) len++;
+            append_raw(val, len);
+            return *this;
+        }
+
+        ostream& operator<<(char* val) {
+            return *this << (const char*)val;
+        }
+
+        ostream& operator<<(const webcc::string& val) {
+            append_raw(val.data(), val.length());
+            return *this;
+        }
+
+        ostream& operator<<(webcc::string_view val) {
+            append_raw(val.data(), val.length());
+            return *this;
+        }
+
+        // Numeric types - use formatter
+        template<typename T>
+        ostream& operator<<(const T& val) {
+            webcc::formatter<128> fmt;
+            fmt << val;
+            append_raw(fmt.c_str(), fmt.length());
+            return *this;
+        }
+
+        // Manipulators
+        using manipulator = ostream& (*)(ostream&);
+        ostream& operator<<(manipulator manip) {
+            return manip(*this);
+        }
+
+        void flush() {
+            if (m_len == 0) return;
+            
+            webcc::string_view sv(m_data, m_len);
+            if (m_is_error) {
+                webcc::system::error(sv);
+            } else {
+                webcc::system::log(sv);
+            }
+            
+            // Reset length but keep capacity/buffer for reuse
+            m_len = 0;
+            if (m_data) m_data[0] = '\0';
+        }
+    };
+
+    inline ostream& endl(ostream& os) {
+        os << "\n";
+        os.flush();
+        return os;
+    }
+
+    inline ostream cout(false);
+    inline ostream cerr(true);
+
+} // namespace std

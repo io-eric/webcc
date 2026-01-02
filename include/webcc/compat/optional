@@ -1,0 +1,8 @@
+#pragma once
+#include "../core/optional.h"
+
+namespace std
+{
+    template <typename T>
+    using optional = webcc::optional<T>;
+} // namespace std

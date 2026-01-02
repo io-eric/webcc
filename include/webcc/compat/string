@@ -1,0 +1,7 @@
+#pragma once
+#include "../core/string.h"
+
+namespace std
+{
+    using string = webcc::string;
+} // namespace std

@@ -1,0 +1,10 @@
+#pragma once
+#include "../core/algorithm.h"
+
+namespace std
+{
+    using webcc::min;
+    using webcc::max;
+    using webcc::clamp;
+    using webcc::sort;
+} // namespace std

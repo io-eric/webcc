@@ -1,0 +1,12 @@
+#pragma once
+#include "../core/unordered_map.h"
+#include "../core/hash.h"
+
+namespace std
+{
+    template <typename Key, typename T>
+    using unordered_map = webcc::unordered_map<Key, T>;
+
+    template <typename T>
+    using hash = webcc::hash<T>;
+} // namespace std

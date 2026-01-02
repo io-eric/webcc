@@ -1,0 +1,10 @@
+#pragma once
+#include "../core/utility.h"
+
+namespace std
+{
+    using webcc::move;
+    using webcc::forward;
+    using webcc::swap;
+    using webcc::remove_reference;
+} // namespace std

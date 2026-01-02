@@ -1,0 +1,23 @@
+#pragma once
+#include "../core/math.h"
+
+// Standard constants
+#ifndef M_PI
+#define M_PI 3.14159265358979323846
+#endif
+
+namespace std
+{
+    using webcc::abs;
+    using webcc::sqrt;
+    using webcc::sin;
+    using webcc::cos;
+    using webcc::tan;
+
+    // Constants
+    using webcc::PI;
+    using webcc::HALF_PI;
+    using webcc::TAU;
+    using webcc::DEG2RAD;
+    using webcc::RAD2DEG;
+} // namespace std
