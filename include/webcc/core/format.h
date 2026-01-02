@@ -69,6 +69,30 @@ public:
         return *this;
     }
 
+    // Overload for long
+    formatter& operator<<(long val) {
+        if (val == 0) return *this << "0";
+        if (val < 0) {
+            if (m_pos < N - 1) m_data[m_pos++] = '-';
+            val = -val;
+        }
+        return *this << (unsigned long)val;
+    }
+
+    // Overload for unsigned long
+    formatter& operator<<(unsigned long val) {
+        if (val == 0) return *this << "0";
+        char temp[24];
+        int i = 0;
+        while (val > 0) {
+            temp[i++] = (val % 10) + '0';
+            val /= 10;
+        }
+        while (i > 0 && m_pos < N - 1) m_data[m_pos++] = temp[--i];
+        m_data[m_pos] = '\0';
+        return *this;
+    }
+
     // Overload for Hex
     formatter& operator<<(hex h) {
         *this << "0x";
