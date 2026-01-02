@@ -6,6 +6,7 @@
 
 #include <stddef.h>
 #include <stdint.h>
+#include "webcc/core/allocator.h"
 
 extern "C"
 {
@@ -45,4 +46,36 @@ extern "C"
         }
         return dest;
     }
+}
+
+// Global C++ allocation operators must be outside extern "C" 
+// so they use C++ mangling (e.g., _Znwm, _ZdlPv) which the linker expects.
+void* operator new(size_t size)
+{
+    return webcc::malloc(size);
+}
+
+void operator delete(void* p) noexcept
+{
+    webcc::free(p);
+}
+
+void operator delete(void* p, size_t) noexcept
+{
+    webcc::free(p);
+}
+
+void* operator new[](size_t size)
+{
+    return webcc::malloc(size);
+}
+
+void operator delete[](void* p) noexcept
+{
+    webcc::free(p);
+}
+
+void operator delete[](void* p, size_t) noexcept
+{
+    webcc::free(p);
 }
