@@ -35,7 +35,8 @@ int main(int argc, char **argv)
                 defs_path = argv[++i];
             }
         }
-        else if (arg == "--out")
+        else if (arg == "--out" || arg == "-o")
+
         {
             if (i + 1 < argc)
             {
