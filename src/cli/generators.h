@@ -28,6 +28,6 @@ namespace webcc
     void generate_html(const std::string &out_dir);
 
     // Compiles the C++ code to WebAssembly.
-    bool compile_wasm(const std::vector<std::string> &input_files, const std::string &out_dir, const std::string &build_dir);
+    bool compile_wasm(const std::vector<std::string> &input_files, const std::string &out_dir, const std::string &cache_dir);
 
 } // namespace webcc

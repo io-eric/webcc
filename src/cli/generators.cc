@@ -793,12 +793,12 @@ namespace webcc {
         std::cout << "[WebCC] Generated " << out_dir << "/index.html" << std::endl;
     }
 
-    bool compile_wasm(const std::vector<std::string> &input_files, const std::string &out_dir, const std::string &build_dir)
+    bool compile_wasm(const std::vector<std::string> &input_files, const std::string &out_dir, const std::string &cache_dir)
     {
         std::cout << "[WebCC] Compiling..." << std::endl;
 
         // Ensure cache directory exists
-        mkdir(build_dir.c_str(), 0755);
+        mkdir(cache_dir.c_str(), 0755);
 
         std::string exe_dir = get_executable_dir();
         std::vector<std::string> all_sources = input_files;
@@ -822,7 +822,7 @@ namespace webcc {
                 if (!isalnum(c))
                     c = '_';
             }
-            std::string obj = build_dir + "/" + obj_name + ".o";
+            std::string obj = cache_dir + "/" + obj_name + ".o";
 
             struct stat src_stat, obj_stat;
             bool need_compile = true;

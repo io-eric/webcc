@@ -8,6 +8,7 @@
 #include <sys/stat.h>
 #include <set>
 #include <vector>
+#include <filesystem>
 
 #if __has_include("webcc_schema.h")
 #include "webcc_schema.h"
@@ -22,6 +23,7 @@ int main(int argc, char **argv)
     std::vector<std::string> input_files;
     bool generate_headers = false;
     std::string out_dir = ".";
+    std::string cache_dir_arg = "";
 
     // Parse command-line arguments.
     for (int i = 1; i < argc; ++i)
@@ -36,11 +38,17 @@ int main(int argc, char **argv)
             }
         }
         else if (arg == "--out" || arg == "-o")
-
         {
             if (i + 1 < argc)
             {
                 out_dir = argv[++i];
+            }
+        }
+        else if (arg == "--cache-dir")
+        {
+            if (i + 1 < argc)
+            {
+                cache_dir_arg = argv[++i];
             }
         }
         else
@@ -54,8 +62,6 @@ int main(int argc, char **argv)
     {
         mkdir(out_dir.c_str(), 0755);
     }
-
-    std::string build_dir = out_dir + "/.webcc_cache";
 
     // Load the command and event definitions.
     webcc::SchemaDefs defs;
@@ -72,6 +78,23 @@ int main(int argc, char **argv)
     {
         std::cerr << "Usage: webcc [--defs <path>] [--out <dir>] <source.cc> ... or webcc headers" << std::endl;
         return 1;
+    }
+
+    std::filesystem::path first_source(input_files[0]);
+    std::string cache_dir;
+
+    if (!cache_dir_arg.empty())
+    {
+        cache_dir = cache_dir_arg;
+    }
+    else
+    {
+        std::string source_dir = first_source.parent_path().string();
+        if (source_dir.empty())
+        {
+            source_dir = ".";
+        }
+        cache_dir = source_dir + "/.webcc_cache";
     }
 
 #if WEBCC_HAS_SCHEMA
@@ -104,7 +127,7 @@ int main(int argc, char **argv)
     webcc::generate_html(out_dir);
 
     // D. COMPILE C++ TO WASM (Incremental)
-    if (!webcc::compile_wasm(input_files, out_dir, build_dir))
+    if (!webcc::compile_wasm(input_files, out_dir, cache_dir))
     {
         return 1;
     }
