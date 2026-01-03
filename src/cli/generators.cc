@@ -835,6 +835,7 @@ namespace webcc {
                     if (obj_stat.st_mtime >= src_stat.st_mtime)
                     {
                         need_compile = false;
+                        std::cout << "  [Cache] " << src << std::endl;
                     }
                 }
             }

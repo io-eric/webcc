@@ -76,7 +76,7 @@ int main(int argc, char **argv)
 
     if (input_files.empty())
     {
-        std::cerr << "Usage: webcc [--defs <path>] [--out <dir>] <source.cc> ... or webcc headers" << std::endl;
+        std::cerr << "Usage: webcc [--defs <path>] [--out <dir> | -o <dir>] [--cache-dir <dir>] <source.cc> ... or webcc headers" << std::endl;
         return 1;
     }
 
