@@ -98,6 +98,8 @@ system|command|SET_TITLE|set_title|string:title|{ document.title = title; }
 system|command|RELOAD|reload||{ location.reload(); }
 system|command|OPEN_URL|open_url|string:url|{ window.open(url, '_blank'); }
 system|command|REQUEST_FULLSCREEN|request_fullscreen|int32:handle|{ const el = elements[handle] || document.body; el.requestFullscreen().catch(console.error); }
+system|command|GET_TIME|get_time|RET:float64|{ return performance.now(); }
+system|command|GET_DATE_NOW|get_date_now|RET:float64|{ return Date.now(); }
 
 # ------------------------------------------------------------------------------
 # STORAGE (LocalStorage)
