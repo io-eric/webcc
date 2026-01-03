@@ -37,3 +37,27 @@ void reload();
 void open_url(webcc::string_view url);
 void request_fullscreen(webcc::handle handle);
 ```
+
+## Time
+
+These functions provide access to the system time.
+
+```cpp
+// Returns the time in milliseconds since the page started loading (performance.now())
+double get_time();
+
+// Returns the number of milliseconds elapsed since the epoch (Date.now())
+double get_date_now();
+```
+
+## Time
+
+These functions provide access to the browser's time functions.
+
+```cpp
+// Returns the time in milliseconds since the time origin (performance.now())
+double get_time();
+
+// Returns the number of milliseconds elapsed since the epoch (Date.now())
+double get_date_now();
+```
