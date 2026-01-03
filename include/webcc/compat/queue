@@ -1,0 +1,8 @@
+#pragma once
+#include "../core/queue.h"
+
+namespace std
+{
+    template <typename T>
+    using queue = webcc::queue<T>;
+} // namespace std
