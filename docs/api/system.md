@@ -49,15 +49,3 @@ double get_time();
 // Returns the number of milliseconds elapsed since the epoch (Date.now())
 double get_date_now();
 ```
-
-## Time
-
-These functions provide access to the browser's time functions.
-
-```cpp
-// Returns the time in milliseconds since the time origin (performance.now())
-double get_time();
-
-// Returns the number of milliseconds elapsed since the epoch (Date.now())
-double get_date_now();
-```
