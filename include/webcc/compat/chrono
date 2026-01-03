@@ -1,0 +1,20 @@
+#pragma once
+#include "../core/chrono.h"
+
+namespace std {
+    namespace chrono {
+        using webcc::chrono::duration;
+        using webcc::chrono::time_point;
+        using webcc::chrono::system_clock;
+        using webcc::chrono::steady_clock;
+        using webcc::chrono::high_resolution_clock;
+        using webcc::chrono::duration_cast;
+        
+        using webcc::chrono::nanoseconds;
+        using webcc::chrono::microseconds;
+        using webcc::chrono::milliseconds;
+        using webcc::chrono::seconds;
+        using webcc::chrono::minutes;
+        using webcc::chrono::hours;
+    }
+} // namespace std
