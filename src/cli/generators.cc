@@ -27,6 +27,8 @@ namespace webcc
             return "uint32_t";
         if (type == "float32")
             return "float";
+        if (type == "float64")
+            return "double";
         if (type == "uint8")
             return "uint8_t";
         if (type == "func_ptr")
@@ -227,6 +229,10 @@ namespace webcc {
                         {
                             w.write("res." + p.name + " = *(float*)(data + offset); offset += 4;");
                         }
+                        else if (p.type == "float64")
+                        {
+                            w.write("res." + p.name + " = *(double*)(data + offset); offset += 8;");
+                        }
                         else if (p.type == "uint8")
                         {
                             w.write("res." + p.name + " = *(uint8_t*)(data + offset); offset += 4;");
@@ -261,6 +267,8 @@ namespace webcc {
                         ret_type = "uint32_t";
                     else if (ret_type == "float32")
                         ret_type = "float";
+                    else if (ret_type == "float64")
+                        ret_type = "double";
 
                     // Generate extern "C" import
                     std::string c_ret_type = ret_type;
@@ -279,6 +287,8 @@ namespace webcc {
                             sig << "const char* " << name << ", uint32_t " << name << "_len";
                         else if (p.type == "float32")
                             sig << "float " << name;
+                        else if (p.type == "float64")
+                            sig << "double " << name;
                         else if (p.type == "uint8")
                             sig << "uint8_t " << name;
                         else if (p.type == "uint32")
@@ -586,6 +596,19 @@ namespace webcc {
                     user_code.find("#include \"webcc/compat/iostream\"") != std::string::npos ||
                     contains_whole_word(user_code, "std::cout") ||
                     contains_whole_word(user_code, "std::cerr"))
+                {
+                    used = true;
+                }
+            }
+
+            // 4. Special check for chrono which uses system::get_time and system::get_date_now implicitly
+            if (!used && d.ns == "system" && (d.func_name == "get_time" || d.func_name == "get_date_now"))
+            {
+                if (user_code.find("#include <webcc/compat/chrono>") != std::string::npos ||
+                    user_code.find("#include \"webcc/compat/chrono\"") != std::string::npos ||
+                    user_code.find("#include \"webcc/core/chrono.h\"") != std::string::npos ||
+                    contains_whole_word(user_code, "std::chrono") ||
+                    contains_whole_word(user_code, "webcc::chrono"))
                 {
                     used = true;
                 }
