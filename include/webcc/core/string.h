@@ -187,5 +187,57 @@ namespace webcc
         bool operator!=(const char* other) const {
             return !(*this == other);
         }
+
+        // String concatenation
+        string operator+(const string& other) const {
+            return concat(*this, other);
+        }
+        string operator+(const char* other) const {
+            return concat(*this, other);
+        }
+        string& operator+=(const string& other) {
+            *this = concat(*this, other);
+            return *this;
+        }
+        string& operator+=(const char* other) {
+            *this = concat(*this, other);
+            return *this;
+        }
+
+        // Lexicographic comparison (for character range checks)
+        bool operator<(const string& other) const {
+            uint32_t min_len = m_len < other.m_len ? m_len : other.m_len;
+            for (uint32_t i = 0; i < min_len; i++) {
+                if (m_data[i] < other.m_data[i]) return true;
+                if (m_data[i] > other.m_data[i]) return false;
+            }
+            return m_len < other.m_len;
+        }
+        bool operator<(const char* other) const {
+            return *this < string(other);
+        }
+        bool operator>(const string& other) const {
+            return other < *this;
+        }
+        bool operator>(const char* other) const {
+            return *this > string(other);
+        }
+        bool operator<=(const string& other) const {
+            return !(other < *this);
+        }
+        bool operator<=(const char* other) const {
+            return *this <= string(other);
+        }
+        bool operator>=(const string& other) const {
+            return !(*this < other);
+        }
+        bool operator>=(const char* other) const {
+            return *this >= string(other);
+        }
     };
+
+    // Free function for "literal" + string
+    inline string operator+(const char* lhs, const string& rhs) {
+        return string::concat(lhs, rhs);
+    }
 } // namespace webcc
