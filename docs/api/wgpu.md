@@ -16,7 +16,7 @@ WebGPU initialization is asynchronous.
 
 ```cpp
 void request_adapter();
-void request_device(webcc::handle adapter_handle);
+void request_device(webcc::WGPUAdapter adapter);
 ```
 
 You must listen for `AdapterReadyEvent` and `DeviceReadyEvent` to proceed.
@@ -26,36 +26,36 @@ You must listen for `AdapterReadyEvent` and `DeviceReadyEvent` to proceed.
 ### Device & Queue
 
 ```cpp
-webcc::handle get_queue(webcc::handle device_handle);
-void configure(webcc::handle context_handle, webcc::handle device_handle, webcc::string_view format);
+webcc::WGPUQueue get_queue(webcc::WGPUDevice device);
+void configure(webcc::WGPUContext context, webcc::WGPUDevice device, webcc::string_view format);
 ```
 
 ### Shaders & Pipelines
 
 ```cpp
-webcc::handle create_shader_module(webcc::handle device_handle, webcc::string_view code);
-webcc::handle create_render_pipeline_simple(webcc::handle device_handle, webcc::handle vs_module_handle, webcc::handle fs_module_handle, webcc::string_view vs_entry, webcc::string_view fs_entry, webcc::string_view format);
+webcc::WGPUShaderModule create_shader_module(webcc::WGPUDevice device, webcc::string_view code);
+webcc::WGPURenderPipeline create_render_pipeline_simple(webcc::WGPUDevice device, webcc::WGPUShaderModule vs_module, webcc::WGPUShaderModule fs_module, webcc::string_view vs_entry, webcc::string_view fs_entry, webcc::string_view format);
 ```
 
 ### Command Encoding
 
 ```cpp
-webcc::handle create_command_encoder(webcc::handle device_handle);
-webcc::handle finish_encoder(webcc::handle encoder_handle);
-void queue_submit(webcc::handle queue_handle, webcc::handle command_buffer_handle);
+webcc::WGPUCommandEncoder create_command_encoder(webcc::WGPUDevice device);
+webcc::WGPUCommandBuffer finish_encoder(webcc::WGPUCommandEncoder encoder);
+void queue_submit(webcc::WGPUQueue queue, webcc::WGPUCommandBuffer command_buffer);
 ```
 
 ### Render Pass
 
 ```cpp
-webcc::handle get_current_texture_view(webcc::handle context_handle);
-webcc::handle begin_render_pass(webcc::handle encoder_handle, webcc::handle view_handle, float r, float g, float b, float a);
-void end_pass(webcc::handle pass_handle);
+webcc::WGPUTextureView get_current_texture_view(webcc::WGPUContext context);
+webcc::WGPURenderPass begin_render_pass(webcc::WGPUCommandEncoder encoder, webcc::WGPUTextureView view, float r, float g, float b, float a);
+void end_pass(webcc::WGPURenderPass pass);
 ```
 
 ### Drawing
 
 ```cpp
-void set_pipeline(webcc::handle pass_handle, webcc::handle pipeline_handle);
-void draw(webcc::handle pass_handle, int32_t vertex_count, int32_t instance_count, int32_t first_vertex, int32_t first_instance);
+void set_pipeline(webcc::WGPURenderPass pass, webcc::WGPURenderPipeline pipeline);
+void draw(webcc::WGPURenderPass pass, int32_t vertex_count, int32_t instance_count, int32_t first_vertex, int32_t first_instance);
 ```

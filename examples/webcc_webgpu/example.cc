@@ -20,17 +20,17 @@ fn fs_main() -> @location(0) vec4<f32> {
 }
 )";
 
-webcc::handle canvas_handle;
-webcc::handle wgpu_ctx;
-webcc::handle device;
-webcc::handle queue;
-webcc::handle pipeline;
+webcc::Canvas canvas_handle;
+webcc::WGPUContext wgpu_ctx;
+webcc::WGPUDevice device;
+webcc::WGPUQueue queue;
+webcc::WGPURenderPipeline pipeline;
 bool ready = false;
 
 float last_time = 0.0f;
 float fps = 0.0f;
-webcc::handle hud_canvas;
-webcc::handle hud_ctx;
+webcc::Canvas hud_canvas;
+webcc::CanvasContext2D hud_ctx;
 
 void update(float time_ms) {
     // Calculate Delta Time (in seconds)
@@ -48,12 +48,12 @@ void update(float time_ms) {
     webcc::Event e;
     while (webcc::poll_event(e)) {
         if (auto event = e.as<webcc::wgpu::AdapterReadyEvent>()) {
-            webcc::handle handle(event->handle);
+            webcc::WGPUAdapter handle(event->handle);
             
             if (!handle.is_valid()) {
                 webcc::system::error("WebGPU adapter request failed.");
-                webcc::handle body = webcc::dom::get_body();
-                webcc::handle msg = webcc::dom::create_element("div");
+                webcc::DOMElement body = webcc::dom::get_body();
+                webcc::DOMElement msg = webcc::dom::create_element("div");
                 webcc::dom::set_attribute(msg, "style", "position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); background: rgba(255, 0, 0, 0.8); color: white; padding: 20px; border-radius: 8px; font-family: sans-serif; font-weight: bold; z-index: 1000;");
                 webcc::dom::set_inner_text(msg, "WebGPU is not supported or enabled in this browser.");
                 webcc::dom::append_child(body, msg);
@@ -62,7 +62,7 @@ void update(float time_ms) {
                 webcc::wgpu::request_device(handle);
             }
         } else if (auto event = e.as<webcc::wgpu::DeviceReadyEvent>()) {
-            webcc::handle handle(event->handle);
+            webcc::WGPUDevice handle(event->handle);
             
             webcc::system::log("Device ready!");
             device = handle;
@@ -71,7 +71,7 @@ void update(float time_ms) {
             wgpu_ctx = webcc::canvas::get_context(canvas_handle, "webgpu");
             webcc::wgpu::configure(wgpu_ctx, device, "preferred");
 
-            webcc::handle shader_module = webcc::wgpu::create_shader_module(device, shader_code);
+            webcc::WGPUShaderModule shader_module = webcc::wgpu::create_shader_module(device, shader_code);
                 
                 // Create a simple pipeline
                 pipeline = webcc::wgpu::create_render_pipeline_simple(device, shader_module, shader_module, "vs_main", "fs_main", "preferred");
@@ -82,18 +82,18 @@ void update(float time_ms) {
     }
 
     if (ready) {
-        webcc::handle encoder = webcc::wgpu::create_command_encoder(device);
-        webcc::handle view = webcc::wgpu::get_current_texture_view(wgpu_ctx);
+        webcc::WGPUCommandEncoder encoder = webcc::wgpu::create_command_encoder(device);
+        webcc::WGPUTextureView view = webcc::wgpu::get_current_texture_view(wgpu_ctx);
         
         // Clear to dark blue
-        webcc::handle pass = webcc::wgpu::begin_render_pass(encoder, view, 0.0f, 0.0f, 0.2f, 1.0f);
+        webcc::WGPURenderPass pass = webcc::wgpu::begin_render_pass(encoder, view, 0.0f, 0.0f, 0.2f, 1.0f);
         
         webcc::wgpu::set_pipeline(pass, pipeline);
         webcc::wgpu::draw(pass, 3, 1, 0, 0);
         
         webcc::wgpu::end_pass(pass);
         
-        webcc::handle cmd_buffer = webcc::wgpu::finish_encoder(encoder);
+        webcc::WGPUCommandBuffer cmd_buffer = webcc::wgpu::finish_encoder(encoder);
         webcc::wgpu::queue_submit(queue, cmd_buffer);
 
         // Draw FPS text via Canvas 2D overlay
@@ -109,24 +109,24 @@ void update(float time_ms) {
 int main() {
     webcc::system::set_title("WebCC WebGPU Demo");
     
-    webcc::handle body = webcc::dom::get_body();
+    webcc::DOMElement body = webcc::dom::get_body();
 
     // Style the body to center content
     webcc::dom::set_attribute(body, "style", "margin: 0; height: 100vh; display: flex; justify-content: center; align-items: center; background: #111; color: #eee; font-family: sans-serif;");
 
     // Create a container for the game
-    webcc::handle game_container = webcc::dom::create_element("div");
+    webcc::DOMElement game_container = webcc::dom::create_element("div");
     webcc::dom::set_attribute(game_container, "style", "position: relative; border: 2px solid #444; box-shadow: 0 0 20px rgba(0,0,0,0.5); display: flex; flex-direction: column; align-items: center; background: #222; padding: 10px;");
     webcc::dom::append_child(body, game_container);
 
     // Add a title via DOM
-    webcc::handle game_title = webcc::dom::create_element("h1");
+    webcc::DOMElement game_title = webcc::dom::create_element("h1");
     webcc::dom::set_inner_text(game_title, "WebCC WebGPU Demo");
     webcc::dom::set_attribute(game_title, "style", "color: #fff; margin: 10px 0; font-family: monospace;");
     webcc::dom::append_child(game_container, game_title);
 
     // Add some description text
-    webcc::handle game_desc = webcc::dom::create_element("p");
+    webcc::DOMElement game_desc = webcc::dom::create_element("p");
     webcc::dom::set_inner_text(game_desc, "This is a Triangle rendered with WebGPU via WebCC.");
     webcc::dom::set_attribute(game_desc, "style", "color: #aaa; margin-bottom: 20px; font-size: 14px;");
     webcc::dom::append_child(game_container, game_desc);
@@ -137,7 +137,7 @@ int main() {
     webcc::dom::set_attribute(hud_canvas, "style", "position: absolute; left: 0; top: 0; pointer-events: none;");
     webcc::dom::append_child(game_container, hud_canvas);
 
-    webcc::handle canvas = webcc::canvas::create_canvas("wgpu-canvas", 600, 600);
+    webcc::Canvas canvas = webcc::canvas::create_canvas("wgpu-canvas", 600, 600);
     webcc::dom::append_child(game_container, canvas);
     
     canvas_handle = canvas;

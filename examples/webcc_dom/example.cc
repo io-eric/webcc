@@ -5,9 +5,9 @@
 int item_count = 0;
 
 // Global handles
-webcc::handle box_container;
-webcc::handle counter_el;
-webcc::handle add_btn;
+webcc::DOMElement box_container;
+webcc::DOMElement counter_el;
+webcc::DOMElement add_btn;
 
 // Helper for int to string
 void int_to_str(int v, char* buf) {
@@ -84,7 +84,7 @@ void update(float time_ms) {
             
             int_to_str(item_count, num);
             
-            webcc::handle item = webcc::dom::create_element("div");
+            webcc::DOMElement item = webcc::dom::create_element("div");
                 
                 // Build text: "Box #X"
                 char text[64];
@@ -129,30 +129,30 @@ void update(float time_ms) {
 int main() {
     webcc::system::set_title("WebCC DOM Demo");
     
-    webcc::handle body = webcc::dom::get_body();
+    webcc::DOMElement body = webcc::dom::get_body();
 
     // Style the body to center content
     webcc::dom::set_attribute(body, "style", "margin: 0; height: 100vh; display: flex; justify-content: center; align-items: center; background: #111; color: #eee; font-family: sans-serif;");
 
     // Create a container for the game
-    webcc::handle game_container = webcc::dom::create_element("div");
+    webcc::DOMElement game_container = webcc::dom::create_element("div");
     webcc::dom::set_attribute(game_container, "style", "position: relative; border: 2px solid #444; box-shadow: 0 0 20px rgba(0,0,0,0.5); display: flex; flex-direction: column; align-items: center; background: #222; padding: 20px; min-width: 500px;");
     webcc::dom::append_child(body, game_container);
 
     // Add a title via DOM
-    webcc::handle game_title = webcc::dom::create_element("h1");
+    webcc::DOMElement game_title = webcc::dom::create_element("h1");
     webcc::dom::set_inner_text(game_title, "WebCC DOM Demo");
     webcc::dom::set_attribute(game_title, "style", "color: #fff; margin: 10px 0; font-family: monospace;");
     webcc::dom::append_child(game_container, game_title);
 
     // Add some description text
-    webcc::handle game_desc = webcc::dom::create_element("p");
+    webcc::DOMElement game_desc = webcc::dom::create_element("p");
     webcc::dom::set_inner_text(game_desc, "Click the button below to create colorful boxes with random colors. The DOM is controlled through C++!");
     webcc::dom::set_attribute(game_desc, "style", "color: #aaa; margin-bottom: 20px; font-size: 14px; text-align: center;");
     webcc::dom::append_child(game_container, game_desc);
 
     // Stats container
-    webcc::handle stats = webcc::dom::create_element("div");
+    webcc::DOMElement stats = webcc::dom::create_element("div");
     webcc::dom::set_attribute(stats, "style", "display: flex; gap: 20px; margin-bottom: 20px; font-size: 14px; color: #4CAF50;");
     webcc::dom::append_child(game_container, stats);
 

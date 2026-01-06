@@ -89,15 +89,15 @@ float vertices[] = {
 float angle = 0.0f;
 
 // WebGL Handles
-webcc::handle gl;
-webcc::handle prog;
-webcc::handle vbo;
-webcc::handle angle_loc;
+webcc::WebGLContext gl;
+webcc::WebGLProgram prog;
+webcc::WebGLBuffer vbo;
+webcc::WebGLUniform angle_loc;
 
 float last_time = 0.0f;
 float fps = 0.0f;
-webcc::handle hud_canvas;
-webcc::handle hud_ctx;
+webcc::Canvas hud_canvas;
+webcc::CanvasContext2D hud_ctx;
 
 void update(float time_ms) {
    // Calculate Delta Time (in seconds)
@@ -146,24 +146,24 @@ void update(float time_ms) {
 int main() {
     webcc::system::set_title("WebCC WebGL Demo");
     
-    webcc::handle body = webcc::dom::get_body();
+    webcc::DOMElement body = webcc::dom::get_body();
 
     // Style the body to center content
     webcc::dom::set_attribute(body, "style", "margin: 0; height: 100vh; display: flex; justify-content: center; align-items: center; background: #111; color: #eee; font-family: sans-serif;");
 
     // Create a container for the game
-    webcc::handle game_container = webcc::dom::create_element("div");
+    webcc::DOMElement game_container = webcc::dom::create_element("div");
     webcc::dom::set_attribute(game_container, "style", "position: relative; border: 2px solid #444; box-shadow: 0 0 20px rgba(0,0,0,0.5); display: flex; flex-direction: column; align-items: center; background: #222; padding: 10px;");
     webcc::dom::append_child(body, game_container);
 
     // Add a title via DOM
-    webcc::handle game_title = webcc::dom::create_element("h1");
+    webcc::DOMElement game_title = webcc::dom::create_element("h1");
     webcc::dom::set_inner_text(game_title, "WebCC WebGL Demo");
     webcc::dom::set_attribute(game_title, "style", "color: #fff; margin: 10px 0; font-family: monospace;");
     webcc::dom::append_child(game_container, game_title);
 
     // Add some description text
-    webcc::handle game_desc = webcc::dom::create_element("p");
+    webcc::DOMElement game_desc = webcc::dom::create_element("p");
     webcc::dom::set_inner_text(game_desc, "This is a 3D Cube rendered with WebGL via WebCC.");
     webcc::dom::set_attribute(game_desc, "style", "color: #aaa; margin-bottom: 20px; font-size: 14px;");
     webcc::dom::append_child(game_container, game_desc);
@@ -174,7 +174,7 @@ int main() {
     webcc::dom::set_attribute(hud_canvas, "style", "position: absolute; left: 0; top: 0; pointer-events: none;");
     webcc::dom::append_child(game_container, hud_canvas);
 
-    webcc::handle gl_canvas = webcc::dom::create_element("canvas");
+    webcc::Canvas gl_canvas = webcc::dom::create_element("canvas");
     webcc::dom::set_attribute(gl_canvas, "width", "600");
     webcc::dom::set_attribute(gl_canvas, "height", "600");
     webcc::dom::append_child(game_container, gl_canvas);
@@ -185,8 +185,8 @@ int main() {
     webcc::webgl::enable(gl, 0x0B71); // GL_DEPTH_TEST
 
     // Create Shaders
-    webcc::handle vs = webcc::webgl::create_shader(gl, 0x8B31, vs_source); // GL_VERTEX_SHADER
-    webcc::handle fs = webcc::webgl::create_shader(gl, 0x8B30, fs_source); // GL_FRAGMENT_SHADER
+    webcc::WebGLShader vs = webcc::webgl::create_shader(gl, 0x8B31, vs_source); // GL_VERTEX_SHADER
+    webcc::WebGLShader fs = webcc::webgl::create_shader(gl, 0x8B30, fs_source); // GL_FRAGMENT_SHADER
     
     // Create Program
     prog = webcc::webgl::create_program(gl);

@@ -12,10 +12,10 @@ The `webcc::image` module provides functions for loading images.
 
 ### `load`
 
-Loads an image from the specified URL. Returns a handle to the image object.
+Loads an image from the specified URL. Returns an `Image` handle, which can be implicitly converted to `DOMElement` for use with DOM functions.
 
 ```cpp
-webcc::handle load(webcc::string_view src);
+webcc::Image load(webcc::string_view src);
 ```
 
 This handle can be used with `webcc::canvas::draw_image`.

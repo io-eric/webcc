@@ -91,8 +91,10 @@ void generate_grid() {
     vertex_count = idx / 3;
 }
 
-webcc::handle gl, prog, vbo;
-webcc::handle uTimeLoc;
+webcc::WebGLContext gl;
+webcc::WebGLProgram prog;
+webcc::WebGLBuffer vbo;
+webcc::WebGLUniform uTimeLoc;
 float total_time = 0.0f;
 
 void update(float time_ms) {
@@ -115,10 +117,10 @@ void update(float time_ms) {
     webcc::flush();
 }
 int main() {
-    webcc::handle body = webcc::dom::get_body();
+    webcc::DOMElement body = webcc::dom::get_body();
     webcc::dom::set_attribute(body, "style", "margin: 0; overflow: hidden; background-color: #05050d;");
 
-    webcc::handle text = webcc::dom::create_element("div");
+    webcc::DOMElement text = webcc::dom::create_element("div");
     webcc::dom::set_attribute(text, "style", 
         "position: absolute; "
         "top: 30%; left: 50%; "
@@ -129,17 +131,17 @@ int main() {
         "z-index: 2; "
         "pointer-events: none; "
         "user-select: none;");
-    webcc::handle webSpan = webcc::dom::create_element("span");
+    webcc::DOMElement webSpan = webcc::dom::create_element("span");
     webcc::dom::set_inner_text(webSpan, "Web");
     webcc::dom::set_attribute(webSpan, "style", "color: #ffffff;");
     webcc::dom::append_child(text, webSpan);
-    webcc::handle ccSpan = webcc::dom::create_element("span");
+    webcc::DOMElement ccSpan = webcc::dom::create_element("span");
     webcc::dom::set_inner_text(ccSpan, "CC");
     webcc::dom::set_attribute(ccSpan, "style", "color: #9477ff;");
     webcc::dom::append_child(text, ccSpan);
     webcc::dom::append_child(body, text);
 
-    webcc::handle canvas = webcc::dom::create_element("canvas");
+    webcc::Canvas canvas = webcc::dom::create_element("canvas");
     webcc::dom::set_attribute(canvas, "width", "1920");
     webcc::dom::set_attribute(canvas, "height", "1080");
     webcc::dom::set_attribute(canvas, "style", "width: 100vw; height: 100vh; display: block; position: absolute; top: 0; left: 0; z-index: 1;");
@@ -149,8 +151,8 @@ int main() {
     
     generate_grid();
 
-    webcc::handle vs = webcc::webgl::create_shader(gl, 0x8B31, vs_source);
-    webcc::handle fs = webcc::webgl::create_shader(gl, 0x8B30, fs_source);
+    webcc::WebGLShader vs = webcc::webgl::create_shader(gl, 0x8B31, vs_source);
+    webcc::WebGLShader fs = webcc::webgl::create_shader(gl, 0x8B30, fs_source);
     prog = webcc::webgl::create_program(gl);
     webcc::webgl::attach_shader(gl, prog, vs);
     webcc::webgl::attach_shader(gl, prog, fs);

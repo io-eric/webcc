@@ -59,10 +59,10 @@ Here is a complete example of creating a Canvas, handling mouse input, and runni
 #include "webcc/input.h"
 
 // Global handles
-webcc::handle canvas;
-webcc::handle ctx;
-int mouse_x = 400.0f;
-int mouse_y = 300.0f;
+webcc::Canvas canvas;
+webcc::CanvasContext2D ctx;
+int mouse_x = 400;
+int mouse_y = 300;
 
 // Main loop function called every frame
 void update(float time_ms) {

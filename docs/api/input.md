@@ -14,13 +14,15 @@ Before receiving input events, you must initialize the respective input systems.
 
 ```cpp
 void init_keyboard();
-void init_mouse(webcc::handle handle); // handle is usually the canvas or body
+void init_mouse(webcc::DOMElement handle); // handle is usually the canvas or body
 ```
+
+Note: `Canvas` handles can be passed directly as they implicitly convert to `DOMElement`.
 
 ## Pointer Lock
 
 ```cpp
-void request_pointer_lock(webcc::handle handle);
+void request_pointer_lock(webcc::DOMElement handle);
 void exit_pointer_lock();
 ```
 

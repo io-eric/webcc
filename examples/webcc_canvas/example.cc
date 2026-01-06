@@ -10,10 +10,10 @@ int mouse_y = 0.0f;
 bool is_clicking = false;
 
 // Canvas Handles
-webcc::handle demo_canvas;
-webcc::handle hud_canvas;
-webcc::handle demo_ctx;
-webcc::handle hud_ctx;
+webcc::Canvas demo_canvas;
+webcc::Canvas hud_canvas;
+webcc::CanvasContext2D demo_ctx;
+webcc::CanvasContext2D hud_ctx;
 
 // FPS counting
 float last_time = 0.0f;
@@ -86,24 +86,24 @@ void update(float time_ms) {
 int main() {
     webcc::system::set_title("WebCC Canvas Demo");
     
-    webcc::handle body = webcc::dom::get_body();
+    webcc::DOMElement body = webcc::dom::get_body();
 
     // Style the body to center content
     webcc::dom::set_attribute(body, "style", "margin: 0; height: 100vh; display: flex; justify-content: center; align-items: center; background: #111; color: #eee; font-family: sans-serif;");
 
     // Create a container for the game
-    webcc::handle game_container = webcc::dom::create_element("div");
+    webcc::DOMElement game_container = webcc::dom::create_element("div");
     webcc::dom::set_attribute(game_container, "style", "position: relative; border: 2px solid #444; box-shadow: 0 0 20px rgba(0,0,0,0.5); display: flex; flex-direction: column; align-items: center; background: #222; padding: 10px;");
     webcc::dom::append_child(body, game_container);
 
     // Add a title via DOM
-    webcc::handle game_title = webcc::dom::create_element("h1");
+    webcc::DOMElement game_title = webcc::dom::create_element("h1");
     webcc::dom::set_inner_text(game_title, "WebCC Canvas Demo");
     webcc::dom::set_attribute(game_title, "style", "color: #fff; margin: 10px 0; font-family: monospace;");
     webcc::dom::append_child(game_container, game_title);
 
     // Add some description text
-    webcc::handle game_desc = webcc::dom::create_element("p");
+    webcc::DOMElement game_desc = webcc::dom::create_element("p");
     webcc::dom::set_inner_text(game_desc, "This text is a DOM element created from C++. The canvas below is Canvas 2D.");
     webcc::dom::set_attribute(game_desc, "style", "color: #aaa; margin-bottom: 20px; font-size: 14px;");
     webcc::dom::append_child(game_container, game_desc);

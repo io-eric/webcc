@@ -1,6 +1,7 @@
 #pragma once
 #include <string>
 #include <vector>
+#include <map>
 #include <cstdint>
 
 namespace webcc
@@ -9,8 +10,9 @@ namespace webcc
     // Represents a parameter for a command or event.
     struct SchemaParam
     {
-        std::string type;
-        std::string name; // optional; if empty we'll generate argN
+        std::string type;        // Base type: string, int32, handle, etc.
+        std::string name;        // optional; if empty we'll generate argN
+        std::string handle_type; // For handle types: DOMElement, CanvasContext2D, etc.
     };
 
     // Represents a command definition from `schema.def`.
@@ -22,7 +24,8 @@ namespace webcc
         std::string func_name;           // C++ function name to search for
         std::vector<SchemaParam> params; // list of parameters
         std::string action;              // JS action body (using arg0.. or custom names)
-        std::string return_type;         // Optional return type
+        std::string return_type;         // Optional return type: handle, int32, string, etc.
+        std::string return_handle_type;  // For handle return types: DOMElement, CanvasContext2D, etc.
     };
 
     // Represents an event definition from `schema.def`.
@@ -39,6 +42,7 @@ namespace webcc
     {
         std::vector<SchemaCommand> commands;
         std::vector<SchemaEvent> events;
+        std::map<std::string, std::string> handle_inheritance;
     };
 
     // Loads and parses the command and event definitions from a file (e.g., schema.def).

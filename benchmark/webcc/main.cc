@@ -7,7 +7,7 @@
 constexpr int RECT_COUNT = 10000;
 constexpr int BENCHMARK_FRAMES = 500;
 
-webcc::handle ctx;
+webcc::CanvasContext2D ctx;
 int frame_count = 0;
 int total_frames = 0;
 double last_time = 0;
@@ -103,7 +103,7 @@ void update(float time_ms) {
 }
 
 int main() {
-    webcc::handle canvas = webcc::dom::create_element("canvas");
+    webcc::DOMElement canvas = webcc::dom::create_element("canvas");
     webcc::dom::set_attribute(canvas, "width", "800");
     webcc::dom::set_attribute(canvas, "height", "600");
     webcc::dom::append_child(webcc::dom::get_body(), canvas);

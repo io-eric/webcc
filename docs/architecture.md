@@ -22,9 +22,11 @@ WebCC acts as a wrapper around `clang++`. It:
 4.  **Caches** compiled object files in a `.webcc_cache` directory (located inside the output directory) to speed up subsequent builds.
 
 ## Resource Handles
-To maximize performance, WebCC uses **integer handles** to reference resources (like DOM elements, Canvases, Audio objects, and WebGL programs).
-- **Creation**: Functions like `create_element` or `create_canvas` return a unique `int` handle.
-- **Usage**: Subsequent commands use this integer handle, avoiding expensive string lookups or map queries on the JavaScript side during hot code paths (like rendering loops).
+To maximize performance, WebCC uses **typed integer handles** to reference resources (like DOM elements, Canvases, Audio objects, and WebGL programs).
+- **Creation**: Functions like `create_element` return a typed handle (e.g., `webcc::DOMElement`), and `create_canvas` returns a `webcc::Canvas`.
+- **Type Safety**: Handle types use C++ template inheritance to allow implicit conversions where appropriate (e.g., `Canvas` can be passed to functions expecting `DOMElement`).
+- **Zero Overhead**: The type system is compile-time only—at runtime, handles are simple 32-bit integers with no additional cost.
+- **Usage**: Subsequent commands use these integer handles, avoiding expensive string lookups or map queries on the JavaScript side during hot code paths (like rendering loops).
 
 ## C++ Standard Library Compatibility
 WebCC provides a lightweight compatibility layer for common C++ Standard Library headers (located in `include/webcc/compat/`). 

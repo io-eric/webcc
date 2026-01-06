@@ -12,10 +12,17 @@ namespace webcc
 {
 
     // Helper to map schema types to C++ types
-    static std::string map_cpp_type(const std::string &type, const std::string &name)
+    // Now supports typed handles via handle_type parameter
+    static std::string map_cpp_type(const std::string &type, const std::string &name, const std::string &handle_type = "")
     {
         if (type == "string")
             return "webcc::string_view";
+        if (type == "handle")
+        {
+            if (!handle_type.empty())
+                return "webcc::" + handle_type;
+            return "webcc::handle";
+        }
         if ((type == "int32" || type == "uint32") &&
             (name.find("handle") != std::string::npos || name == "id" || name.find("_id") != std::string::npos))
         {
@@ -34,6 +41,98 @@ namespace webcc
         if (type == "func_ptr")
             return "void*";
         return "void*";
+    }
+
+    // Collect all unique handle types from schema
+    static std::set<std::string> collect_handle_types(const SchemaDefs &defs)
+    {
+        std::set<std::string> types;
+        for (const auto &c : defs.commands)
+        {
+            if (!c.return_handle_type.empty())
+                types.insert(c.return_handle_type);
+            for (const auto &p : c.params)
+            {
+                if (!p.handle_type.empty())
+                    types.insert(p.handle_type);
+            }
+        }
+        for (const auto &e : defs.events)
+        {
+            for (const auto &p : e.params)
+            {
+                if (!p.handle_type.empty())
+                    types.insert(p.handle_type);
+            }
+        }
+        return types;
+    }
+
+    // Emit the handles.h header with all typed handle aliases
+    static void emit_handles_header(const std::set<std::string> &handle_types, const std::map<std::string, std::string> &inheritance)
+    {
+        CodeWriter w;
+        w.write("// GENERATED FILE - DO NOT EDIT");
+        w.write("#pragma once");
+        w.write("#include \"webcc/core/handle.h\"");
+        w.write("");
+        w.write("namespace webcc {");
+        w.write("");
+        w.write("// Type-safe handle types auto-generated from schema.def");
+        w.write("// Each type is a distinct compile-time type wrapping int32_t");
+        w.write("");
+        
+        std::set<std::string> emitted;
+        std::set<std::string> remaining = handle_types;
+
+        while (!remaining.empty())
+        {
+            bool progress = false;
+            auto it = remaining.begin();
+            while (it != remaining.end())
+            {
+                std::string ht = *it;
+                std::string base = "";
+                if (inheritance.count(ht)) base = inheritance.at(ht);
+                
+                // If base exists and not emitted yet
+                if (!base.empty() && emitted.find(base) == emitted.end())
+                {
+                    ++it;
+                    continue;
+                }
+                
+                w.write("// Tag struct for " + ht);
+                if (base.empty())
+                    w.write("struct " + ht + "_tag {};");
+                else
+                    w.write("struct " + ht + "_tag : " + base + "_tag {};");
+                
+                w.write("using " + ht + " = typed_handle<" + ht + "_tag>;");
+                w.write("");
+                
+                emitted.insert(ht);
+                it = remaining.erase(it);
+                progress = true;
+            }
+            
+            if (!progress)
+            {
+                 // Fallback
+                for (const auto& ht : remaining) {
+                    w.write("// Tag struct for " + ht + " (fallback)");
+                    w.write("struct " + ht + "_tag {};");
+                    w.write("using " + ht + " = typed_handle<" + ht + "_tag>;");
+                    w.write("");
+                }
+                break;
+            }
+        }
+        
+        w.write("} // namespace webcc");
+        
+        write_file("include/webcc/core/handles.h", w.str());
+        std::cout << "[WebCC] Emitted include/webcc/core/handles.h with " << handle_types.size() << " typed handles" << std::endl;
     }
 
     void emit_schema_header(const SchemaDefs &defs)
@@ -97,6 +196,22 @@ namespace webcc {
     void emit_headers(const SchemaDefs &defs)
     {
         std::cout << "[WebCC] Emitting headers..." << std::endl;
+        
+        // First, collect and emit all typed handles
+        auto handle_types = collect_handle_types(defs);
+        
+        // Ensure all base types are included
+        for (const auto& kv : defs.handle_inheritance) {
+             if (handle_types.count(kv.first)) {
+                 handle_types.insert(kv.second);
+             }
+        }
+        
+        if (!handle_types.empty())
+        {
+            emit_handles_header(handle_types, defs.handle_inheritance);
+        }
+        
         // Emit per-namespace headers
         std::set<std::string> namespaces;
         for (const auto &d : defs.commands)
@@ -116,6 +231,10 @@ namespace webcc {
             w.write("#pragma once");
             w.write("#include \"webcc.h\"");
             w.write("#include \"webcc/core/handle.h\"");
+            if (!handle_types.empty())
+            {
+                w.write("#include \"webcc/core/handles.h\"");
+            }
             w.write("#include \"webcc/core/string_view.h\"");
             w.write("#include \"webcc/core/string.h\"");
             w.write("namespace webcc::" + ns + " {");
@@ -199,7 +318,7 @@ namespace webcc {
                     w.write("static constexpr uint8_t OPCODE = EVENT_" + d.name + ";");
                     for (const auto &p : d.params)
                     {
-                        std::string type = map_cpp_type(p.type, p.name);
+                        std::string type = map_cpp_type(p.type, p.name, p.handle_type);
                         std::string name = p.name;
                         w.write(type + " " + name + ";");
                     }
@@ -210,10 +329,15 @@ namespace webcc {
                     w.write("uint32_t offset = 0;");
                     for (const auto &p : d.params)
                     {
-                        std::string cpp_type = map_cpp_type(p.type, p.name);
-                        if (p.type == "int32")
+                        std::string cpp_type = map_cpp_type(p.type, p.name, p.handle_type);
+                        if (p.type == "int32" || p.type == "handle")
                         {
-                            if (cpp_type == "webcc::handle")
+                            if (cpp_type.find("webcc::") != std::string::npos && cpp_type != "webcc::handle")
+                            {
+                                // Typed handle
+                                w.write("res." + p.name + " = " + cpp_type + "(*(int32_t*)(data + offset)); offset += 4;");
+                            }
+                            else if (cpp_type == "webcc::handle")
                                 w.write("res." + p.name + " = webcc::handle(*(int32_t*)(data + offset)); offset += 4;");
                             else
                                 w.write("res." + p.name + " = *(int32_t*)(data + offset); offset += 4;");
@@ -261,6 +385,7 @@ namespace webcc {
                 if (!d.return_type.empty())
                 {
                     std::string ret_type = d.return_type;
+                    std::string ret_handle_type = d.return_handle_type;
                     if (ret_type == "int32")
                         ret_type = "int32_t";
                     else if (ret_type == "uint32")
@@ -274,6 +399,8 @@ namespace webcc {
                     std::string c_ret_type = ret_type;
                     if (ret_type == "string")
                         c_ret_type = "uint32_t"; // Returns length
+                    if (ret_type == "handle")
+                        c_ret_type = "int32_t"; // Handles are int32 at the ABI level
 
                     std::stringstream sig;
                     sig << "extern \"C\" " << c_ret_type << " webcc_" << d.ns << "_" << d.func_name << "(";
@@ -293,7 +420,7 @@ namespace webcc {
                             sig << "uint8_t " << name;
                         else if (p.type == "uint32")
                             sig << "uint32_t " << name;
-                        else if (p.type == "int32")
+                        else if (p.type == "int32" || p.type == "handle")
                             sig << "int32_t " << name;
                         else
                             sig << "/*unknown*/ void* " << name;
@@ -302,12 +429,19 @@ namespace webcc {
                     w.write(sig.str());
 
                     // Generate inline wrapper
-                    std::string wrapper_ret_type = ret_type;
-                    bool ret_is_handle = (ret_type == "int32_t");
-                    if (ret_is_handle)
+                    std::string wrapper_ret_type;
+                    bool ret_is_typed_handle = (ret_type == "handle" && !ret_handle_type.empty());
+                    bool ret_is_untyped_handle = (ret_type == "handle" && ret_handle_type.empty());
+                    bool ret_is_any_handle = ret_is_typed_handle || ret_is_untyped_handle;
+                    
+                    if (ret_is_typed_handle)
+                        wrapper_ret_type = "webcc::" + ret_handle_type;
+                    else if (ret_is_untyped_handle)
                         wrapper_ret_type = "webcc::handle";
-                    if (ret_type == "string")
+                    else if (ret_type == "string")
                         wrapper_ret_type = "webcc::string";
+                    else
+                        wrapper_ret_type = ret_type;
 
                     std::stringstream wrap;
                     wrap << "inline " << wrapper_ret_type << " " << d.func_name << "(";
@@ -317,7 +451,7 @@ namespace webcc {
                             wrap << ", ";
                         const auto &p = d.params[i];
                         std::string name = p.name.empty() ? ("arg" + std::to_string(i)) : p.name;
-                        wrap << map_cpp_type(p.type, p.name) << " " << name;
+                        wrap << map_cpp_type(p.type, p.name, p.handle_type) << " " << name;
                     }
                     wrap << "){";
                     w.write(wrap.str());
@@ -331,8 +465,8 @@ namespace webcc {
                     else
                     {
                         call << "return ";
-                        if (ret_is_handle)
-                            call << "webcc::handle(";
+                        if (ret_is_any_handle)
+                            call << wrapper_ret_type << "(";
                         call << "webcc_" << d.ns << "_" << d.func_name << "(";
                     }
 
@@ -342,14 +476,15 @@ namespace webcc {
                             call << ", ";
                         const auto &p = d.params[i];
                         std::string name = p.name.empty() ? ("arg" + std::to_string(i)) : p.name;
-                        std::string cpp_type = map_cpp_type(p.type, p.name);
+                        std::string cpp_type = map_cpp_type(p.type, p.name, p.handle_type);
 
                         if (cpp_type == "webcc::string_view")
                         {
                             call << name << ".data(), " << name << ".length()";
                         }
-                        else if (cpp_type == "webcc::handle")
+                        else if (cpp_type.find("webcc::") != std::string::npos && cpp_type != "webcc::string_view")
                         {
+                            // Any handle type (typed or untyped)
                             call << "(int32_t)" << name;
                         }
                         else
@@ -358,7 +493,7 @@ namespace webcc {
                         }
                     }
                     call << ")";
-                    if (ret_is_handle)
+                    if (ret_is_any_handle)
                         call << ")";
                     call << ";";
                     w.write(call.str());
@@ -416,7 +551,7 @@ namespace webcc {
                     }
                     else
                     {
-                        func << map_cpp_type(p.type, p.name) << " " << name;
+                        func << map_cpp_type(p.type, p.name, p.handle_type) << " " << name;
                     }
                 }
                 func << "){";
@@ -426,11 +561,12 @@ namespace webcc {
                 {
                     const auto &p = d.params[i];
                     std::string name = p.name.empty() ? ("arg" + std::to_string(i)) : p.name;
-                    std::string cpp_type = map_cpp_type(p.type, p.name);
+                    std::string cpp_type = map_cpp_type(p.type, p.name, p.handle_type);
 
                     if (cpp_type == "webcc::string_view")
                         w.write("webcc::CommandBuffer::push_string(" + name + ".data(), " + name + ".length());");
-                    else if (cpp_type == "webcc::handle")
+                    else if (cpp_type.find("webcc::") != std::string::npos && cpp_type != "webcc::string_view")
+                        // Any handle type (typed or untyped)
                         w.write("push_data<int32_t>((int32_t)" + name + ");");
                     else if (p.type == "uint8")
                         w.write("push_data<uint32_t>((uint32_t)" + name + ");");
@@ -480,6 +616,11 @@ namespace webcc {
                 w.write("const " + varName + " = f32[pos >> 2]; pos += 4;");
             }
             else if (p.type == "func_ptr")
+            {
+                w.write("if (pos + 4 > end) { console.error('WebCC: OOB " + varName + "'); break; }");
+                w.write("const " + varName + " = i32[pos >> 2]; pos += 4;");
+            }
+            else if (p.type == "handle")
             {
                 w.write("if (pos + 4 > end) { console.error('WebCC: OOB " + varName + "'); break; }");
                 w.write("const " + varName + " = i32[pos >> 2]; pos += 4;");
@@ -741,6 +882,8 @@ namespace webcc {
                 else if (p.type == "uint32")
                     w.write("event_i32[pos >> 2] = " + name + "; pos += 4;");
                 else if (p.type == "uint8")
+                    w.write("event_i32[pos >> 2] = " + name + "; pos += 4;");
+                else if (p.type == "handle")
                     w.write("event_i32[pos >> 2] = " + name + "; pos += 4;");
                 else if (p.type == "float32")
                     w.write("event_f32[pos >> 2] = " + name + "; pos += 4;");

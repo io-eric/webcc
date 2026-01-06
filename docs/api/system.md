@@ -35,7 +35,7 @@ The callback function should have the signature `void(float time_ms)`.
 void set_title(webcc::string_view title);
 void reload();
 void open_url(webcc::string_view url);
-void request_fullscreen(webcc::handle handle);
+void request_fullscreen(webcc::DOMElement handle);
 ```
 
 ## Time

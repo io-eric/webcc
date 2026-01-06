@@ -12,10 +12,10 @@ The `webcc::canvas` module provides an interface to the HTML5 Canvas 2D API.
 
 ### `create_canvas`
 
-Creates a new `<canvas>` element with the specified ID and dimensions, and appends it to the document body.
+Creates a new `<canvas>` element with the specified ID and dimensions, and appends it to the document body. Returns a `Canvas` handle, which can be implicitly converted to `DOMElement` for use with DOM functions.
 
 ```cpp
-webcc::handle create_canvas(webcc::string_view dom_id, float width, float height);
+webcc::Canvas create_canvas(webcc::string_view dom_id, float width, float height);
 ```
 
 ### `get_context`
@@ -23,7 +23,7 @@ webcc::handle create_canvas(webcc::string_view dom_id, float width, float height
 Gets the 2D rendering context for a canvas.
 
 ```cpp
-webcc::handle get_context(webcc::handle canvas_handle, webcc::string_view context_type);
+webcc::CanvasContext2D get_context(webcc::Canvas canvas_handle, webcc::string_view context_type);
 ```
 
 ### `set_size`
@@ -31,71 +31,71 @@ webcc::handle get_context(webcc::handle canvas_handle, webcc::string_view contex
 Sets the width and height of the canvas.
 
 ```cpp
-void set_size(webcc::handle handle, float width, float height);
+void set_size(webcc::Canvas handle, float width, float height);
 ```
 
 ### Drawing Rectangles
 
 ```cpp
-void fill_rect(webcc::handle handle, float x, float y, float w, float h);
-void stroke_rect(webcc::handle handle, float x, float y, float w, float h);
-void clear_rect(webcc::handle handle, float x, float y, float w, float h);
-void rect(webcc::handle handle, float x, float y, float w, float h);
+void fill_rect(webcc::CanvasContext2D ctx, float x, float y, float w, float h);
+void stroke_rect(webcc::CanvasContext2D ctx, float x, float y, float w, float h);
+void clear_rect(webcc::CanvasContext2D ctx, float x, float y, float w, float h);
+void rect(webcc::CanvasContext2D ctx, float x, float y, float w, float h);
 ```
 
 ### Paths
 
 ```cpp
-void begin_path(webcc::handle handle);
-void close_path(webcc::handle handle);
-void move_to(webcc::handle handle, float x, float y);
-void line_to(webcc::handle handle, float x, float y);
-void bezier_curve_to(webcc::handle handle, float cp1x, float cp1y, float cp2x, float cp2y, float x, float y);
-void quadratic_curve_to(webcc::handle handle, float cpx, float cpy, float x, float y);
-void stroke(webcc::handle handle);
-void fill(webcc::handle handle);
-void clip(webcc::handle handle);
-void arc(webcc::handle handle, float x, float y, float radius, float start_angle, float end_angle);
-void ellipse(webcc::handle handle, float x, float y, float radius_x, float radius_y, float rotation, float start_angle, float end_angle, uint8_t counter_clockwise);
-void arc_to(webcc::handle handle, float x1, float y1, float x2, float y2, float radius);
+void begin_path(webcc::CanvasContext2D ctx);
+void close_path(webcc::CanvasContext2D ctx);
+void move_to(webcc::CanvasContext2D ctx, float x, float y);
+void line_to(webcc::CanvasContext2D ctx, float x, float y);
+void bezier_curve_to(webcc::CanvasContext2D ctx, float cp1x, float cp1y, float cp2x, float cp2y, float x, float y);
+void quadratic_curve_to(webcc::CanvasContext2D ctx, float cpx, float cpy, float x, float y);
+void stroke(webcc::CanvasContext2D ctx);
+void fill(webcc::CanvasContext2D ctx);
+void clip(webcc::CanvasContext2D ctx);
+void arc(webcc::CanvasContext2D ctx, float x, float y, float radius, float start_angle, float end_angle);
+void ellipse(webcc::CanvasContext2D ctx, float x, float y, float radius_x, float radius_y, float rotation, float start_angle, float end_angle, uint8_t counter_clockwise);
+void arc_to(webcc::CanvasContext2D ctx, float x1, float y1, float x2, float y2, float radius);
 ```
 
 ### Styles
 
 ```cpp
-void set_fill_style(webcc::handle handle, uint8_t r, uint8_t g, uint8_t b);
-void set_fill_style_str(webcc::handle handle, webcc::string_view color);
-void set_stroke_style(webcc::handle handle, uint8_t r, uint8_t g, uint8_t b);
-void set_stroke_style_str(webcc::handle handle, webcc::string_view color);
-void set_line_width(webcc::handle handle, float width);
-void set_global_alpha(webcc::handle handle, float alpha);
-void set_global_composite_operation(webcc::handle handle, webcc::string_view op);
-void set_line_cap(webcc::handle handle, webcc::string_view cap);
-void set_line_join(webcc::handle handle, webcc::string_view join);
-void set_shadow(webcc::handle handle, float blur, float off_x, float off_y, webcc::string_view color);
-void set_miter_limit(webcc::handle handle, float limit);
+void set_fill_style(webcc::CanvasContext2D ctx, uint8_t r, uint8_t g, uint8_t b);
+void set_fill_style_str(webcc::CanvasContext2D ctx, webcc::string_view color);
+void set_stroke_style(webcc::CanvasContext2D ctx, uint8_t r, uint8_t g, uint8_t b);
+void set_stroke_style_str(webcc::CanvasContext2D ctx, webcc::string_view color);
+void set_line_width(webcc::CanvasContext2D ctx, float width);
+void set_global_alpha(webcc::CanvasContext2D ctx, float alpha);
+void set_global_composite_operation(webcc::CanvasContext2D ctx, webcc::string_view op);
+void set_line_cap(webcc::CanvasContext2D ctx, webcc::string_view cap);
+void set_line_join(webcc::CanvasContext2D ctx, webcc::string_view join);
+void set_shadow(webcc::CanvasContext2D ctx, float blur, float off_x, float off_y, webcc::string_view color);
+void set_miter_limit(webcc::CanvasContext2D ctx, float limit);
 ```
 
 ### Text
 
 ```cpp
-void fill_text(webcc::handle handle, webcc::string_view text, float x, float y);
-void stroke_text(webcc::handle handle, webcc::string_view text, float x, float y);
-void fill_text_f(webcc::handle handle, webcc::string_view fmt, float val, float x, float y);
-void fill_text_i(webcc::handle handle, webcc::string_view fmt, int32_t val, float x, float y);
-void set_font(webcc::handle handle, webcc::string_view font);
-void set_text_align(webcc::handle handle, webcc::string_view align);
-void set_text_baseline(webcc::handle handle, webcc::string_view baseline);
-float measure_text_width(webcc::handle handle, webcc::string_view text);
+void fill_text(webcc::CanvasContext2D ctx, webcc::string_view text, float x, float y);
+void stroke_text(webcc::CanvasContext2D ctx, webcc::string_view text, float x, float y);
+void fill_text_f(webcc::CanvasContext2D ctx, webcc::string_view fmt, float val, float x, float y);
+void fill_text_i(webcc::CanvasContext2D ctx, webcc::string_view fmt, int32_t val, float x, float y);
+void set_font(webcc::CanvasContext2D ctx, webcc::string_view font);
+void set_text_align(webcc::CanvasContext2D ctx, webcc::string_view align);
+void set_text_baseline(webcc::CanvasContext2D ctx, webcc::string_view baseline);
+float measure_text_width(webcc::CanvasContext2D ctx, webcc::string_view text);
 ```
 
 ### Transformations
 
 ```cpp
-void translate(webcc::handle handle, float x, float y);
-void rotate(webcc::handle handle, float angle);
-void scale(webcc::handle handle, float x, float y);
-void reset_transform(webcc::handle handle);
+void translate(webcc::CanvasContext2D ctx, float x, float y);
+void rotate(webcc::CanvasContext2D ctx, float angle);
+void scale(webcc::CanvasContext2D ctx, float x, float y);
+void reset_transform(webcc::CanvasContext2D ctx);
 void save(webcc::handle handle);
 void restore(webcc::handle handle);
 void set_transform(webcc::handle handle, float a, float b, float c, float d, float e, float f);

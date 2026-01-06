@@ -15,7 +15,7 @@ The `webcc::dom` module provides functions for manipulating the Document Object 
 Gets a handle to the `<body>` element of the document.
 
 ```cpp
-webcc::handle get_body();
+webcc::DOMElement get_body();
 ```
 
 ### `create_element`
@@ -23,15 +23,15 @@ webcc::handle get_body();
 Creates a new HTML element with the specified tag name.
 
 ```cpp
-webcc::handle create_element(webcc::string_view tag);
+webcc::DOMElement create_element(webcc::string_view tag);
 ```
 
 ### `append_child`
 
-Appends a child element to a parent element.
+Appends a child element to a parent element. Note: Derived handle types like `Canvas`, `Audio`, and `Image` can be passed directly as they implicitly convert to `DOMElement`.
 
 ```cpp
-void append_child(webcc::handle parent_handle, webcc::handle child_handle);
+void append_child(webcc::DOMElement parent_handle, webcc::DOMElement child_handle);
 ```
 
 ### `remove_element`
@@ -39,28 +39,28 @@ void append_child(webcc::handle parent_handle, webcc::handle child_handle);
 Removes an element from the DOM.
 
 ```cpp
-void remove_element(webcc::handle handle);
+void remove_element(webcc::DOMElement handle);
 ```
 
 ### Attributes
 
 ```cpp
-void set_attribute(webcc::handle handle, webcc::string_view name, webcc::string_view value);
-void get_attribute(webcc::handle handle, webcc::string_view name);
+void set_attribute(webcc::DOMElement handle, webcc::string_view name, webcc::string_view value);
+void get_attribute(webcc::DOMElement handle, webcc::string_view name);
 ```
 
 ### Content
 
 ```cpp
-void set_inner_html(webcc::handle handle, webcc::string_view html);
-void set_inner_text(webcc::handle handle, webcc::string_view text);
+void set_inner_html(webcc::DOMElement handle, webcc::string_view html);
+void set_inner_text(webcc::DOMElement handle, webcc::string_view text);
 ```
 
 ### Classes
 
 ```cpp
-void add_class(webcc::handle handle, webcc::string_view cls);
-void remove_class(webcc::handle handle, webcc::string_view cls);
+void add_class(webcc::DOMElement handle, webcc::string_view cls);
+void remove_class(webcc::DOMElement handle, webcc::string_view cls);
 ```
 
 ### Events
@@ -70,7 +70,7 @@ void remove_class(webcc::handle handle, webcc::string_view cls);
 Adds a click event listener to an element. When the element is clicked, a `ClickEvent` will be generated.
 
 ```cpp
-void add_click_listener(webcc::handle handle);
+void add_click_listener(webcc::DOMElement handle);
 ```
 
 #### `ClickEvent`
@@ -79,6 +79,6 @@ Structure representing a click event.
 
 ```cpp
 struct ClickEvent {
-    webcc::handle handle; // The handle of the element that was clicked
+    webcc::DOMElement handle; // The handle of the element that was clicked
 };
 ```

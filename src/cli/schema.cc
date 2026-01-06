@@ -65,6 +65,14 @@ namespace webcc
             std::string kind = "command";
             int name_idx = 1;
 
+            if (ns == "meta") {
+                if (parts.size() >= 4 && parts[1] == "inherit") {
+                    // meta|inherit|Derived|Base
+                    out.handle_inheritance[parts[2]] = parts[3];
+                }
+                continue;
+            }
+
             // Check if second column is explicit kind
             if (parts[1] == "event" || parts[1] == "command")
             {
@@ -98,6 +106,18 @@ namespace webcc
                         p.type = tkn.substr(0, colon);
                         p.name = tkn.substr(colon + 1);
                     }
+
+                    // Check for handle(TypeName) syntax
+                    if (p.type.substr(0, 7) == "handle(")
+                    {
+                        size_t close_paren = p.type.find(')');
+                        if (close_paren != std::string::npos)
+                        {
+                            p.handle_type = p.type.substr(7, close_paren - 7);
+                            p.type = "handle";
+                        }
+                    }
+
                     e.params.push_back(p);
                 }
                 out.events.push_back(e);
@@ -130,9 +150,43 @@ namespace webcc
                         p.name = tkn.substr(colon + 1);
                     }
 
+                    // Check for handle(TypeName) syntax
+                    if (p.type.substr(0, 7) == "handle(")
+                    {
+                        size_t close_paren = p.type.find(')');
+                        if (close_paren != std::string::npos)
+                        {
+                            p.handle_type = p.type.substr(7, close_paren - 7);
+                            p.type = "handle";
+                        }
+                    }
+                    // Also check name for handle(TypeName) syntax (for RET:handle(TypeName))
+                    if (p.name.substr(0, 7) == "handle(")
+                    {
+                        size_t close_paren = p.name.find(')');
+                        if (close_paren != std::string::npos)
+                        {
+                            p.handle_type = p.name.substr(7, close_paren - 7);
+                            p.name = "handle";
+                        }
+                    }
+
                     if (p.type == "RET")
                     {
-                        c.return_type = p.name;
+                        // Check if return type is handle(TypeName)
+                        if (p.name.substr(0, 7) == "handle(")
+                        {
+                            size_t close_paren = p.name.find(')');
+                            if (close_paren != std::string::npos)
+                            {
+                                c.return_handle_type = p.name.substr(7, close_paren - 7);
+                                c.return_type = "handle";
+                            }
+                        }
+                        else
+                        {
+                            c.return_type = p.name;
+                        }
                     }
                     else
                     {

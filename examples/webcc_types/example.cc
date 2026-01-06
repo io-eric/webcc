@@ -12,21 +12,21 @@
 #include "webcc/core/allocator.h"
 
 // Global handles
-webcc::handle log_container;
-webcc::handle canvas_ctx;
-webcc::handle button_string;
-webcc::handle button_array;
-webcc::handle button_vector;
-webcc::handle button_unique;
-webcc::handle button_optional;
-webcc::handle button_function;
-webcc::handle button_custom;
-webcc::handle button_allocate;
-webcc::handle button_clear;
+webcc::DOMElement log_container;
+webcc::CanvasContext2D canvas_ctx;
+webcc::DOMElement button_string;
+webcc::DOMElement button_array;
+webcc::DOMElement button_vector;
+webcc::DOMElement button_unique;
+webcc::DOMElement button_optional;
+webcc::DOMElement button_function;
+webcc::DOMElement button_custom;
+webcc::DOMElement button_allocate;
+webcc::DOMElement button_clear;
 
 // Helper to log to DOM
 void log(const char* msg) {
-    webcc::handle p = webcc::dom::create_element("div");
+    webcc::DOMElement p = webcc::dom::create_element("div");
     webcc::dom::set_inner_text(p, msg);
     webcc::dom::set_attribute(p, "style", "font-family: monospace; margin: 2px 0; color: #ddd; border-bottom: 1px solid #333; padding: 2px;");
     webcc::dom::append_child(log_container, p);
@@ -236,24 +236,24 @@ void update(float time_ms) {
 int main() {
     webcc::system::set_title("WebCC Types Demo");
     
-    webcc::handle body = webcc::dom::get_body();
+    webcc::DOMElement body = webcc::dom::get_body();
     webcc::dom::set_attribute(body, "style", "background: #1e1e1e; color: #eee; font-family: 'Segoe UI', sans-serif; padding: 20px; max-width: 800px; margin: 0 auto;");
 
-    webcc::handle h1 = webcc::dom::create_element("h1");
+    webcc::DOMElement h1 = webcc::dom::create_element("h1");
     webcc::dom::set_inner_text(h1, "WebCC Types & Allocator");
     webcc::dom::set_attribute(h1, "style", "border-bottom: 2px solid #4caf50; padding-bottom: 10px;");
     webcc::dom::append_child(body, h1);
 
-    webcc::handle desc = webcc::dom::create_element("p");
+    webcc::DOMElement desc = webcc::dom::create_element("p");
     webcc::dom::set_inner_text(desc, "This example demonstrates the custom C++ types (string, array, unique_ptr, optional, function) and visualizes the bump allocator heap usage. Click the buttons on the left to run individual demos.");
     webcc::dom::append_child(body, desc);
 
     // Canvas for heap viz
-    webcc::handle canvas_container = webcc::dom::create_element("div");
+    webcc::DOMElement canvas_container = webcc::dom::create_element("div");
     webcc::dom::set_attribute(canvas_container, "style", "margin: 20px 0; border: 1px solid #555; box-shadow: 0 4px 8px rgba(0,0,0,0.3);");
     webcc::dom::append_child(body, canvas_container);
 
-    webcc::handle canvas = webcc::canvas::create_canvas("heap-viz", 600, 150);
+    webcc::Canvas canvas = webcc::canvas::create_canvas("heap-viz", 600, 150);
     canvas_ctx = webcc::canvas::get_context(canvas, "2d");
     webcc::dom::append_child(canvas_container, canvas);
     
