@@ -146,6 +146,16 @@ namespace webcc
 namespace webcc {
 )");
 
+        // Output handle inheritance map
+        w.write("static const std::pair<const char*, const char*> HANDLE_INHERITANCE[] = {");
+        for (const auto &kv : defs.handle_inheritance)
+        {
+            w.write("{ \"" + kv.first + "\", \"" + kv.second + "\" },");
+        }
+        w.write("{ nullptr, nullptr }");
+        w.write("};");
+        w.write("");
+
         w.write("static const SchemaCommand SCHEMA_COMMANDS[] = {");
         for (const auto &d : defs.commands)
         {
@@ -157,14 +167,14 @@ namespace webcc {
                 if (i > 0)
                     ss << ", ";
                 std::string name = d.params[i].name.empty() ? ("arg" + std::to_string(i)) : d.params[i].name;
-                ss << "{ \"" << d.params[i].type << "\", \"" << name << "\" }";
+                ss << "{ \"" << d.params[i].type << "\", \"" << name << "\", \"" << d.params[i].handle_type << "\" }";
             }
             ss << "}, ";
             ss << "R\"JS_ACTION(" << d.action << ")JS_ACTION\", ";
-            ss << "\"" << d.return_type << "\" },";
+            ss << "\"" << d.return_type << "\", \"" << d.return_handle_type << "\" },";
             w.write(ss.str());
         }
-        w.write("{ \"\", \"\", 0, \"\", {}, \"\", \"\" }");
+        w.write("{ \"\", \"\", 0, \"\", {}, \"\", \"\", \"\" }");
         w.write("};");
         w.write("");
 
@@ -178,7 +188,7 @@ namespace webcc {
                 if (i > 0)
                     ss << ", ";
                 std::string name = d.params[i].name.empty() ? ("arg" + std::to_string(i)) : d.params[i].name;
-                ss << "{ \"" << d.params[i].type << "\", \"" << name << "\" }";
+                ss << "{ \"" << d.params[i].type << "\", \"" << name << "\", \"" << d.params[i].handle_type << "\" }";
             }
             ss << "} },";
             w.write(ss.str());

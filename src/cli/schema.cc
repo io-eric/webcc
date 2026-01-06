@@ -173,19 +173,10 @@ namespace webcc
 
                     if (p.type == "RET")
                     {
-                        // Check if return type is handle(TypeName)
-                        if (p.name.substr(0, 7) == "handle(")
+                        c.return_type = p.name;
+                        if (!p.handle_type.empty())
                         {
-                            size_t close_paren = p.name.find(')');
-                            if (close_paren != std::string::npos)
-                            {
-                                c.return_handle_type = p.name.substr(7, close_paren - 7);
-                                c.return_type = "handle";
-                            }
-                        }
-                        else
-                        {
-                            c.return_type = p.name;
+                            c.return_handle_type = p.handle_type;
                         }
                     }
                     else
@@ -213,6 +204,11 @@ namespace webcc
 #if WEBCC_HAS_SCHEMA
         std::cout << "[WebCC] Loading definitions from compiled-in schema..." << std::endl;
         SchemaDefs out;
+
+        for (const auto *kv = webcc::HANDLE_INHERITANCE; kv->first != nullptr; ++kv)
+        {
+            out.handle_inheritance[kv->first] = kv->second;
+        }
 
         for (const auto *c = webcc::SCHEMA_COMMANDS; !c->ns.empty(); ++c)
         {
