@@ -18,6 +18,14 @@ Gets a handle to the `<body>` element of the document.
 webcc::DOMElement get_body();
 ```
 
+### `get_element_by_id`
+
+Gets a handle to an element by its ID.
+
+```cpp
+webcc::DOMElement get_element_by_id(webcc::string_view id);
+```
+
 ### `create_element`
 
 Creates a new HTML element with the specified tag name.
