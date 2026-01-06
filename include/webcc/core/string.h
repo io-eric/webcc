@@ -133,6 +133,38 @@ namespace webcc
         uint32_t size() const { return m_len; }
         bool empty() const { return m_len == 0; }
 
+        // Get character at index as a single-character string
+        string at(uint32_t index) const {
+            if (index >= m_len) return string();
+            return string(m_data + index, 1);
+        }
+
+        // Get substring (standard library compatible)
+        // substr(pos, len) - get substring starting at pos with length len
+        string substr(uint32_t pos, uint32_t len = 0xFFFFFFFF) const {
+            if (pos >= m_len) return string();
+            uint32_t actual_len = (len > m_len - pos) ? (m_len - pos) : len;
+            return string(m_data + pos, actual_len);
+        }
+
+        // Check if string contains substring (C++23 standard)
+        bool contains(const string& needle) const {
+            if (needle.m_len == 0) return true;
+            if (needle.m_len > m_len) return false;
+            for (uint32_t i = 0; i <= m_len - needle.m_len; i++) {
+                bool match = true;
+                for (uint32_t j = 0; j < needle.m_len && match; j++) {
+                    if (m_data[i + j] != needle.m_data[j]) match = false;
+                }
+                if (match) return true;
+            }
+            return false;
+        }
+
+        bool contains(const char* needle) const {
+            return contains(string(needle));
+        }
+
         iterator begin() { return m_data; }
         iterator end() { return m_data + m_len; }
         const_iterator begin() const { return m_data; }
