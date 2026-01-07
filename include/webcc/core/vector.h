@@ -162,6 +162,19 @@ namespace webcc
             }
         }
 
+        // Erase element at index, shifting remaining elements
+        void erase(size_t index)
+        {
+            if (index >= m_size) return;
+            m_data[index].~T();
+            for (size_t i = index; i < m_size - 1; ++i)
+            {
+                new (m_data + i) T(webcc::move(m_data[i + 1]));
+                m_data[i + 1].~T();
+            }
+            m_size--;
+        }
+
         void reserve(size_t new_capacity)
         {
             if (new_capacity > m_capacity)
