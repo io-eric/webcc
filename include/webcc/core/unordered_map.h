@@ -184,6 +184,45 @@ namespace webcc
         size_t size() const { return m_size; }
         bool empty() const { return m_size == 0; }
         
+        iterator find(const Key& key) {
+            if (m_capacity == 0) return end();
+            size_t idx = m_hasher(key) & (m_capacity - 1);
+            while (m_data[idx].state != EMPTY) {
+                if (m_data[idx].state == OCCUPIED && m_data[idx].key == key) {
+                    return {&m_data[idx], m_data + m_capacity};
+                }
+                idx = (idx + 1) & (m_capacity - 1);
+            }
+            return end();
+        }
+        
+        bool contains(const Key& key) const {
+            if (m_capacity == 0) return false;
+            size_t idx = m_hasher(key) & (m_capacity - 1);
+            while (m_data[idx].state != EMPTY) {
+                if (m_data[idx].state == OCCUPIED && m_data[idx].key == key) {
+                    return true;
+                }
+                idx = (idx + 1) & (m_capacity - 1);
+            }
+            return false;
+        }
+        
+        void erase(const Key& key) {
+            if (m_capacity == 0) return;
+            size_t idx = m_hasher(key) & (m_capacity - 1);
+            while (m_data[idx].state != EMPTY) {
+                if (m_data[idx].state == OCCUPIED && m_data[idx].key == key) {
+                    m_data[idx].key.~Key();
+                    m_data[idx].value.~T();
+                    m_data[idx].state = DELETED;
+                    m_size--;
+                    return;
+                }
+                idx = (idx + 1) & (m_capacity - 1);
+            }
+        }
+        
         void clear() {
              if (m_data) {
                 for (size_t i = 0; i < m_capacity; ++i) {
