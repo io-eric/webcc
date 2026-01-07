@@ -20,6 +20,10 @@ namespace webcc
             return l;
         }
 
+        // Private: take ownership of an existing buffer (used by concat)
+        struct take_ownership_t {};
+        string(char* data, uint32_t len, take_ownership_t) : m_data(data), m_len(len) {}
+
     public:
         using iterator = char*;
         using const_iterator = const char*;
@@ -114,15 +118,21 @@ namespace webcc
         template <typename... Args>
         static string concat(Args... args)
         {
-            // 1. We use a formatter on the stack to build the string first
-            // This avoids multiple heap allocations
-            webcc::formatter<1024> temp;
+            // Hybrid formatter: stack (1024) first, heap if overflow
+            webcc::hybrid_formatter<1024> buf;
             if constexpr (sizeof...(Args) > 0) {
-                (temp << ... << args); // C++17 Fold Expression
+                (buf << ... << args);
             }
-
-            // 2. Now we allocate the exact size needed once
-            return string(temp.c_str());
+            
+            // If on heap, take ownership directly (no copy)
+            if (buf.on_heap()) {
+                uint32_t len = buf.length();
+                char* data = buf.release();
+                return string(data, len, take_ownership_t{});
+            }
+            
+            // Otherwise copy from stack buffer
+            return string(buf.c_str());
         }
 
         const char *c_str() const { return m_data ? m_data : ""; }
