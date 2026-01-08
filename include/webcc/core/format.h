@@ -379,13 +379,98 @@ public:
         return *this;
     }
 
+    hybrid_formatter& operator<<(long val) {
+        if (val == 0) return *this << "0";
+        if (val < 0) {
+            ensure_capacity(1);
+            buffer()[m_pos++] = '-';
+            val = -val;
+        }
+        return *this << (unsigned long)val;
+    }
+
+    hybrid_formatter& operator<<(unsigned long val) {
+        if (val == 0) return *this << "0";
+        char temp[24];
+        int i = 0;
+        while (val > 0) {
+            temp[i++] = (val % 10) + '0';
+            val /= 10;
+        }
+        ensure_capacity(i);
+        char* buf = buffer();
+        while (i > 0) buf[m_pos++] = temp[--i];
+        buf[m_pos] = '\0';
+        return *this;
+    }
+
+    hybrid_formatter& operator<<(long long val) {
+        if (val == 0) return *this << "0";
+        if (val < 0) {
+            ensure_capacity(1);
+            buffer()[m_pos++] = '-';
+            val = -val;
+        }
+        return *this << (unsigned long long)val;
+    }
+
+    hybrid_formatter& operator<<(unsigned long long val) {
+        if (val == 0) return *this << "0";
+        char temp[24];
+        int i = 0;
+        while (val > 0) {
+            temp[i++] = (val % 10) + '0';
+            val /= 10;
+        }
+        ensure_capacity(i);
+        char* buf = buffer();
+        while (i > 0) buf[m_pos++] = temp[--i];
+        buf[m_pos] = '\0';
+        return *this;
+    }
+
+    hybrid_formatter& operator<<(hex h) {
+        *this << "0x";
+        if (h.value == 0) return *this << "0";
+        char temp[10];
+        int i = 0;
+        unsigned int v = h.value;
+        while (v > 0) {
+            int d = v % 16;
+            temp[i++] = (d < 10) ? (d + '0') : (d - 10 + 'a');
+            v /= 16;
+        }
+        ensure_capacity(i);
+        char* buf = buffer();
+        while (i > 0) buf[m_pos++] = temp[--i];
+        buf[m_pos] = '\0';
+        return *this;
+    }
+
     hybrid_formatter& operator<<(float val) {
-        int i = (int)val;
+        return *this << precision(val);
+    }
+
+    hybrid_formatter& operator<<(double val) {
+        return *this << precision((float)val);
+    }
+
+    hybrid_formatter& operator<<(precision p) {
+        int i = (int)p.value;
         *this << i << ".";
-        float frac = val - (float)i;
+        float frac = p.value - (float)i;
         if (frac < 0) frac = -frac;
-        int ifrac = (int)(frac * 100 + 0.5f);
-        if (ifrac < 10) *this << "0";
+        
+        int mult = 1;
+        for(int j=0; j < p.places; j++) mult *= 10;
+        
+        int ifrac = (int)(frac * mult + 0.5f);
+        int temp = ifrac;
+        int digits = 0;
+        if (temp == 0) digits = 1;
+        while(temp > 0) { temp /= 10; digits++; }
+        for(int j=0; j < p.places - digits; j++) *this << "0";
+        
         return *this << ifrac;
     }
 };
