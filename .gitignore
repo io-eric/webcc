@@ -1,6 +1,9 @@
 # Binaries
 /webcc
 
+# Build cache
+.webcc_cache/
+
 # Generated Web Artifacts (produced by the tool)
 app.wasm
 app.js
