@@ -254,7 +254,7 @@ int main() {
     webcc::dom::append_child(body, canvas_container);
 
     webcc::Canvas canvas = webcc::canvas::create_canvas("heap-viz", 600, 150);
-    canvas_ctx = webcc::canvas::get_context(canvas, "2d");
+    canvas_ctx = webcc::canvas::get_context_2d(canvas);
     webcc::dom::append_child(canvas_container, canvas);
     
     // Log container

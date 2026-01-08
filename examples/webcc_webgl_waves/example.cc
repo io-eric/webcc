@@ -144,7 +144,7 @@ int main() {
     webcc::Canvas canvas = webcc::canvas::create_canvas("wave-canvas", 1920, 1080);
     webcc::dom::set_attribute(canvas, "style", "width: 100vw; height: 100vh; display: block; position: absolute; top: 0; left: 0; z-index: 1;");
     webcc::dom::append_child(body, canvas);
-    gl = webcc::webgl::get_context(canvas);
+    gl = webcc::canvas::get_context_webgl(canvas);
     
     generate_grid();
 

@@ -68,7 +68,7 @@ void update(float time_ms) {
             device = handle;
             queue = webcc::wgpu::get_queue(device);
             
-            wgpu_ctx = webcc::wgpu::get_context(canvas_handle);
+            wgpu_ctx = webcc::canvas::get_context_webgpu(canvas_handle);
             webcc::wgpu::configure(wgpu_ctx, device, "preferred");
 
             webcc::WGPUShaderModule shader_module = webcc::wgpu::create_shader_module(device, shader_code);
@@ -133,7 +133,7 @@ int main() {
 
     // HUD canvas overlay for FPS (like canvas example)
     hud_canvas = webcc::canvas::create_canvas("hud-canvas", 800, 600);
-    hud_ctx = webcc::canvas::get_context(hud_canvas, "2d");
+    hud_ctx = webcc::canvas::get_context_2d(hud_canvas);
     webcc::dom::set_attribute(hud_canvas, "style", "position: absolute; left: 0; top: 0; pointer-events: none;");
     webcc::dom::append_child(game_container, hud_canvas);
 

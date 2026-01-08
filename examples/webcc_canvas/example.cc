@@ -110,12 +110,12 @@ int main() {
 
     // Create main render canvas and append to container
     demo_canvas = webcc::canvas::create_canvas("demo-canvas", 600, 600);
-    demo_ctx = webcc::canvas::get_context(demo_canvas, "2d");
+    demo_ctx = webcc::canvas::get_context_2d(demo_canvas);
     webcc::dom::append_child(game_container, demo_canvas);
 
     // HUD canvas overlay for FPS (to match WebGL example)
     hud_canvas = webcc::canvas::create_canvas("hud-canvas", 600, 600);
-    hud_ctx = webcc::canvas::get_context(hud_canvas, "2d");
+    hud_ctx = webcc::canvas::get_context_2d(hud_canvas);
     webcc::dom::set_attribute(hud_canvas, "style", "position: absolute; left: 0; top: 0; pointer-events: none;");
     webcc::dom::append_child(game_container, hud_canvas);
     

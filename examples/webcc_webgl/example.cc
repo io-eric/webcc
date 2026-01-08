@@ -170,7 +170,7 @@ int main() {
 
     // HUD canvas overlay for FPS (like canvas example)
     hud_canvas = webcc::canvas::create_canvas("hud-canvas", 800, 600);
-    hud_ctx = webcc::canvas::get_context(hud_canvas, "2d");
+    hud_ctx = webcc::canvas::get_context_2d(hud_canvas);
     webcc::dom::set_attribute(hud_canvas, "style", "position: absolute; left: 0; top: 0; pointer-events: none;");
     webcc::dom::append_child(game_container, hud_canvas);
 
@@ -178,7 +178,7 @@ int main() {
     webcc::dom::append_child(game_container, gl_canvas);
 
     // Initialize WebGL
-    gl = webcc::webgl::get_context(gl_canvas);
+    gl = webcc::canvas::get_context_webgl(gl_canvas);
     webcc::webgl::viewport(gl, 0, 0, 600, 600);
     webcc::webgl::enable(gl, 0x0B71); // GL_DEPTH_TEST
 
