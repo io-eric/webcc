@@ -68,7 +68,7 @@ void update(float time_ms) {
             device = handle;
             queue = webcc::wgpu::get_queue(device);
             
-            wgpu_ctx = webcc::canvas::get_context(canvas_handle, "webgpu");
+            wgpu_ctx = webcc::wgpu::get_context(canvas_handle);
             webcc::wgpu::configure(wgpu_ctx, device, "preferred");
 
             webcc::WGPUShaderModule shader_module = webcc::wgpu::create_shader_module(device, shader_code);

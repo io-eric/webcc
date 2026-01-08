@@ -174,13 +174,11 @@ int main() {
     webcc::dom::set_attribute(hud_canvas, "style", "position: absolute; left: 0; top: 0; pointer-events: none;");
     webcc::dom::append_child(game_container, hud_canvas);
 
-    webcc::Canvas gl_canvas = webcc::dom::create_element("canvas");
-    webcc::dom::set_attribute(gl_canvas, "width", "600");
-    webcc::dom::set_attribute(gl_canvas, "height", "600");
+    webcc::Canvas gl_canvas = webcc::canvas::create_canvas("gl-canvas", 600, 600);
     webcc::dom::append_child(game_container, gl_canvas);
 
     // Initialize WebGL
-    gl = webcc::canvas::get_context(gl_canvas, "webgl");
+    gl = webcc::webgl::get_context(gl_canvas);
     webcc::webgl::viewport(gl, 0, 0, 600, 600);
     webcc::webgl::enable(gl, 0x0B71); // GL_DEPTH_TEST
 

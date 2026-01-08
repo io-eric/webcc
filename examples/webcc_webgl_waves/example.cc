@@ -141,13 +141,10 @@ int main() {
     webcc::dom::append_child(text, ccSpan);
     webcc::dom::append_child(body, text);
 
-    webcc::Canvas canvas = webcc::dom::create_element("canvas");
-    webcc::dom::set_attribute(canvas, "width", "1920");
-    webcc::dom::set_attribute(canvas, "height", "1080");
+    webcc::Canvas canvas = webcc::canvas::create_canvas("wave-canvas", 1920, 1080);
     webcc::dom::set_attribute(canvas, "style", "width: 100vw; height: 100vh; display: block; position: absolute; top: 0; left: 0; z-index: 1;");
     webcc::dom::append_child(body, canvas);
-    gl = webcc::canvas::get_context(canvas, "webgl");
-    gl = webcc::canvas::get_context(canvas, "webgl");
+    gl = webcc::webgl::get_context(canvas);
     
     generate_grid();
 
