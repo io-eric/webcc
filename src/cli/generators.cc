@@ -12,7 +12,6 @@ namespace webcc
 {
 
     // Helper to map schema types to C++ types
-    // Now supports typed handles via handle_type parameter
     static std::string map_cpp_type(const std::string &type, const std::string &name, const std::string &handle_type = "")
     {
         if (type == "string")
