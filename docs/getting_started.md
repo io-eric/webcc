@@ -69,6 +69,28 @@ This command will generate the following in the `dist` directory:
 - `index.html`: A basic HTML file to run the application.
 - `.webcc_cache/`: A directory containing cached object files for faster rebuilds.
 
+### Custom HTML Template (Optional)
+
+You can customize the generated `index.html` by creating a template file named `index.template.html` in your project directory:
+
+```html
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>My WebCC App</title>
+    <meta name="description" content="My awesome WebAssembly app">
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+{{script}}
+</body>
+</html>
+```
+
+WebCC will replace `{{script}}` with the appropriate script tag. If the placeholder is omitted, the script is injected before `</body>`.
+
 ### 3. Run the application
 
 Start a local web server to serve your files.

@@ -169,6 +169,30 @@ Use the `--cache-dir <dir>` flag to specify the cache directory (defaults to `.w
 ./webcc main.cc [other_sources.cc ...] [--out dist] [--cache-dir .cache]
 ```
 
+### 3. Custom HTML Templates
+WebCC supports custom HTML templates for your application. Create a file named `index.template.html` in your project directory or output directory:
+
+```html
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>My App</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+{{script}}
+</body>
+</html>
+```
+
+WebCC will automatically inject the `<script src="app.js"></script>` tag where you place the `{{script}}` placeholder. If no placeholder is found, the script tag is inserted before `</body>`.
+
+Template search order (first match wins):
+1. `index.template.html` in the current working directory
+2. `index.template.html` in the output directory
+
 ## Examples
 
 **[View Live Demos](https://io-eric.github.io/webcc/)**
