@@ -165,8 +165,9 @@ Generates the C++ header files in `include/webcc/` from `schema.def`.
 Compiles your C++ source files into `app.wasm`, and generates the optimized `app.js` and `index.html`.
 Use the `--out <dir>` flag to specify the output directory (defaults to the current directory).
 Use the `--cache-dir <dir>` flag to specify the cache directory (defaults to `.webcc_cache` in the source directory).
+Use the `--template <path>` or `-t <path>` flag to specify a custom HTML template file.
 ```bash
-./webcc main.cc [other_sources.cc ...] [--out dist] [--cache-dir .cache]
+./webcc main.cc [other_sources.cc ...] [--out dist] [--cache-dir .cache] [--template index.template.html]
 ```
 
 ### 3. Custom HTML Templates

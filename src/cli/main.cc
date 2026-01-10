@@ -24,6 +24,7 @@ int main(int argc, char **argv)
     bool generate_headers = false;
     std::string out_dir = ".";
     std::string cache_dir_arg = "";
+    std::string template_path = "";
 
     // Parse command-line arguments.
     for (int i = 1; i < argc; ++i)
@@ -49,6 +50,13 @@ int main(int argc, char **argv)
             if (i + 1 < argc)
             {
                 cache_dir_arg = argv[++i];
+            }
+        }
+        else if (arg == "--template" || arg == "-t")
+        {
+            if (i + 1 < argc)
+            {
+                template_path = argv[++i];
             }
         }
         else
@@ -124,7 +132,7 @@ int main(int argc, char **argv)
     webcc::generate_js_runtime(defs, user_code, out_dir);
 
     // C. GENERATE HTML (Basic scaffolding)
-    webcc::generate_html(out_dir);
+    webcc::generate_html(out_dir, template_path);
 
     // D. COMPILE C++ TO WASM (Incremental)
     if (!webcc::compile_wasm(input_files, out_dir, cache_dir))
