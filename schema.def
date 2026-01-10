@@ -30,6 +30,12 @@ dom|command|ADD_CLASS|add_class|handle(DOMElement):handle string:cls|{ const el 
 dom|command|REMOVE_CLASS|remove_class|handle(DOMElement):handle string:cls|{ const el = elements[handle]; if(el) el.classList.remove(cls); }
 dom|event|CLICK|handle(DOMElement):handle
 dom|command|ADD_CLICK_LISTENER|add_click_listener|handle(DOMElement):handle|{ const el = elements[handle]; if(el) el.addEventListener('click', () => push_event_dom_CLICK(handle)); }
+dom|event|INPUT|handle(DOMElement):handle string:value
+dom|command|ADD_INPUT_LISTENER|add_input_listener|handle(DOMElement):handle|{ const el = elements[handle]; if(el) el.addEventListener('input', (e) => push_event_dom_INPUT(handle, e.target.value || '')); }
+dom|event|CHANGE|handle(DOMElement):handle string:value
+dom|command|ADD_CHANGE_LISTENER|add_change_listener|handle(DOMElement):handle|{ const el = elements[handle]; if(el) el.addEventListener('change', (e) => push_event_dom_CHANGE(handle, e.target.type === 'checkbox' ? (e.target.checked ? 'true' : 'false') : (e.target.value || ''))); }
+dom|event|KEYDOWN|handle(DOMElement):handle int32:keycode
+dom|command|ADD_KEYDOWN_LISTENER|add_keydown_listener|handle(DOMElement):handle|{ const el = elements[handle]; if(el) el.addEventListener('keydown', (e) => push_event_dom_KEYDOWN(handle, e.keyCode)); }
 
 # ------------------------------------------------------------------------------
 # CANVAS 2D
