@@ -931,20 +931,62 @@ namespace webcc {
         std::cout << "[WebCC] Generated " << out_dir << "/app.js" << std::endl;
     }
 
-    void generate_html(const std::string &out_dir)
+    void generate_html(const std::string &out_dir, const std::string &template_path)
     {
-        std::string html = R"(
-<!DOCTYPE html>
+        const std::string script_tag = "    <script src=\"app.js\"></script>";
+        std::string html;
+        
+        // Try to find a custom template
+        std::vector<std::string> template_paths;
+        if (!template_path.empty()) {
+            template_paths.push_back(template_path);
+        }
+        template_paths.push_back("index.template.html");
+        template_paths.push_back(out_dir + "/index.template.html");
+        
+        std::string found_template;
+        for (const auto& path : template_paths) {
+            std::string content = read_file(path);
+            if (!content.empty()) {
+                found_template = path;
+                html = content;
+                break;
+            }
+        }
+        
+        if (!html.empty()) {
+            // Custom template found - inject script tag
+            const std::string placeholder = "{{script}}";
+            size_t pos = html.find(placeholder);
+            if (pos != std::string::npos) {
+                // Replace placeholder with script tag
+                html.replace(pos, placeholder.length(), script_tag);
+            } else {
+                // No placeholder - inject before </body>
+                pos = html.rfind("</body>");
+                if (pos != std::string::npos) {
+                    html.insert(pos, script_tag + "\n");
+                } else {
+                    // No </body> found - append script tag
+                    html += "\n" + script_tag + "\n";
+                }
+            }
+            std::cout << "[WebCC] Using template: " << found_template << std::endl;
+        } else {
+            // Default template
+            html = R"(<!DOCTYPE html>
 <html>
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 </head>
 <body>
-    <script src="app.js"></script>
+)" + script_tag + R"(
 </body>
 </html>
 )";
+        }
+        
         write_file(out_dir + "/index.html", html);
         std::cout << "[WebCC] Generated " << out_dir << "/index.html" << std::endl;
     }

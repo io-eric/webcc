@@ -25,7 +25,10 @@ namespace webcc
     void generate_js_runtime(const SchemaDefs &defs, const std::string &user_code, const std::string &out_dir);
 
     // Generates the HTML scaffolding (index.html).
-    void generate_html(const std::string &out_dir);
+    // If a template file exists (index.template.html), uses it and injects the script tag.
+    // Supported placeholders: {{script}} for script tag injection.
+    // If no placeholder, script is injected before </body>.
+    void generate_html(const std::string &out_dir, const std::string &template_path = "");
 
     // Compiles the C++ code to WebAssembly.
     bool compile_wasm(const std::vector<std::string> &input_files, const std::string &out_dir, const std::string &cache_dir);
