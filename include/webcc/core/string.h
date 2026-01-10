@@ -205,12 +205,34 @@ namespace webcc
         string operator+(const char* other) const {
             return concat(*this, other);
         }
+        string operator+(int val) const {
+            formatter<32> fmt;
+            fmt << val;
+            return concat(*this, fmt.c_str());
+        }
+        string operator+(float val) const {
+            formatter<32> fmt;
+            fmt << val;
+            return concat(*this, fmt.c_str());
+        }
         string& operator+=(const string& other) {
             *this = concat(*this, other);
             return *this;
         }
         string& operator+=(const char* other) {
             *this = concat(*this, other);
+            return *this;
+        }
+        string& operator+=(int val) {
+            formatter<32> fmt;
+            fmt << val;
+            *this = concat(*this, fmt.c_str());
+            return *this;
+        }
+        string& operator+=(float val) {
+            formatter<32> fmt;
+            fmt << val;
+            *this = concat(*this, fmt.c_str());
             return *this;
         }
 
