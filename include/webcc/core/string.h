@@ -267,9 +267,4 @@ namespace webcc
             return *this >= string(other);
         }
     };
-
-    // Free function for "literal" + string
-    inline string operator+(const char* lhs, const string& rhs) {
-        return string::concat(lhs, rhs);
-    }
 } // namespace webcc
