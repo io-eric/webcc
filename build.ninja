@@ -1,11 +1,18 @@
 builddir = build
 cxx = clang++
 cflags = -std=c++20 -O3 -I include -I src/cli -I src/core
+cflags_bootstrap = -std=c++20 -O3 -I include -I src/core
 
 rule cxx
   command = $cxx $cflags -MD -MF $out.d -c $in -o $out
   depfile = $out.d
   description = CXX $in
+
+# Bootstrap rule: no depfile to avoid cycles when webcc_schema.h exists
+# (The bootstrap must NOT depend on webcc_schema.h, but .d files would track it)
+rule cxx_bootstrap
+  command = $cxx $cflags_bootstrap -c $in -o $out
+  description = CXX [bootstrap] $in
 
 rule link
   command = $cxx -o $out $in
@@ -15,11 +22,11 @@ rule generate_schema
   command = ./build/webcc_bootstrap --headers && touch $out
   description = GEN schema
 
-# Bootstrap compiler (no schema baked in)
-build build/bootstrap/main.o: cxx src/cli/main.cc
-build build/bootstrap/utils.o: cxx src/cli/utils.cc
-build build/bootstrap/schema.o: cxx src/cli/schema.cc
-build build/bootstrap/generators.o: cxx src/cli/generators.cc
+# Bootstrap compiler (no schema baked in - excludes src/cli from include path)
+build build/bootstrap/main.o: cxx_bootstrap src/cli/main.cc
+build build/bootstrap/utils.o: cxx_bootstrap src/cli/utils.cc
+build build/bootstrap/schema.o: cxx_bootstrap src/cli/schema.cc
+build build/bootstrap/generators.o: cxx_bootstrap src/cli/generators.cc
 
 build build/webcc_bootstrap: link build/bootstrap/main.o build/bootstrap/utils.o build/bootstrap/schema.o build/bootstrap/generators.o
   description = LINK bootstrap
