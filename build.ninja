@@ -1,7 +1,7 @@
 builddir = build
 cxx = clang++
 cflags = -std=c++20 -O3 -I include -I src/cli -I src/core
-cflags_bootstrap = -std=c++20 -O3 -I include -I src/core
+cflags_bootstrap = -std=c++20 -O3 -I include -I src/core -DWEBCC_BOOTSTRAP
 
 rule cxx
   command = $cxx $cflags -MD -MF $out.d -c $in -o $out
@@ -37,7 +37,7 @@ build src/cli/webcc_schema.h: generate_schema build/webcc_bootstrap schema.def
 # Final compiler (with schema baked in)
 build build/final/main.o: cxx src/cli/main.cc | src/cli/webcc_schema.h
 build build/final/utils.o: cxx src/cli/utils.cc
-build build/final/schema.o: cxx src/cli/schema.cc
+build build/final/schema.o: cxx src/cli/schema.cc | src/cli/webcc_schema.h
 build build/final/generators.o: cxx src/cli/generators.cc
 
 build webcc: link build/final/main.o build/final/utils.o build/final/schema.o build/final/generators.o

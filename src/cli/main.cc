@@ -10,7 +10,7 @@
 #include <vector>
 #include <filesystem>
 
-#if __has_include("webcc_schema.h")
+#if !defined(WEBCC_BOOTSTRAP) && __has_include("webcc_schema.h")
 #include "webcc_schema.h"
 #define WEBCC_HAS_SCHEMA 1
 #else

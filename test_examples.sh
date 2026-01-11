@@ -3,7 +3,16 @@ set -e
 
 # 1. Build the compiler
 echo "Building WebCC compiler..."
-./build.sh
+./build.sh && WEBCC_REBUILT=0 || WEBCC_REBUILT=$?
+
+# Exit code 2 means webcc was rebuilt - clear example caches to force recompile
+if [ $WEBCC_REBUILT -eq 2 ]; then
+    echo "WebCC was rebuilt, clearing example caches..."
+    rm -rf examples/*/.webcc_cache
+elif [ $WEBCC_REBUILT -ne 0 ]; then
+    echo "WebCC build failed with exit code $WEBCC_REBUILT"
+    exit $WEBCC_REBUILT
+fi
 
 # 2. Build all examples
 EXAMPLES=(
@@ -63,8 +72,9 @@ elif command -v start &> /dev/null; then
 fi
 
 if [ -n "$OPEN_CMD" ]; then
+    # Open all URLs (xdg-open only accepts one URL at a time)
     for ex in "${EXAMPLES[@]}"; do
-        $OPEN_CMD "$BASE_URL/$ex/dist/index.html"
+        $OPEN_CMD "$BASE_URL/$ex/dist/index.html" &
     done
 else
     echo "Could not detect a command to open the browser."
