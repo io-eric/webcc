@@ -1,5 +1,5 @@
 builddir = build
-cxx = g++
+cxx = clang++
 cflags = -std=c++20 -O3 -I include -I src/cli -I src/core
 
 rule cxx

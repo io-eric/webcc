@@ -32,6 +32,11 @@ ninja
 
 echo "[WebCC] Done."
 
+# In CI, just exit successfully
+if [ -n "$CI" ]; then
+    exit 0
+fi
+
 # Exit code 2 = rebuilt successfully (signals to parent builds that schema changed)
 # Check if webcc is already linked correctly
 if command -v webcc >/dev/null 2>&1 && [ "$(command -v webcc)" -ef "$PWD/webcc" ]; then
@@ -59,4 +64,4 @@ if [ -d "/usr/local/bin" ] && [ -t 0 ] && [ -z "$CI" ]; then
     fi
 fi
 
-exit 2  # 2 = rebuilt
+exit 2  # 2 = rebuilt (only reached when not in CI)
