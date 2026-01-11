@@ -50,8 +50,6 @@ jobs:
           # Build each example and copy to public/
           for ex in "${EXAMPLES[@]}"; do
               echo "Building $ex..."
-              # Clean dist folder to ensure fresh build (avoid stale cached files)
-              rm -rf "examples/$ex/dist"
               ./examples/$ex/build.sh
               mkdir -p "public/examples/$ex"
               cp -r examples/$ex/dist/* "public/examples/$ex/"

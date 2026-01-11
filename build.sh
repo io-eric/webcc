@@ -19,6 +19,14 @@ fi
 # Create build directories
 mkdir -p build/bootstrap build/final
 
+# CRITICAL: Always remove the schema header before building bootstrap.
+# The bootstrap compiler must NOT find webcc_schema.h (it uses #include "webcc_schema.h"
+# which resolves relative to the source file, bypassing include path settings).
+# Ninja will regenerate it via the generate_schema rule.
+rm -f src/cli/webcc_schema.h
+# Also remove bootstrap objects to force recompilation without schema
+rm -f build/bootstrap/*.o
+
 # Run ninja and check if it did anything
 # -v makes ninja verbose, -n does dry-run
 if ninja -n 2>&1 | grep -q "no work to do"; then
