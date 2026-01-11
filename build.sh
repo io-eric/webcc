@@ -2,40 +2,41 @@
 
 set -e
 
-# Clean up previous build artifacts to ensure a clean bootstrap
-rm -f src/cli/webcc_schema.h
+FORCE_REBUILD=false
+for arg in "$@"; do
+    case $arg in
+        --force|-f)
+            FORCE_REBUILD=true
+            ;;
+    esac
+done
 
-echo "[WebCC] 1/3 Compiling bootstrap compiler..."
-# Compile without schema support first
-g++ -std=c++20 -O3 -o webcc_bootstrap \
-    src/cli/main.cc \
-    src/cli/utils.cc \
-    src/cli/schema.cc \
-    src/cli/generators.cc \
-    -I include -I src/cli -I src/core
+# Force clean if requested
+if [ "$FORCE_REBUILD" = true ]; then
+    rm -rf build src/cli/webcc_schema.h webcc
+fi
 
-echo "[WebCC] 2/3 Generating headers..."
-# Use bootstrap compiler to generate headers and schema definition
-./webcc_bootstrap --headers
+# Create build directories
+mkdir -p build/bootstrap build/final
 
-echo "[WebCC] 3/3 Compiling final compiler..."
-# Compile final version which will now include the generated webcc_schema.h
-g++ -std=c++20 -O3 -o webcc \
-    src/cli/main.cc \
-    src/cli/utils.cc \
-    src/cli/schema.cc \
-    src/cli/generators.cc \
-    -I include -I src/cli -I src/core
+# Run ninja and check if it did anything
+# -v makes ninja verbose, -n does dry-run
+if ninja -n 2>&1 | grep -q "no work to do"; then
+    echo "[WebCC] Up to date"
+    exit 0  # 0 = no rebuild needed
+fi
 
-# Cleanup
-rm webcc_bootstrap
+# Actually run the build
+echo "[WebCC] Building..."
+ninja
 
 echo "[WebCC] Done."
 
+# Exit code 2 = rebuilt successfully (signals to parent builds that schema changed)
 # Check if webcc is already linked correctly
 if command -v webcc >/dev/null 2>&1 && [ "$(command -v webcc)" -ef "$PWD/webcc" ]; then
     echo "webcc is already configured in PATH."
-    exit 0
+    exit 2  # 2 = rebuilt
 fi
 
 # Only offer install if /usr/local/bin exists (common on Linux/macOS)
@@ -57,3 +58,5 @@ if [ -d "/usr/local/bin" ] && [ -t 0 ] && [ -z "$CI" ]; then
         echo "You can now use 'webcc' command from any directory."
     fi
 fi
+
+exit 2  # 2 = rebuilt

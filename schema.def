@@ -146,7 +146,6 @@ websocket|event|MESSAGE|handle(WebSocket):handle string:data
 websocket|event|OPEN|handle(WebSocket):handle
 websocket|event|CLOSE|handle(WebSocket):handle
 websocket|event|ERROR|handle(WebSocket):handle
-
 websocket|command|CREATE|create|string:url uint32:events RET:handle(WebSocket)|{ const handle = (window.webcc_next_id = (window.webcc_next_id || 0) + 1); const ws = new WebSocket(url); websockets[handle] = ws; if(events & 1) ws.onmessage = (e) => push_event_websocket_MESSAGE(handle, e.data); if(events & 2) ws.onopen = () => push_event_websocket_OPEN(handle); if(events & 4) ws.onclose = () => push_event_websocket_CLOSE(handle); if(events & 8) ws.onerror = () => push_event_websocket_ERROR(handle); return handle; }
 websocket|command|SEND|send|handle(WebSocket):handle string:msg|{ const ws = websockets[handle]; if(ws && ws.readyState === 1) ws.send(msg); }
 websocket|command|CLOSE|close|handle(WebSocket):handle|{ const ws = websockets[handle]; if(ws) ws.close(); }

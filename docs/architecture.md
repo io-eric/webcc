@@ -14,6 +14,12 @@ WebCC uses a secondary shared memory buffer for sending events (like mouse click
 ## Schema Generation
 The toolchain generates `src/cli/webcc_schema.h` which embeds command definitions directly into the binary. This avoids the need to parse `schema.def` at runtime.
 
+The build uses Ninja for incremental compilation:
+- A bootstrap compiler is built first (without the schema)
+- The bootstrap generates `webcc_schema.h` from `schema.def`
+- The final compiler is built with the schema baked in
+- Changes to `schema.def` automatically trigger a rebuild
+
 ## Compilation & Linking
 WebCC acts as a wrapper around `clang++`. It:
 1.  **Scans** your code to determine which Web APIs are used.

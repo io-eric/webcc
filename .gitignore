@@ -1,6 +1,9 @@
 # Binaries
 /webcc
 
+# Build artifacts
+.ninja_log
+
 # Build cache
 .webcc_cache/
 

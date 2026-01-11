@@ -23,7 +23,20 @@ Before you begin, ensure you have the following installed:
     ```bash
     ./build.sh
     ```
-    This will generate the `webcc` binary in the root directory. The script will also offer to install `webcc` to your system PATH.
+    This uses Ninja for incremental builds. The script will:
+    - Build a bootstrap compiler (without baked-in schema)
+    - Generate `webcc_schema.h` from `schema.def`
+    - Build the final compiler with the schema baked in
+    
+    On subsequent runs, it only rebuilds if `schema.def` changes.
+    
+    The script will also offer to install `webcc` to your system PATH.
+
+    **Build options:**
+    ```bash
+    ./build.sh          # Incremental build (only rebuilds if schema.def changed)
+    ./build.sh --force  # Force full rebuild
+    ```
 
 ## Your First Application
 
