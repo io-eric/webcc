@@ -35,5 +35,7 @@ jobs:
         
         for ex in "${EXAMPLES[@]}"; do
             echo "Building example: $ex"
+            # Clean dist folder to ensure fresh build
+            rm -rf "examples/$ex/dist"
             ./examples/$ex/build.sh
         done
