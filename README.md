@@ -104,7 +104,7 @@ int main() {
     webcc::dom::append_child(body, canvas);
     
     // Get Context
-    ctx = webcc::canvas::get_context(canvas, "2d");
+    ctx = webcc::canvas::get_context_2d(canvas);
     
     // Initialize mouse input on the canvas
     webcc::input::init_mouse(canvas);

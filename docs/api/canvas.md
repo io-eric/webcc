@@ -18,12 +18,28 @@ Creates a new `<canvas>` element with the specified ID and dimensions, and appen
 webcc::Canvas create_canvas(webcc::string_view dom_id, float width, float height);
 ```
 
-### `get_context`
+### `get_context_2d`
 
 Gets the 2D rendering context for a canvas.
 
 ```cpp
-webcc::CanvasContext2D get_context(webcc::Canvas canvas_handle, webcc::string_view context_type);
+webcc::CanvasContext2D get_context_2d(webcc::Canvas canvas_handle);
+```
+
+### `get_context_webgl`
+
+Gets the WebGL rendering context for a canvas.
+
+```cpp
+webcc::WebGLContext get_context_webgl(webcc::Canvas canvas_handle);
+```
+
+### `get_context_webgpu`
+
+Gets the WebGPU rendering context for a canvas.
+
+```cpp
+webcc::WGPUContext get_context_webgpu(webcc::Canvas canvas_handle);
 ```
 
 ### `set_size`
