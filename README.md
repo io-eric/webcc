@@ -37,7 +37,7 @@ WebCC is designed to be lightweight. In a [Canvas 2D benchmark](benchmark/) rend
 - **Memory**: Lower JS and WASM heap usage.
 
 <p align="center">
-  <img src="benchmark/benchmark_results.svg" alt="Benchmark Results" width="500">
+  <img src="benchmark/benchmark_results.svg" alt="Benchmark Results" width="600">
 </p>
 
 See the [benchmark/](benchmark/) directory for details and to run it yourself.

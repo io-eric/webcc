@@ -6,10 +6,18 @@ namespace webcc
 
     // JS code to initialize the WebAssembly module and set up the environment.
     const std::string JS_INIT_HEAD = R"(
+const supportsStreaming = () => {
+    try {
+        if (typeof WebAssembly === 'undefined') return false;
+        if (typeof WebAssembly.instantiateStreaming !== 'function') return false;
+        
+        return !/^((?!chrome|android).)*safari/i.test(navigator.userAgent) ||
+               parseInt(navigator.userAgent.match(/version\/(\d+)/i)?.[1] || 0) >= 15;
+    } catch { return false; }
+};
+
 const run = async () => {
-    const response = await fetch('app.wasm');
-    const bytes = await response.arrayBuffer();
-    const mod = await WebAssembly.instantiate(bytes, {
+    const imports = {
         env: {
             // C++ calls this function to tell JS "I wrote commands, please execute them"
             webcc_js_flush: (ptr, size) => flush(ptr, size),
@@ -23,7 +31,16 @@ const run = async () => {
     // Note: The exports destructuring is now generated dynamically based on what's needed.
     const std::string JS_INIT_TAIL = R"(
         }
-    });
+    };
+
+    let mod;
+    if (supportsStreaming()) {
+        mod = await WebAssembly.instantiateStreaming(fetch('app.wasm'), imports);
+    } else {
+        const response = await fetch('app.wasm');
+        const bytes = await response.arrayBuffer();
+        mod = await WebAssembly.instantiate(bytes, imports);
+    }
 )";
 
     // JS code for the 'flush' function, which processes commands from C++.

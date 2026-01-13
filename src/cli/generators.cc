@@ -1048,23 +1048,57 @@ namespace webcc {
 
         // --- 1. CONFIGURATION ---
         // base_cmd: Shared core settings for both compilation and linking.
-        std::string base_cmd = "clang++ --target=wasm32 -Oz -flto -std=c++20 -nostdlib ";
+        std::string base_cmd = "clang++ --target=wasm32 "
+                               "-Oz "   // Size optimization
+                               "-flto " // Link-time optimization
+                               "-std=c++20 "
+                               "-nostdlib "
+                               "-mbulk-memory "     // Enable bulk memory operations
+                               "-mmutable-globals " // Faster global variable access
+                               "-msign-ext ";       // Optimize sign extensions
 
         // include_flags: Tells the compiler where to find headers.
         std::string include_flags = "-isystem " + exe_dir + "/include/webcc/compat " +
                                     "-I " + exe_dir + "/include ";
 
         // compile_only_flags: Settings applied only when generating .o files.
-        std::string compile_only_flags = "-fvisibility=hidden -fno-exceptions -fno-rtti -c ";
+        std::string compile_only_flags = "-fvisibility=hidden "
+                                         "-fno-exceptions "
+                                         "-fno-rtti "
+                                         "-ffunction-sections " // For better dead code elimination
+                                         "-fdata-sections "     // For better dead code elimination
+                                         "-c ";
 
-        // link_only_flags: Build dynamically from required_exports
+        // link_only_flags: Build dynamically from required_exports with MEMORY OPTIMIZATIONS
         std::string link_only_flags = "-Wl,--no-entry ";
+
+        // Export your required functions
         for (const auto &exp : required_exports)
         {
             link_only_flags += "-Wl,--export=" + exp + " ";
         }
-        link_only_flags += "-Wl,--gc-sections -Wl,--strip-all -Wl,--allow-undefined ";
 
+        // === CRITICAL MEMORY OPTIMIZATIONS FOR FAST MOUNT ===
+        link_only_flags +=
+            "-Wl,--gc-sections "     // Remove unused code sections
+            "-Wl,--allow-undefined " // Allow undefined symbols (for JS imports)
+
+            // === MEMORY LAYOUT OPTIMIZATIONS ===
+            "-Wl,--stack-first "   // Stack at address 0 (grows DOWNWARD)
+            "-z stack-size=65536 " // 64KB stack (efficient for UI recursion)
+
+            // Memory allocation (Bumped to 4MB to accommodate static data > 2.1MB)
+            "-Wl,--initial-memory=4194304 " // 4MB total
+            "-Wl,--max-memory=67108864 "    // 64MB max
+
+            // === PERFORMANCE OPTIMIZATIONS ===
+            "-Wl,--compress-relocations " // Smaller binary = faster download
+                                          // "-Wl,--lto-O3 "              // Removed: can increase size. Rely on -Oz.
+
+            // === SIZE OPTIMIZATIONS ===
+            "-Wl,--strip-debug " // Remove debug info
+            "-Wl,--strip-all "   // Strip all symbols
+            ;
         // --- 2. COMPILATION LOOP ---
         std::string object_files_str;
         bool compilation_failed = false;
