@@ -129,13 +129,13 @@ int main(int argc, char **argv)
     }
 
     // B. GENERATE JS RUNTIME
-    webcc::generate_js_runtime(defs, user_code, out_dir);
+    webcc::JsGenResult js_result = webcc::generate_js_runtime(defs, user_code, out_dir);
 
     // C. GENERATE HTML (Basic scaffolding)
     webcc::generate_html(out_dir, template_path);
 
     // D. COMPILE C++ TO WASM (Incremental)
-    if (!webcc::compile_wasm(input_files, out_dir, cache_dir))
+    if (!webcc::compile_wasm(input_files, out_dir, cache_dir, js_result.required_exports))
     {
         return 1;
     }

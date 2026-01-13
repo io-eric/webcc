@@ -80,7 +80,7 @@ namespace webcc
         w.write("// Type-safe handle types auto-generated from schema.def");
         w.write("// Each type is a distinct compile-time type wrapping int32_t");
         w.write("");
-        
+
         std::set<std::string> emitted;
         std::set<std::string> remaining = handle_types;
 
@@ -92,33 +92,35 @@ namespace webcc
             {
                 std::string ht = *it;
                 std::string base = "";
-                if (inheritance.count(ht)) base = inheritance.at(ht);
-                
+                if (inheritance.count(ht))
+                    base = inheritance.at(ht);
+
                 // If base exists and not emitted yet
                 if (!base.empty() && emitted.find(base) == emitted.end())
                 {
                     ++it;
                     continue;
                 }
-                
+
                 w.write("// Tag struct for " + ht);
                 if (base.empty())
                     w.write("struct " + ht + "_tag {};");
                 else
                     w.write("struct " + ht + "_tag : " + base + "_tag {};");
-                
+
                 w.write("using " + ht + " = typed_handle<" + ht + "_tag>;");
                 w.write("");
-                
+
                 emitted.insert(ht);
                 it = remaining.erase(it);
                 progress = true;
             }
-            
+
             if (!progress)
             {
-                 // Fallback
-                for (const auto& ht : remaining) {
+                // Fallback
+                for (const auto &ht : remaining)
+                {
                     w.write("// Tag struct for " + ht + " (fallback)");
                     w.write("struct " + ht + "_tag {};");
                     w.write("using " + ht + " = typed_handle<" + ht + "_tag>;");
@@ -127,9 +129,9 @@ namespace webcc
                 break;
             }
         }
-        
+
         w.write("} // namespace webcc");
-        
+
         write_file("include/webcc/core/handles.h", w.str());
         std::cout << "[WebCC] Emitted include/webcc/core/handles.h with " << handle_types.size() << " typed handles" << std::endl;
     }
@@ -205,22 +207,24 @@ namespace webcc {
     void emit_headers(const SchemaDefs &defs)
     {
         std::cout << "[WebCC] Emitting headers..." << std::endl;
-        
+
         // First, collect and emit all typed handles
         auto handle_types = collect_handle_types(defs);
-        
+
         // Ensure all base types are included
-        for (const auto& kv : defs.handle_inheritance) {
-             if (handle_types.count(kv.first)) {
-                 handle_types.insert(kv.second);
-             }
+        for (const auto &kv : defs.handle_inheritance)
+        {
+            if (handle_types.count(kv.first))
+            {
+                handle_types.insert(kv.second);
+            }
         }
-        
+
         if (!handle_types.empty())
         {
             emit_handles_header(handle_types, defs.handle_inheritance);
         }
-        
+
         // Emit per-namespace headers
         std::set<std::string> namespaces;
         for (const auto &d : defs.commands)
@@ -442,7 +446,7 @@ namespace webcc {
                     bool ret_is_typed_handle = (ret_type == "handle" && !ret_handle_type.empty());
                     bool ret_is_untyped_handle = (ret_type == "handle" && ret_handle_type.empty());
                     bool ret_is_any_handle = ret_is_typed_handle || ret_is_untyped_handle;
-                    
+
                     if (ret_is_typed_handle)
                         wrapper_ret_type = "webcc::" + ret_handle_type;
                     else if (ret_is_untyped_handle)
@@ -708,9 +712,15 @@ namespace webcc {
         return maps;
     }
 
-    void generate_js_runtime(const SchemaDefs &defs, const std::string &user_code, const std::string &out_dir)
+    JsGenResult generate_js_runtime(const SchemaDefs &defs, const std::string &user_code, const std::string &out_dir)
     {
         CodeWriter w;
+        JsGenResult result;
+
+        // Always-needed exports
+        result.required_exports.insert("memory");
+        result.required_exports.insert("main");
+        result.required_exports.insert("__indirect_function_table");
 
         std::cout << "[WebCC] Scanning source files for features..." << std::endl;
 
@@ -742,7 +752,7 @@ namespace webcc {
             // 3. Special check for iostream which uses system::log and system::error implicitly
             if (!used && d.ns == "system" && (d.func_name == "log" || d.func_name == "error"))
             {
-                if (user_code.find("#include <iostream>") != std::string::npos || 
+                if (user_code.find("#include <iostream>") != std::string::npos ||
                     user_code.find("#include \"webcc/compat/iostream\"") != std::string::npos ||
                     contains_whole_word(user_code, "std::cout") ||
                     contains_whole_word(user_code, "std::cerr"))
@@ -839,8 +849,23 @@ namespace webcc {
         w.raw(JS_INIT_TAIL);
         w.set_indent(1);
 
+        // Track event system exports
+        result.required_exports.insert("webcc_event_buffer_ptr");
+        result.required_exports.insert("webcc_event_offset_ptr");
+        result.required_exports.insert("webcc_event_buffer_capacity");
+        result.required_exports.insert("webcc_scratch_buffer_ptr");
+        result.required_exports.insert("webcc_command_buffer_ptr");
+
+        // Generate single unified exports destructuring
+        std::stringstream exports_ss;
+        exports_ss << "const { ";
+        exports_ss << "memory, main, __indirect_function_table: table";
+        exports_ss << ", webcc_event_buffer_ptr, webcc_event_offset_ptr, webcc_event_buffer_capacity, webcc_scratch_buffer_ptr";
+        exports_ss << " } = mod.instance.exports;";
+        w.write(exports_ss.str());
+        w.write("");
+
         // Event System Setup: Set up buffers for JS to send events to C++.
-        w.write("const { webcc_event_buffer_ptr, webcc_event_offset_ptr, webcc_event_buffer_capacity, webcc_scratch_buffer_ptr } = mod.instance.exports;");
         w.write("const event_buffer_ptr_val = webcc_event_buffer_ptr();");
         w.write("const event_offset_ptr_val = webcc_event_offset_ptr();");
         w.write("const scratch_buffer_ptr_val = webcc_scratch_buffer_ptr();");
@@ -929,50 +954,64 @@ namespace webcc {
         w.raw(JS_TAIL);
         write_file(out_dir + "/app.js", w.str());
         std::cout << "[WebCC] Generated " << out_dir << "/app.js" << std::endl;
+
+        return result;
     }
 
     void generate_html(const std::string &out_dir, const std::string &template_path)
     {
         const std::string script_tag = "    <script src=\"app.js\"></script>";
         std::string html;
-        
+
         // Try to find a custom template
         std::vector<std::string> template_paths;
-        if (!template_path.empty()) {
+        if (!template_path.empty())
+        {
             template_paths.push_back(template_path);
         }
         template_paths.push_back("index.template.html");
         template_paths.push_back(out_dir + "/index.template.html");
-        
+
         std::string found_template;
-        for (const auto& path : template_paths) {
+        for (const auto &path : template_paths)
+        {
             std::string content = read_file(path);
-            if (!content.empty()) {
+            if (!content.empty())
+            {
                 found_template = path;
                 html = content;
                 break;
             }
         }
-        
-        if (!html.empty()) {
+
+        if (!html.empty())
+        {
             // Custom template found - inject script tag
             const std::string placeholder = "{{script}}";
             size_t pos = html.find(placeholder);
-            if (pos != std::string::npos) {
+            if (pos != std::string::npos)
+            {
                 // Replace placeholder with script tag
                 html.replace(pos, placeholder.length(), script_tag);
-            } else {
+            }
+            else
+            {
                 // No placeholder - inject before </body>
                 pos = html.rfind("</body>");
-                if (pos != std::string::npos) {
+                if (pos != std::string::npos)
+                {
                     html.insert(pos, script_tag + "\n");
-                } else {
+                }
+                else
+                {
                     // No </body> found - append script tag
                     html += "\n" + script_tag + "\n";
                 }
             }
             std::cout << "[WebCC] Using template: " << found_template << std::endl;
-        } else {
+        }
+        else
+        {
             // Default template
             html = R"(<!DOCTYPE html>
 <html>
@@ -986,12 +1025,12 @@ namespace webcc {
 </html>
 )";
         }
-        
+
         write_file(out_dir + "/index.html", html);
         std::cout << "[WebCC] Generated " << out_dir << "/index.html" << std::endl;
     }
 
-    bool compile_wasm(const std::vector<std::string> &input_files, const std::string &out_dir, const std::string &cache_dir)
+    bool compile_wasm(const std::vector<std::string> &input_files, const std::string &out_dir, const std::string &cache_dir, const std::set<std::string> &required_exports)
     {
         std::cout << "[WebCC] Compiling..." << std::endl;
 
@@ -1001,25 +1040,41 @@ namespace webcc {
         std::string exe_dir = get_executable_dir();
         std::vector<std::string> all_sources = input_files;
 
-        // Add internal sources using absolute paths relative to the compiler executable
+        // Internal sources
         all_sources.push_back(exe_dir + "/src/core/command_buffer.cc");
         all_sources.push_back(exe_dir + "/src/core/event_buffer.cc");
         all_sources.push_back(exe_dir + "/src/core/scratch_buffer.cc");
         all_sources.push_back(exe_dir + "/src/core/libc.cc");
 
+        // --- 1. CONFIGURATION ---
+        // base_cmd: Shared core settings for both compilation and linking.
+        std::string base_cmd = "clang++ --target=wasm32 -Oz -flto -std=c++20 -nostdlib ";
+
+        // include_flags: Tells the compiler where to find headers.
+        std::string include_flags = "-isystem " + exe_dir + "/include/webcc/compat " +
+                                    "-I " + exe_dir + "/include ";
+
+        // compile_only_flags: Settings applied only when generating .o files.
+        std::string compile_only_flags = "-fvisibility=hidden -fno-exceptions -fno-rtti -c ";
+
+        // link_only_flags: Build dynamically from required_exports
+        std::string link_only_flags = "-Wl,--no-entry ";
+        for (const auto &exp : required_exports)
+        {
+            link_only_flags += "-Wl,--export=" + exp + " ";
+        }
+        link_only_flags += "-Wl,--gc-sections -Wl,--strip-all -Wl,--allow-undefined ";
+
+        // --- 2. COMPILATION LOOP ---
         std::string object_files_str;
         bool compilation_failed = false;
 
         for (const auto &src : all_sources)
         {
-            // Generate a unique object file name based on the source path.
-            // We replace non-alphanumeric chars with '_' to flatten the path.
             std::string obj_name = src;
             for (char &c : obj_name)
-            {
                 if (!isalnum(c))
                     c = '_';
-            }
             std::string obj = cache_dir + "/" + obj_name + ".o";
 
             struct stat src_stat, obj_stat;
@@ -1029,66 +1084,58 @@ namespace webcc {
             {
                 if (stat(obj.c_str(), &obj_stat) == 0)
                 {
-                    // If obj is newer than src, we don't need to recompile
                     if (obj_stat.st_mtime >= src_stat.st_mtime)
-                    {
                         need_compile = false;
-                        std::cout << "  [Cache] " << src << std::endl;
-                    }
                 }
             }
             else
             {
-                std::cerr << "[WebCC] Error: Source file not found: " << src << std::endl;
+                std::cerr << "[WebCC] Error: Source not found: " << src << std::endl;
                 return false;
             }
 
             if (need_compile)
             {
                 std::cout << "  [CC] " << src << std::endl;
-                // Compile to object file
-                // -c : Compile and assemble, but do not link
-               std::string cc_cmd = "clang++ --target=wasm32 -O3 -std=c++20 "
-                     "-nostdlib -nostdinc++ " // No standard library, no standard headers
-                     "-fno-exceptions -fno-rtti " // Smaller WASM binary
-                     "-c -o " + obj + " " + src + " "
-                     "-isystem " + exe_dir + "/include/webcc/compat " // Make <vector> work
-                     "-I " + exe_dir + "/include"; // Make #include "webcc/core/vector.h" work
-                     
-                if (system(cc_cmd.c_str()) != 0)
+                std::string cc_full_cmd = base_cmd + compile_only_flags + include_flags + "-o " + obj + " " + src;
+
+                if (system(cc_full_cmd.c_str()) != 0)
                 {
                     compilation_failed = true;
                     break;
                 }
             }
-
+            else
+            {
+                std::cout << "  [Cache] " << src << std::endl;
+            }
             object_files_str += obj + " ";
         }
 
         if (compilation_failed)
-        {
-            std::cerr << "[WebCC] Compilation failed!" << std::endl;
             return false;
-        }
 
+        // --- 3. LINKING ---
         std::cout << "[WebCC] Linking..." << std::endl;
-        std::string cmd = "clang++ --target=wasm32 -O3 -std=c++20 -nostdlib "
-                          "-Wl,--no-entry -Wl,--export-all -Wl,--allow-undefined "
-                          "-o " +
-                          out_dir + "/app.wasm " +
-                          object_files_str;
+        std::string wasm_path = out_dir + "/app.wasm";
+        std::string link_full_cmd = base_cmd + link_only_flags + "-o " + wasm_path + " " + object_files_str;
 
-        // std::cout << "  COMMAND: " << cmd << std::endl;
-
-        int result = system(cmd.c_str());
-        if (result != 0)
+        if (system(link_full_cmd.c_str()) != 0)
         {
             std::cerr << "[WebCC] Linking failed!" << std::endl;
             return false;
         }
 
+        // --- 4. POST-OPTIMIZATION ---
+        /*
+        if (system("command -v wasm-opt > /dev/null") == 0)
+        {
+            std::cout << "[WebCC] Optimizing with wasm-opt..." << std::endl;
+            std::string opt_cmd = "wasm-opt -Oz --strip-debug " + wasm_path + " -o " + wasm_path;
+            system(opt_cmd.c_str());
+        }
+        */
         std::cout << "[WebCC] Success! Run 'python3 -m http.server' in " << out_dir << " to view." << std::endl;
         return true;
     }
-
 } // namespace webcc

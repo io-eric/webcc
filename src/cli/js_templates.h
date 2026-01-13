@@ -19,13 +19,11 @@ const run = async () => {
             __cxa_finalize: () => {}
 )";
 
-    // JS code to finalize WASM instantiation and get exported functions.
+    // JS code to finalize WASM instantiation.
+    // Note: The exports destructuring is now generated dynamically based on what's needed.
     const std::string JS_INIT_TAIL = R"(
         }
     });
-
-    // Get exports from WASM
-    const { memory, main, __indirect_function_table: table } = mod.instance.exports;
 )";
 
     // JS code for the 'flush' function, which processes commands from C++.
