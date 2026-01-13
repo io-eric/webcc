@@ -103,12 +103,10 @@ void update(float time_ms) {
 }
 
 int main() {
-    webcc::DOMElement canvas = webcc::dom::create_element("canvas");
-    webcc::dom::set_attribute(canvas, "width", "800");
-    webcc::dom::set_attribute(canvas, "height", "600");
+    webcc::Canvas canvas = webcc::canvas::create_canvas("canvas", 800, 600);
     webcc::dom::append_child(webcc::dom::get_body(), canvas);
 
-    ctx = webcc::canvas::get_context(canvas, "2d");
+    ctx = webcc::canvas::get_context_2d(canvas);
 
     init_rects();
 

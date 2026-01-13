@@ -6,7 +6,7 @@ import subprocess
 import sys
 import threading
 import time
-import webbrowser
+import signal
 from urllib.parse import urlparse
 
 PORT = 8000
@@ -14,6 +14,10 @@ BENCHMARK_FRAMES = 500
 RESULTS = {}
 EXPECTED_REPORTS = 2
 server_instance = None
+browser_process = None
+
+class ReusableTCPServer(socketserver.TCPServer):
+    allow_reuse_address = True
 
 def kill_process_on_port(port):
     """Kill any process using the specified port."""
@@ -90,12 +94,53 @@ def get_file_sizes():
         
     return sizes
 
+def open_browser(url):
+    """Open browser as a subprocess that can be killed later."""
+    global browser_process
+    # Try common browsers in order of preference
+    browsers = [
+        ['google-chrome', '--new-window'],
+        ['chromium', '--new-window'],
+        ['chromium-browser', '--new-window'],
+        ['firefox', '--new-window'],
+    ]
+    for browser_cmd in browsers:
+        try:
+            browser_process = subprocess.Popen(
+                browser_cmd + [url],
+                stdout=subprocess.DEVNULL,
+                stderr=subprocess.DEVNULL,
+                start_new_session=True  # Create new process group
+            )
+            print(f"Opened browser: {browser_cmd[0]} (PID: {browser_process.pid})")
+            return True
+        except FileNotFoundError:
+            continue
+    print("Warning: Could not find a browser to open")
+    return False
+
+def close_browser():
+    """Close the browser subprocess."""
+    global browser_process
+    if browser_process:
+        try:
+            # Kill the entire process group
+            os.killpg(os.getpgid(browser_process.pid), signal.SIGTERM)
+            browser_process.wait(timeout=3)
+            print("Browser closed.")
+        except (ProcessLookupError, subprocess.TimeoutExpired, OSError):
+            try:
+                os.killpg(os.getpgid(browser_process.pid), signal.SIGKILL)
+            except (ProcessLookupError, OSError):
+                pass
+        browser_process = None
+
 def run_server():
     global server_instance, PORT
     max_attempts = 5
     for attempt in range(max_attempts):
         try:
-            with socketserver.TCPServer(("", PORT), BenchmarkHandler) as httpd:
+            with ReusableTCPServer(("", PORT), BenchmarkHandler) as httpd:
                 server_instance = httpd
                 print(f"Serving at port {PORT}")
                 httpd.serve_forever()
@@ -275,22 +320,23 @@ def main():
     kill_process_on_port(PORT)
     
     # 4. Start Server
-    server_thread = threading.Thread(target=run_server)
+    server_thread = threading.Thread(target=run_server, daemon=True)
     server_thread.start()
     
     # 5. Run Benchmarks Sequentially
     
     # WebCC
     print("Running WebCC Benchmark...")
-    webbrowser.open(f'http://localhost:{PORT}/webcc/index.html')
+    open_browser(f'http://localhost:{PORT}/webcc/index.html')
     wait_for_result('webcc')
     
     # Emscripten
     print("Running Emscripten Benchmark...")
-    webbrowser.open(f'http://localhost:{PORT}/emscripten/index.html')
+    open_browser(f'http://localhost:{PORT}/emscripten/index.html')
     wait_for_result('emscripten')
     
-    # Shutdown server
+    # Close browser and shutdown server
+    close_browser()
     if server_instance:
         threading.Thread(target=server_instance.shutdown).start()
     server_thread.join()

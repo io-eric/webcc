@@ -1,39 +1,39 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 900 700" width="100%" style="font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; background: #f8f9fa;">
 <rect width="100%" height="100%" fill="#f8f9fa"/>
 <text x="450.0" y="60" text-anchor="middle" fill="#212529" font-size="32" font-weight="bold" letter-spacing="-0.5">WebCC vs Emscripten</text>
-<text x="450.0" y="95" text-anchor="middle" fill="#6c757d" font-size="18">Canvas 2D • 10,000 Rectangles • Chrome 142.0.0.0</text>
+<text x="450.0" y="95" text-anchor="middle" fill="#6c757d" font-size="18">Canvas 2D • 10,000 Rectangles • Chrome 143.0.0.0</text>
 <rect x="330.0" y="130" width="20" height="20" fill="#20c997" rx="4"/>
 <text x="360.0" y="145" fill="#212529" font-size="16" font-weight="600">WebCC</text>
 <rect x="470.0" y="130" width="20" height="20" fill="#5c7cfa" rx="4"/>
 <text x="500.0" y="145" fill="#212529" font-size="16" font-weight="600">Emscripten</text>
 <text x="180" y="218" text-anchor="end" fill="#212529" font-size="16" font-weight="bold">FPS</text>
 <rect x="200" y="190" width="450.0" height="28" fill="#20c997" rx="4"/>
-<text x="660.0" y="209" fill="#212529" font-size="14">100.37 FPS</text>
-<rect x="200" y="226" width="180.1536319907834" height="28" fill="#5c7cfa" rx="4"/>
-<text x="390.1536319907834" y="245" fill="#212529" font-size="14">40.18 FPS</text>
+<text x="660.0" y="209" fill="#212529" font-size="14">100.45 FPS</text>
+<rect x="200" y="226" width="191.12111523029563" height="28" fill="#5c7cfa" rx="4"/>
+<text x="401.12111523029563" y="245" fill="#212529" font-size="14">42.66 FPS</text>
 <circle cx="190" cy="204" r="4" fill="#20c997"/>
-<text x="750" y="209" fill="#20c997" font-size="14" font-weight="bold">149.8% faster</text>
+<text x="750" y="209" fill="#20c997" font-size="14" font-weight="bold">135.5% faster</text>
 <text x="180" y="308" text-anchor="end" fill="#212529" font-size="16" font-weight="bold">WASM Size</text>
-<rect x="200" y="280" width="33.6346000376313" height="28" fill="#20c997" rx="4"/>
-<text x="243.6346000376313" y="299" fill="#212529" font-size="14">11.25 KB</text>
+<rect x="200" y="280" width="9.898778722105714" height="28" fill="#20c997" rx="4"/>
+<text x="219.8987787221057" y="299" fill="#212529" font-size="14">3.31 KB</text>
 <rect x="200" y="316" width="450.0" height="28" fill="#5c7cfa" rx="4"/>
-<text x="660.0" y="335" fill="#212529" font-size="14">150.51 KB</text>
+<text x="660.0" y="335" fill="#212529" font-size="14">150.41 KB</text>
 <circle cx="190" cy="294" r="4" fill="#20c997"/>
-<text x="750" y="299" fill="#20c997" font-size="14" font-weight="bold">92.5% smaller</text>
+<text x="750" y="299" fill="#20c997" font-size="14" font-weight="bold">97.8% smaller</text>
 <text x="180" y="398" text-anchor="end" fill="#212529" font-size="16" font-weight="bold">JS Size</text>
-<rect x="200" y="370" width="61.64241542379047" height="28" fill="#20c997" rx="4"/>
-<text x="271.64241542379045" y="389" fill="#212529" font-size="14">11.03 KB</text>
+<rect x="200" y="370" width="65.84939978173881" height="28" fill="#20c997" rx="4"/>
+<text x="275.84939978173884" y="389" fill="#212529" font-size="14">11.79 KB</text>
 <rect x="200" y="406" width="450.0" height="28" fill="#5c7cfa" rx="4"/>
 <text x="660.0" y="425" fill="#212529" font-size="14">80.54 KB</text>
 <circle cx="190" cy="384" r="4" fill="#20c997"/>
-<text x="750" y="389" fill="#20c997" font-size="14" font-weight="bold">86.3% smaller</text>
+<text x="750" y="389" fill="#20c997" font-size="14" font-weight="bold">85.4% smaller</text>
 <text x="180" y="488" text-anchor="end" fill="#212529" font-size="16" font-weight="bold">JS Heap</text>
-<rect x="200" y="460" width="165.10206913527998" height="28" fill="#20c997" rx="4"/>
-<text x="375.10206913528" y="479" fill="#212529" font-size="14">9.03 MB</text>
+<rect x="200" y="460" width="167.4608701304769" height="28" fill="#20c997" rx="4"/>
+<text x="377.4608701304769" y="479" fill="#212529" font-size="14">8.74 MB</text>
 <rect x="200" y="496" width="450.0" height="28" fill="#5c7cfa" rx="4"/>
-<text x="660.0" y="515" fill="#212529" font-size="14">24.62 MB</text>
+<text x="660.0" y="515" fill="#212529" font-size="14">23.47 MB</text>
 <circle cx="190" cy="474" r="4" fill="#20c997"/>
-<text x="750" y="479" fill="#20c997" font-size="14" font-weight="bold">63.3% smaller</text>
+<text x="750" y="479" fill="#20c997" font-size="14" font-weight="bold">62.8% smaller</text>
 <text x="180" y="578" text-anchor="end" fill="#212529" font-size="16" font-weight="bold">WASM Heap</text>
 <rect x="200" y="550" width="66.4186046511628" height="28" fill="#20c997" rx="4"/>
 <text x="276.4186046511628" y="569" fill="#212529" font-size="14">2.38 MB</text>

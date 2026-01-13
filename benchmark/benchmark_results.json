@@ -1,22 +1,22 @@
 {
-    "browser": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/142.0.0.0 Safari/537.36",
+    "browser": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36",
     "file_sizes": {
-        "webcc_wasm": 11520,
-        "webcc_js": 11297,
-        "emscripten_wasm": 154127,
+        "webcc_wasm": 3388,
+        "webcc_js": 12068,
+        "emscripten_wasm": 154019,
         "emscripten_js": 82470
     },
     "runtime_stats": {
         "webcc": {
             "name": "webcc",
-            "fps": 100.37,
-            "memory_used_mb": 9.034697532653809,
+            "fps": 100.45,
+            "memory_used_mb": 8.735246658325195,
             "wasm_heap_mb": 2.38
         },
         "emscripten": {
             "name": "emscripten",
-            "fps": 40.18226676203318,
-            "memory_used_mb": 24.62485122680664,
+            "fps": 42.662480055295994,
+            "memory_used_mb": 23.473310470581055,
             "wasm_heap_mb": 16.125
         }
     }
