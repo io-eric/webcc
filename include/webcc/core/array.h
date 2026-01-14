@@ -4,13 +4,12 @@
 
 namespace webcc
 {
+    // Aggregate type - supports brace initialization: array<int, 3> a = {1, 2, 3};
     template <typename T, size_t N>
-    class array
+    struct array
     {
-    private:
-        T m_data[N];
+        T m_data[N];  // Public for aggregate initialization
 
-    public:
         // Accessors
         constexpr T *data() { return m_data; }
         constexpr const T *data() const { return m_data; }
@@ -18,6 +17,11 @@ namespace webcc
 
         // Bounds checking (Crucial for WASM debugging)
         T &operator[](size_t i)
+        {
+            return m_data[i];
+        }
+
+        const T &operator[](size_t i) const
         {
             return m_data[i];
         }

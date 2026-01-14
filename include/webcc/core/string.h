@@ -215,6 +215,11 @@ namespace webcc
             fmt << val;
             return concat(*this, fmt.c_str());
         }
+        string operator+(double val) const {
+            formatter<32> fmt;
+            fmt << val;
+            return concat(*this, fmt.c_str());
+        }
         string& operator+=(const string& other) {
             *this = concat(*this, other);
             return *this;
@@ -230,6 +235,12 @@ namespace webcc
             return *this;
         }
         string& operator+=(float val) {
+            formatter<32> fmt;
+            fmt << val;
+            *this = concat(*this, fmt.c_str());
+            return *this;
+        }
+        string& operator+=(double val) {
             formatter<32> fmt;
             fmt << val;
             *this = concat(*this, fmt.c_str());

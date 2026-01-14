@@ -2,6 +2,7 @@
 #include "allocator.h"
 #include "new.h"
 #include "utility.h"
+#include "../compat/initializer_list" // std::initializer_list shim for brace init
 #include <stdint.h>
 #include <stddef.h>
 
@@ -11,16 +12,17 @@ namespace webcc
     class vector
     {
     private:
-        T* m_data = nullptr;
+        T *m_data = nullptr;
         size_t m_size = 0;
         size_t m_capacity = 0;
 
         void reallocate(size_t new_capacity)
         {
             // 1. Allocate new block
-            T* new_block = (T*)webcc::malloc(new_capacity * sizeof(T));
-            if (!new_block) return; // Allocation failed
-            
+            T *new_block = (T *)webcc::malloc(new_capacity * sizeof(T));
+            if (!new_block)
+                return; // Allocation failed
+
             // 2. Move existing elements
             if (m_data)
             {
@@ -31,16 +33,29 @@ namespace webcc
                 }
                 webcc::free(m_data);
             }
-            
+
             m_data = new_block;
             m_capacity = new_capacity;
         }
 
     public:
-        using iterator = T*;
-        using const_iterator = const T*;
+        using iterator = T *;
+        using const_iterator = const T *;
 
         vector() = default;
+
+        // Initializer list constructor for {a,b,c} syntax
+        // Uses shim type, NOT webcc::initializer_list directly, because:
+        // - With stdlib: Need std::initializer_list for compiler brace magic
+        // - Without stdlib: Need our own implementation
+        vector(std::initializer_list<T> init)
+        {
+            reserve(init.size());
+            for (const auto &val : init)
+            {
+                push_back(val);
+            }
+        }
 
         explicit vector(size_t count)
         {
@@ -54,7 +69,7 @@ namespace webcc
         }
 
         // Copy constructor
-        vector(const vector& other)
+        vector(const vector &other)
         {
             if (other.m_size > 0)
             {
@@ -69,7 +84,7 @@ namespace webcc
         }
 
         // Copy assignment
-        vector& operator=(const vector& other)
+        vector &operator=(const vector &other)
         {
             if (this != &other)
             {
@@ -86,7 +101,7 @@ namespace webcc
         }
 
         // Move constructor
-        vector(vector&& other) noexcept
+        vector(vector &&other) noexcept
             : m_data(other.m_data), m_size(other.m_size), m_capacity(other.m_capacity)
         {
             other.m_data = nullptr;
@@ -95,17 +110,17 @@ namespace webcc
         }
 
         // Move assignment
-        vector& operator=(vector&& other) noexcept
+        vector &operator=(vector &&other) noexcept
         {
             if (this != &other)
             {
                 clear();
                 webcc::free(m_data);
-                
+
                 m_data = other.m_data;
                 m_size = other.m_size;
                 m_capacity = other.m_capacity;
-                
+
                 other.m_data = nullptr;
                 other.m_size = 0;
                 other.m_capacity = 0;
@@ -113,41 +128,44 @@ namespace webcc
             return *this;
         }
 
-        void push_back(const T& value)
+        void push_back(const T &value)
         {
             if (m_size == m_capacity)
             {
                 size_t new_cap = m_capacity == 0 ? 4 : m_capacity * 2;
                 reallocate(new_cap);
             }
-            if (m_size < m_capacity) {
+            if (m_size < m_capacity)
+            {
                 new (m_data + m_size) T(value);
                 m_size++;
             }
         }
 
-        void push_back(T&& value)
+        void push_back(T &&value)
         {
             if (m_size == m_capacity)
             {
                 size_t new_cap = m_capacity == 0 ? 4 : m_capacity * 2;
                 reallocate(new_cap);
             }
-            if (m_size < m_capacity) {
+            if (m_size < m_capacity)
+            {
                 new (m_data + m_size) T(webcc::move(value));
                 m_size++;
             }
         }
 
-        template<typename... Args>
-        void emplace_back(Args&&... args)
+        template <typename... Args>
+        void emplace_back(Args &&...args)
         {
             if (m_size == m_capacity)
             {
                 size_t new_cap = m_capacity == 0 ? 4 : m_capacity * 2;
                 reallocate(new_cap);
             }
-            if (m_size < m_capacity) {
+            if (m_size < m_capacity)
+            {
                 new (m_data + m_size) T(webcc::forward<Args>(args)...);
                 m_size++;
             }
@@ -165,7 +183,8 @@ namespace webcc
         // Erase element at index, shifting remaining elements
         void erase(size_t index)
         {
-            if (index >= m_size) return;
+            if (index >= m_size)
+                return;
             m_data[index].~T();
             for (size_t i = index; i < m_size - 1; ++i)
             {
@@ -214,11 +233,11 @@ namespace webcc
             m_size = 0;
         }
 
-        T& operator[](size_t index) { return m_data[index]; }
-        const T& operator[](size_t index) const { return m_data[index]; }
+        T &operator[](size_t index) { return m_data[index]; }
+        const T &operator[](size_t index) const { return m_data[index]; }
 
-        T* data() { return m_data; }
-        const T* data() const { return m_data; }
+        T *data() { return m_data; }
+        const T *data() const { return m_data; }
 
         size_t size() const { return m_size; }
         size_t capacity() const { return m_capacity; }
