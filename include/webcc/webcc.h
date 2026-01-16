@@ -57,4 +57,15 @@ namespace webcc
     inline T parse_event(const uint8_t* data, uint32_t len) {
         return T::parse(data, len);
     }
+
+    // =========================================================================
+    // Deferred DOM element creation (for batched DOM creation)
+    // C++ assigns handles from a high starting number to avoid collision with
+    // JS-assigned handles. 
+    // =========================================================================
+    
+    inline int32_t next_deferred_handle() {
+        static int32_t counter = 0x100000;  // Start high to avoid JS collision
+        return counter++;
+    }
 }
