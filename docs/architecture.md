@@ -34,6 +34,27 @@ To maximize performance, WebCC uses **typed integer handles** to reference resou
 - **Zero Overhead**: The type system is compile-time only—at runtime, handles are simple 32-bit integers with no additional cost.
 - **Usage**: Subsequent commands use these integer handles, avoiding expensive string lookups or map queries on the JavaScript side during hot code paths (like rendering loops).
 
+### Deferred Handles
+Functions that return handles (like `create_element`) must synchronously call into JavaScript, triggering an automatic `flush()`. This can be expensive when creating many elements.
+
+**Deferred handles** allow C++ to pre-assign a handle before the element is created:
+
+```cpp
+// Generate handle on C++ side (no JS call)
+webcc::handle h = webcc::next_deferred_handle();
+
+// Buffer the creation command
+webcc::dom::create_element_deferred(h, "div");
+
+// Use immediately in other buffered commands
+webcc::dom::append_child(parent, webcc::DOMElement(h));
+
+// Single flush creates everything
+webcc::flush();
+```
+
+Deferred handles start at `0x100000` and increment upward, while JS-assigned handles use lower values, ensuring no collisions. This pattern is essential for high-performance DOM manipulation.
+
 ## C++ Standard Library Compatibility
 WebCC provides a lightweight compatibility layer for common C++ Standard Library headers (located in `include/webcc/compat/`). 
 
