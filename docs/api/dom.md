@@ -36,7 +36,7 @@ webcc::DOMElement create_element(webcc::string_view tag);
 
 ### `create_element_deferred`
 
-Creates a new HTML element using a pre-assigned deferred handle. Unlike `create_element`, this function does not return a handle—instead, you provide the handle upfront. This allows the creation command to be batched with other commands, avoiding a synchronous flush.
+Creates a new HTML element using a pre-assigned deferred handle. Unlike `create_element`, this function does not return a handle, instead, you provide the handle upfront. This allows the creation command to be batched with other commands, avoiding a synchronous flush.
 
 ```cpp
 void create_element_deferred(webcc::handle handle, webcc::string_view tag);
