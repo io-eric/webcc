@@ -107,7 +107,7 @@ int main() {
     ctx = webcc::canvas::get_context_2d(canvas);
     
     // Initialize mouse input on the canvas
-    webcc::dom::init_mouse(canvas);
+    webcc::input::init_mouse(canvas);
 
     // Start the main loop
     webcc::system::set_main_loop(update);

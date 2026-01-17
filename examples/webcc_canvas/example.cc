@@ -120,7 +120,7 @@ int main() {
     webcc::dom::append_child(game_container, hud_canvas);
     
     // Initialize input listeners on the canvas so we get correct offsets
-    webcc::dom::init_mouse(demo_canvas);
+    webcc::input::init_mouse(demo_canvas);
 
     webcc::system::log("Starting demo loop...");
     webcc::system::set_main_loop(update);
