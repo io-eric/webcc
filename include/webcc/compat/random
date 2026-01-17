@@ -1,0 +1,10 @@
+#pragma once
+#include "../core/random.h"
+
+namespace std
+{
+    using webcc::random;
+    using webcc::random_int;
+    using webcc::random_range;
+    using webcc::random_seed;
+}
