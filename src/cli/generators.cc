@@ -589,6 +589,8 @@ namespace webcc {
                         w.write("push_data<int32_t>(" + name + ");");
                     else if (p.type == "float32")
                         w.write("push_data<float>(" + name + ");");
+                    else if (p.type == "float64")
+                        w.write("push_data<double>(" + name + ");");
                     else if (p.type == "func_ptr")
                         w.write("push_data<uint32_t>((uint32_t)(uintptr_t)" + name + ");");
                     else
@@ -627,6 +629,12 @@ namespace webcc {
             {
                 w.write("if (pos + 4 > end) { console.error('WebCC: OOB " + varName + "'); break; }");
                 w.write("const " + varName + " = f32[pos >> 2]; pos += 4;");
+            }
+            else if (p.type == "float64")
+            {
+                w.write("if (pos % 8 !== 0) pos += (8 - (pos % 8));");
+                w.write("if (pos + 8 > end) { console.error('WebCC: OOB " + varName + "'); break; }");
+                w.write("const " + varName + " = f64[pos >> 3]; pos += 8;");
             }
             else if (p.type == "func_ptr")
             {

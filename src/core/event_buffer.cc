@@ -4,8 +4,8 @@ namespace webcc
 {
 
     constexpr size_t EVENT_BUFFER_SIZE = 1024 * 1024; // 1MB
-    // Align to 4 bytes so that JS Int32Array/Float32Array can access it directly
-    alignas(4) static uint8_t g_event_buffer[EVENT_BUFFER_SIZE];
+    // Align to 8 bytes so that JS Float64Array can access it directly
+    alignas(8) static uint8_t g_event_buffer[EVENT_BUFFER_SIZE];
     static uint32_t g_event_offset = 0;
     static uint32_t g_read_offset = 0;
 

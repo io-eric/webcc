@@ -31,6 +31,11 @@ namespace webcc
         CommandBuffer::push_float(value);
     }
 
+    template<>
+    inline void push_data<double>(double value){
+        CommandBuffer::push_double(value);
+    }
+
     inline void push_command(uint32_t opcode){
         CommandBuffer::push_u32(opcode);
     }

@@ -5,7 +5,7 @@ namespace webcc
     // 4KB should be enough for most return values (URLs, attributes, JSON chunks)
     constexpr size_t SCRATCH_BUFFER_SIZE = 4096; 
     
-    alignas(4) static uint8_t g_scratch_buffer[SCRATCH_BUFFER_SIZE];
+    alignas(8) static uint8_t g_scratch_buffer[SCRATCH_BUFFER_SIZE];
 
     extern "C" uint8_t *webcc_scratch_buffer_ptr()
     {

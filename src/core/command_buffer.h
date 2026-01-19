@@ -10,6 +10,7 @@ struct CommandBuffer {
     static void push_u32(uint32_t v);
     static void push_i32(int32_t v);
     static void push_float(float v);
+    static void push_double(double v);
 
     // Append a string (aligned)
     static void push_string(const char* str, size_t len);

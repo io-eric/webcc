@@ -4,7 +4,7 @@ namespace webcc {
 
 namespace {
     constexpr size_t MAX_BUFFER_SIZE = 1024 * 1024; // 1MB
-    alignas(4) static uint8_t g_buffer[MAX_BUFFER_SIZE];
+    alignas(8) static uint8_t g_buffer[MAX_BUFFER_SIZE];
     static size_t g_offset = 0;
 }
 
@@ -25,6 +25,21 @@ void CommandBuffer::push_float(float v) {
     uint32_t u;
     __builtin_memcpy(&u, &v, 4);
     push_u32(u);
+}
+
+void CommandBuffer::push_double(double v) {
+    // Align to 8 bytes before writing double
+    if (g_offset % 8 != 0) {
+        size_t pad = 8 - (g_offset % 8);
+        for(size_t k=0; k<pad; ++k) {
+            if(g_offset < MAX_BUFFER_SIZE) g_buffer[g_offset++] = 0;
+        }
+    }
+    uint64_t u;
+    __builtin_memcpy(&u, &v, 8);
+    // Push as two 32-bit values (little-endian)
+    push_u32(u & 0xFFFFFFFF);
+    push_u32(u >> 32);
 }
 
 void CommandBuffer::push_string(const char* str, size_t len) {

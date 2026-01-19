@@ -50,6 +50,7 @@ const run = async () => {
     let u8 = new Uint8Array(memory.buffer);
     let i32 = new Int32Array(memory.buffer);
     let f32 = new Float32Array(memory.buffer);
+    let f64 = new Float64Array(memory.buffer);
 
     function flush(ptr, size) {
         if (size === 0) return;
@@ -58,6 +59,7 @@ const run = async () => {
             u8 = new Uint8Array(memory.buffer);
             i32 = new Int32Array(memory.buffer);
             f32 = new Float32Array(memory.buffer);
+            f64 = new Float64Array(memory.buffer);
         }
 
         let pos = ptr;

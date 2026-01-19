@@ -47,59 +47,59 @@ dom|command|REQUEST_POINTER_LOCK|request_pointer_lock|handle(DOMElement):handle|
 # ------------------------------------------------------------------------------
 # CANVAS 2D
 # ------------------------------------------------------------------------------
-canvas|command|CREATE_CANVAS|create_canvas|string:dom_id float32:width float32:height RET:handle(Canvas)|{ const handle = (window.webcc_next_id = (window.webcc_next_id || 0) + 1); const c = document.createElement('canvas'); c.id = dom_id; c.width = width; c.height = height; elements[dom_id] = c; elements[handle] = c; return handle; }
+canvas|command|CREATE_CANVAS|create_canvas|string:dom_id float64:width float64:height RET:handle(Canvas)|{ const handle = (window.webcc_next_id = (window.webcc_next_id || 0) + 1); const c = document.createElement('canvas'); c.id = dom_id; c.width = width; c.height = height; elements[dom_id] = c; elements[handle] = c; return handle; }
 canvas|command|GET_CONTEXT_2D|get_context_2d|handle(Canvas):canvas_handle RET:handle(CanvasContext2D)|{ const handle = (window.webcc_next_id = (window.webcc_next_id || 0) + 1); const c = elements[canvas_handle]; if(!c) { console.warn('get_context_2d: unknown canvas', canvas_handle); return -1; } contexts[handle] = c.getContext('2d'); return handle; }
 canvas|command|GET_CONTEXT_WEBGL|get_context_webgl|handle(Canvas):canvas_handle RET:handle(WebGLContext)|{ const handle = (window.webcc_next_id = (window.webcc_next_id || 0) + 1); const c = elements[canvas_handle]; if(!c) { console.warn('get_context_webgl: unknown canvas', canvas_handle); return -1; } contexts[handle] = c.getContext('webgl'); return handle; }
 canvas|command|GET_CONTEXT_WEBGPU|get_context_webgpu|handle(Canvas):canvas_handle RET:handle(WGPUContext)|{ const handle = (window.webcc_next_id = (window.webcc_next_id || 0) + 1); const c = elements[canvas_handle]; if(!c) { console.warn('get_context_webgpu: unknown canvas', canvas_handle); return -1; } contexts[handle] = c.getContext('webgpu'); return handle; }
-canvas|command|SET_SIZE|set_size|handle(Canvas):handle float32:width float32:height|{ const c = elements[handle]; if(c) { c.width = width; c.height = height; } }
+canvas|command|SET_SIZE|set_size|handle(Canvas):handle float64:width float64:height|{ const c = elements[handle]; if(c) { c.width = width; c.height = height; } }
 canvas|command|SET_FILL_STYLE|set_fill_style|handle(CanvasContext2D):handle uint8:r uint8:g uint8:b|{ const ctx = contexts[handle]; if(!ctx){ console.warn('set_fill_style: unknown context', handle); continue; } ctx.fillStyle = `rgb(${r},${g},${b})`; }
 canvas|command|SET_FILL_STYLE_STR|set_fill_style_str|handle(CanvasContext2D):handle string:color|{ const ctx = contexts[handle]; if(ctx) ctx.fillStyle = color; }
-canvas|command|FILL_RECT|fill_rect|handle(CanvasContext2D):handle float32:x float32:y float32:w float32:h|{ const ctx = contexts[handle]; if(!ctx){ console.warn('fill_rect: unknown context', handle); continue; } ctx.fillRect(x, y, w, h); }
-canvas|command|CLEAR_RECT|clear_rect|handle(CanvasContext2D):handle float32:x float32:y float32:w float32:h|{ const ctx = contexts[handle]; if(!ctx){ console.warn('clear_canvas: unknown context', handle); continue; } ctx.clearRect(x, y, w, h); }
-canvas|command|STROKE_RECT|stroke_rect|handle(CanvasContext2D):handle float32:x float32:y float32:w float32:h|{ const ctx = contexts[handle]; if(!ctx){ console.warn('stroke_rect: unknown context', handle); continue; } ctx.strokeRect(x, y, w, h); }
+canvas|command|FILL_RECT|fill_rect|handle(CanvasContext2D):handle float64:x float64:y float64:w float64:h|{ const ctx = contexts[handle]; if(!ctx){ console.warn('fill_rect: unknown context', handle); continue; } ctx.fillRect(x, y, w, h); }
+canvas|command|CLEAR_RECT|clear_rect|handle(CanvasContext2D):handle float64:x float64:y float64:w float64:h|{ const ctx = contexts[handle]; if(!ctx){ console.warn('clear_canvas: unknown context', handle); continue; } ctx.clearRect(x, y, w, h); }
+canvas|command|STROKE_RECT|stroke_rect|handle(CanvasContext2D):handle float64:x float64:y float64:w float64:h|{ const ctx = contexts[handle]; if(!ctx){ console.warn('stroke_rect: unknown context', handle); continue; } ctx.strokeRect(x, y, w, h); }
 canvas|command|SET_STROKE_STYLE|set_stroke_style|handle(CanvasContext2D):handle uint8:r uint8:g uint8:b|{ const ctx = contexts[handle]; if(!ctx){ console.warn('set_stroke_style: unknown context', handle); continue; } ctx.strokeStyle = `rgb(${r},${g},${b})`; }
 canvas|command|SET_STROKE_STYLE_STR|set_stroke_style_str|handle(CanvasContext2D):handle string:color|{ const ctx = contexts[handle]; if(ctx) ctx.strokeStyle = color; }
-canvas|command|SET_LINE_WIDTH|set_line_width|handle(CanvasContext2D):handle float32:width|{ const ctx = contexts[handle]; if(ctx) ctx.lineWidth = width; }
+canvas|command|SET_LINE_WIDTH|set_line_width|handle(CanvasContext2D):handle float64:width|{ const ctx = contexts[handle]; if(ctx) ctx.lineWidth = width; }
 canvas|command|BEGIN_PATH|begin_path|handle(CanvasContext2D):handle|{ const ctx = contexts[handle]; if(!ctx){ console.warn('begin_path: unknown context', handle); continue; } ctx.beginPath(); }
 canvas|command|CLOSE_PATH|close_path|handle(CanvasContext2D):handle|{ const ctx = contexts[handle]; if(ctx) ctx.closePath(); }
-canvas|command|MOVE_TO|move_to|handle(CanvasContext2D):handle float32:x float32:y|{ const ctx = contexts[handle]; if(!ctx){ console.warn('move_to: unknown context', handle); continue; } ctx.moveTo(x, y); }
-canvas|command|LINE_TO|line_to|handle(CanvasContext2D):handle float32:x float32:y|{ const ctx = contexts[handle]; if(!ctx){ console.warn('line_to: unknown context', handle); continue; } ctx.lineTo(x, y); }
+canvas|command|MOVE_TO|move_to|handle(CanvasContext2D):handle float64:x float64:y|{ const ctx = contexts[handle]; if(!ctx){ console.warn('move_to: unknown context', handle); continue; } ctx.moveTo(x, y); }
+canvas|command|LINE_TO|line_to|handle(CanvasContext2D):handle float64:x float64:y|{ const ctx = contexts[handle]; if(!ctx){ console.warn('line_to: unknown context', handle); continue; } ctx.lineTo(x, y); }
 canvas|command|STROKE|stroke|handle(CanvasContext2D):handle|{ const ctx = contexts[handle]; if(!ctx){ console.warn('stroke: unknown context', handle); continue; } ctx.stroke(); }
 canvas|command|FILL|fill|handle(CanvasContext2D):handle|{ const ctx = contexts[handle]; if(!ctx){ console.warn('fill: unknown context', handle); continue; } ctx.fill(); }
-canvas|command|ARC|arc|handle(CanvasContext2D):handle float32:x float32:y float32:radius float32:start_angle float32:end_angle|{ const ctx = contexts[handle]; if(!ctx){ console.warn('arc: unknown context', handle); continue; } ctx.arc(x, y, radius, start_angle, end_angle); }
-canvas|command|FILL_TEXT|fill_text|handle(CanvasContext2D):handle string:text float32:x float32:y|{ const ctx = contexts[handle]; if(ctx) ctx.fillText(text, x, y); }
-canvas|command|FILL_TEXT_F|fill_text_f|handle(CanvasContext2D):handle string:fmt float32:val float32:x float32:y|{ const ctx = contexts[handle]; if(ctx) ctx.fillText(fmt.replace('%f', val.toFixed(2)), x, y); }
-canvas|command|FILL_TEXT_I|fill_text_i|handle(CanvasContext2D):handle string:fmt int32:val float32:x float32:y|{ const ctx = contexts[handle]; if(ctx) ctx.fillText(fmt.replace('%d', val), x, y); }
+canvas|command|ARC|arc|handle(CanvasContext2D):handle float64:x float64:y float64:radius float64:start_angle float64:end_angle|{ const ctx = contexts[handle]; if(!ctx){ console.warn('arc: unknown context', handle); continue; } ctx.arc(x, y, radius, start_angle, end_angle); }
+canvas|command|FILL_TEXT|fill_text|handle(CanvasContext2D):handle string:text float64:x float64:y|{ const ctx = contexts[handle]; if(ctx) ctx.fillText(text, x, y); }
+canvas|command|FILL_TEXT_F|fill_text_f|handle(CanvasContext2D):handle string:fmt float64:val float64:x float64:y|{ const ctx = contexts[handle]; if(ctx) ctx.fillText(fmt.replace('%f', val.toFixed(2)), x, y); }
+canvas|command|FILL_TEXT_I|fill_text_i|handle(CanvasContext2D):handle string:fmt int32:val float64:x float64:y|{ const ctx = contexts[handle]; if(ctx) ctx.fillText(fmt.replace('%d', val), x, y); }
 canvas|command|SET_FONT|set_font|handle(CanvasContext2D):handle string:font|{ const ctx = contexts[handle]; if(ctx) ctx.font = font; }
 canvas|command|SET_TEXT_ALIGN|set_text_align|handle(CanvasContext2D):handle string:align|{ const ctx = contexts[handle]; if(ctx) ctx.textAlign = align; }
-canvas|command|DRAW_IMAGE|draw_image|handle(CanvasContext2D):handle handle(Image):img_handle float32:x float32:y|{ const ctx = contexts[handle]; const img = images[img_handle]; if(ctx && img) ctx.drawImage(img, x, y); }
-canvas|command|TRANSLATE|translate|handle(CanvasContext2D):handle float32:x float32:y|{ const ctx = contexts[handle]; if(ctx) ctx.translate(x, y); }
-canvas|command|ROTATE|rotate|handle(CanvasContext2D):handle float32:angle|{ const ctx = contexts[handle]; if(ctx) ctx.rotate(angle); }
-canvas|command|SCALE|scale|handle(CanvasContext2D):handle float32:x float32:y|{ const ctx = contexts[handle]; if(ctx) ctx.scale(x, y); }
+canvas|command|DRAW_IMAGE|draw_image|handle(CanvasContext2D):handle handle(Image):img_handle float64:x float64:y|{ const ctx = contexts[handle]; const img = images[img_handle]; if(ctx && img) ctx.drawImage(img, x, y); }
+canvas|command|TRANSLATE|translate|handle(CanvasContext2D):handle float64:x float64:y|{ const ctx = contexts[handle]; if(ctx) ctx.translate(x, y); }
+canvas|command|ROTATE|rotate|handle(CanvasContext2D):handle float64:angle|{ const ctx = contexts[handle]; if(ctx) ctx.rotate(angle); }
+canvas|command|SCALE|scale|handle(CanvasContext2D):handle float64:x float64:y|{ const ctx = contexts[handle]; if(ctx) ctx.scale(x, y); }
 canvas|command|SAVE|save|handle(CanvasContext2D):handle|{ const ctx = contexts[handle]; if(ctx) ctx.save(); }
 canvas|command|RESTORE|restore|handle(CanvasContext2D):handle|{ const ctx = contexts[handle]; if(ctx) ctx.restore(); }
 canvas|command|LOG_CANVAS_INFO|log_canvas_info|handle(Canvas):handle|{ const cv = elements[handle]; if(!cv){ console.warn('log_canvas_info: unknown canvas handle', handle); continue; } console.log('Canvas', handle, 'size:', cv.width, 'x', cv.height); }
-canvas|command|SET_GLOBAL_ALPHA|set_global_alpha|handle(CanvasContext2D):handle float32:alpha|{ const ctx = contexts[handle]; if(ctx) ctx.globalAlpha = alpha; }
+canvas|command|SET_GLOBAL_ALPHA|set_global_alpha|handle(CanvasContext2D):handle float64:alpha|{ const ctx = contexts[handle]; if(ctx) ctx.globalAlpha = alpha; }
 canvas|command|SET_LINE_CAP|set_line_cap|handle(CanvasContext2D):handle string:cap|{ const ctx = contexts[handle]; if(ctx) ctx.lineCap = cap; }
 canvas|command|SET_LINE_JOIN|set_line_join|handle(CanvasContext2D):handle string:join|{ const ctx = contexts[handle]; if(ctx) ctx.lineJoin = join; }
-canvas|command|SET_SHADOW|set_shadow|handle(CanvasContext2D):handle float32:blur float32:off_x float32:off_y string:color|{ const ctx = contexts[handle]; if(ctx) { ctx.shadowBlur = blur; ctx.shadowOffsetX = off_x; ctx.shadowOffsetY = off_y; ctx.shadowColor = color; } }
-canvas|command|BEZIER_CURVE_TO|bezier_curve_to|handle(CanvasContext2D):handle float32:cp1x float32:cp1y float32:cp2x float32:cp2y float32:x float32:y|{ const ctx = contexts[handle]; if(ctx) ctx.bezierCurveTo(cp1x, cp1y, cp2x, cp2y, x, y); }
-canvas|command|QUADRATIC_CURVE_TO|quadratic_curve_to|handle(CanvasContext2D):handle float32:cpx float32:cpy float32:x float32:y|{ const ctx = contexts[handle]; if(ctx) ctx.quadraticCurveTo(cpx, cpy, x, y); }
-canvas|command|RECT|rect|handle(CanvasContext2D):handle float32:x float32:y float32:w float32:h|{ const ctx = contexts[handle]; if(ctx) ctx.rect(x, y, w, h); }
+canvas|command|SET_SHADOW|set_shadow|handle(CanvasContext2D):handle float64:blur float64:off_x float64:off_y string:color|{ const ctx = contexts[handle]; if(ctx) { ctx.shadowBlur = blur; ctx.shadowOffsetX = off_x; ctx.shadowOffsetY = off_y; ctx.shadowColor = color; } }
+canvas|command|BEZIER_CURVE_TO|bezier_curve_to|handle(CanvasContext2D):handle float64:cp1x float64:cp1y float64:cp2x float64:cp2y float64:x float64:y|{ const ctx = contexts[handle]; if(ctx) ctx.bezierCurveTo(cp1x, cp1y, cp2x, cp2y, x, y); }
+canvas|command|QUADRATIC_CURVE_TO|quadratic_curve_to|handle(CanvasContext2D):handle float64:cpx float64:cpy float64:x float64:y|{ const ctx = contexts[handle]; if(ctx) ctx.quadraticCurveTo(cpx, cpy, x, y); }
+canvas|command|RECT|rect|handle(CanvasContext2D):handle float64:x float64:y float64:w float64:h|{ const ctx = contexts[handle]; if(ctx) ctx.rect(x, y, w, h); }
 canvas|command|CLIP|clip|handle(CanvasContext2D):handle|{ const ctx = contexts[handle]; if(ctx) ctx.clip(); }
-canvas|command|STROKE_TEXT|stroke_text|handle(CanvasContext2D):handle string:text float32:x float32:y|{ const ctx = contexts[handle]; if(ctx) ctx.strokeText(text, x, y); }
+canvas|command|STROKE_TEXT|stroke_text|handle(CanvasContext2D):handle string:text float64:x float64:y|{ const ctx = contexts[handle]; if(ctx) ctx.strokeText(text, x, y); }
 canvas|command|SET_TEXT_BASELINE|set_text_baseline|handle(CanvasContext2D):handle string:baseline|{ const ctx = contexts[handle]; if(ctx) ctx.textBaseline = baseline; }
 canvas|command|SET_GLOBAL_COMPOSITE_OPERATION|set_global_composite_operation|handle(CanvasContext2D):handle string:op|{ const ctx = contexts[handle]; if(ctx) ctx.globalCompositeOperation = op; }
-canvas|command|DRAW_IMAGE_SCALED|draw_image_scaled|handle(CanvasContext2D):handle handle(Image):img_handle float32:x float32:y float32:w float32:h|{ const ctx = contexts[handle]; const img = images[img_handle]; if(ctx && img) ctx.drawImage(img, x, y, w, h); }
-canvas|command|DRAW_IMAGE_FULL|draw_image_full|handle(CanvasContext2D):handle handle(Image):img_handle float32:sx float32:sy float32:sw float32:sh float32:dx float32:dy float32:dw float32:dh|{ const ctx = contexts[handle]; const img = images[img_handle]; if(ctx && img) ctx.drawImage(img, sx, sy, sw, sh, dx, dy, dw, dh); }
+canvas|command|DRAW_IMAGE_SCALED|draw_image_scaled|handle(CanvasContext2D):handle handle(Image):img_handle float64:x float64:y float64:w float64:h|{ const ctx = contexts[handle]; const img = images[img_handle]; if(ctx && img) ctx.drawImage(img, x, y, w, h); }
+canvas|command|DRAW_IMAGE_FULL|draw_image_full|handle(CanvasContext2D):handle handle(Image):img_handle float64:sx float64:sy float64:sw float64:sh float64:dx float64:dy float64:dw float64:dh|{ const ctx = contexts[handle]; const img = images[img_handle]; if(ctx && img) ctx.drawImage(img, sx, sy, sw, sh, dx, dy, dw, dh); }
 canvas|command|RESET_TRANSFORM|reset_transform|handle(CanvasContext2D):handle|{ const ctx = contexts[handle]; if(ctx) ctx.resetTransform(); }
-canvas|command|ELLIPSE|ellipse|handle(CanvasContext2D):handle float32:x float32:y float32:radius_x float32:radius_y float32:rotation float32:start_angle float32:end_angle uint8:counter_clockwise|{ const ctx = contexts[handle]; if(ctx) ctx.ellipse(x, y, radius_x, radius_y, rotation, start_angle, end_angle, counter_clockwise !== 0); }
-canvas|command|ARC_TO|arc_to|handle(CanvasContext2D):handle float32:x1 float32:y1 float32:x2 float32:y2 float32:radius|{ const ctx = contexts[handle]; if(ctx) ctx.arcTo(x1, y1, x2, y2, radius); }
-canvas|command|SET_TRANSFORM|set_transform|handle(CanvasContext2D):handle float32:a float32:b float32:c float32:d float32:e float32:f|{ const ctx = contexts[handle]; if(ctx) ctx.setTransform(a, b, c, d, e, f); }
-canvas|command|TRANSFORM|transform|handle(CanvasContext2D):handle float32:a float32:b float32:c float32:d float32:e float32:f|{ const ctx = contexts[handle]; if(ctx) ctx.transform(a, b, c, d, e, f); }
-canvas|command|SET_MITER_LIMIT|set_miter_limit|handle(CanvasContext2D):handle float32:limit|{ const ctx = contexts[handle]; if(ctx) ctx.miterLimit = limit; }
+canvas|command|ELLIPSE|ellipse|handle(CanvasContext2D):handle float64:x float64:y float64:radius_x float64:radius_y float64:rotation float64:start_angle float64:end_angle uint8:counter_clockwise|{ const ctx = contexts[handle]; if(ctx) ctx.ellipse(x, y, radius_x, radius_y, rotation, start_angle, end_angle, counter_clockwise !== 0); }
+canvas|command|ARC_TO|arc_to|handle(CanvasContext2D):handle float64:x1 float64:y1 float64:x2 float64:y2 float64:radius|{ const ctx = contexts[handle]; if(ctx) ctx.arcTo(x1, y1, x2, y2, radius); }
+canvas|command|SET_TRANSFORM|set_transform|handle(CanvasContext2D):handle float64:a float64:b float64:c float64:d float64:e float64:f|{ const ctx = contexts[handle]; if(ctx) ctx.setTransform(a, b, c, d, e, f); }
+canvas|command|TRANSFORM|transform|handle(CanvasContext2D):handle float64:a float64:b float64:c float64:d float64:e float64:f|{ const ctx = contexts[handle]; if(ctx) ctx.transform(a, b, c, d, e, f); }
+canvas|command|SET_MITER_LIMIT|set_miter_limit|handle(CanvasContext2D):handle float64:limit|{ const ctx = contexts[handle]; if(ctx) ctx.miterLimit = limit; }
 canvas|command|SET_IMAGE_SMOOTHING_ENABLED|set_image_smoothing_enabled|handle(CanvasContext2D):handle uint8:enabled|{ const ctx = contexts[handle]; if(ctx) ctx.imageSmoothingEnabled = (enabled !== 0); }
-canvas|command|MEASURE_TEXT_WIDTH|measure_text_width|handle(CanvasContext2D):handle string:text RET:float32|{ const ctx = contexts[handle]; return (ctx ? ctx.measureText(text).width : 0); }
+canvas|command|MEASURE_TEXT_WIDTH|measure_text_width|handle(CanvasContext2D):handle string:text RET:float64|{ const ctx = contexts[handle]; return (ctx ? ctx.measureText(text).width : 0); }
 
 # ------------------------------------------------------------------------------
 # INPUT
@@ -139,10 +139,10 @@ storage|command|CLEAR|clear||{ localStorage.clear(); }
 audio|command|CREATE_AUDIO|create_audio|string:src RET:handle(Audio)|{ const handle = (window.webcc_next_id = (window.webcc_next_id || 0) + 1); const a = new Audio(src); audios[handle] = a; elements[handle] = a; return handle; }
 audio|command|PLAY|play|handle(Audio):handle|{ const a = audios[handle]; if(a) a.play().catch(e => console.warn(e)); }
 audio|command|PAUSE|pause|handle(Audio):handle|{ const a = audios[handle]; if(a) a.pause(); }
-audio|command|SET_VOLUME|set_volume|handle(Audio):handle float32:vol|{ const a = audios[handle]; if(a) a.volume = vol; }
+audio|command|SET_VOLUME|set_volume|handle(Audio):handle float64:vol|{ const a = audios[handle]; if(a) a.volume = vol; }
 audio|command|SET_LOOP|set_loop|handle(Audio):handle uint8:loop|{ const a = audios[handle]; if(a) a.loop = (loop !== 0); }
-audio|command|GET_CURRENT_TIME|get_current_time|handle(Audio):handle RET:float32|{ const a = audios[handle]; return (a ? (a.currentTime || 0) : 0); }
-audio|command|GET_DURATION|get_duration|handle(Audio):handle RET:float32|{ const a = audios[handle]; return (a ? (a.duration || 0) : 0); }
+audio|command|GET_CURRENT_TIME|get_current_time|handle(Audio):handle RET:float64|{ const a = audios[handle]; return (a ? (a.currentTime || 0) : 0); }
+audio|command|GET_DURATION|get_duration|handle(Audio):handle RET:float64|{ const a = audios[handle]; return (a ? (a.duration || 0) : 0); }
 
 # ------------------------------------------------------------------------------
 # WEBSOCKETS
@@ -172,7 +172,7 @@ image|command|LOAD|load|string:src RET:handle(Image)|{ const handle = (window.we
 # WEBGL
 # ------------------------------------------------------------------------------
 webgl|command|VIEWPORT|viewport|handle(WebGLContext):ctx_handle int32:x int32:y int32:width int32:height|{ const gl = contexts[ctx_handle]; if(gl) gl.viewport(x, y, width, height); }
-webgl|command|CLEAR_COLOR|clear_color|handle(WebGLContext):ctx_handle float32:r float32:g float32:b float32:a|{ const gl = contexts[ctx_handle]; if(gl) gl.clearColor(r, g, b, a); }
+webgl|command|CLEAR_COLOR|clear_color|handle(WebGLContext):ctx_handle float64:r float64:g float64:b float64:a|{ const gl = contexts[ctx_handle]; if(gl) gl.clearColor(r, g, b, a); }
 webgl|command|CLEAR|clear|handle(WebGLContext):ctx_handle uint32:mask|{ const gl = contexts[ctx_handle]; if(gl) gl.clear(mask); }
 webgl|command|CREATE_SHADER|create_shader|handle(WebGLContext):ctx_handle uint32:type string:source RET:handle(WebGLShader)|{ const handle = (window.webcc_next_id = (window.webcc_next_id || 0) + 1); const gl = contexts[ctx_handle]; if(gl) { const s = gl.createShader(type); gl.shaderSource(s, source); gl.compileShader(s); if(!gl.getShaderParameter(s, gl.COMPILE_STATUS)) console.error(gl.getShaderInfoLog(s)); webgl_shaders[handle] = s; } return handle; }
 webgl|command|CREATE_PROGRAM|create_program|handle(WebGLContext):ctx_handle RET:handle(WebGLProgram)|{ const handle = (window.webcc_next_id = (window.webcc_next_id || 0) + 1); const gl = contexts[ctx_handle]; if(gl) { const p = gl.createProgram(); webgl_programs[handle] = p; } return handle; }
@@ -186,7 +186,7 @@ webgl|command|BUFFER_DATA|buffer_data|handle(WebGLContext):ctx_handle uint32:tar
 webgl|command|ENABLE_VERTEX_ATTRIB_ARRAY|enable_vertex_attrib_array|handle(WebGLContext):ctx_handle uint32:index|{ const gl = contexts[ctx_handle]; if(gl) gl.enableVertexAttribArray(index); }
 webgl|command|ENABLE|enable|handle(WebGLContext):ctx_handle uint32:cap|{ const gl = contexts[ctx_handle]; if(gl) gl.enable(cap); }
 webgl|command|GET_UNIFORM_LOCATION|get_uniform_location|handle(WebGLContext):ctx_handle handle(WebGLProgram):prog_handle string:name RET:handle(WebGLUniform)|{ const handle = (window.webcc_next_id = (window.webcc_next_id || 0) + 1); const gl = contexts[ctx_handle]; const p = webgl_programs[prog_handle]; if(gl && p) { const loc = gl.getUniformLocation(p, name); if(!loc) console.warn('getUniformLocation failed:', name); webgl_uniforms[handle] = loc; } return handle; }
-webgl|command|UNIFORM_1F|uniform_1f|handle(WebGLContext):ctx_handle handle(WebGLUniform):loc_handle float32:val|{ const gl = contexts[ctx_handle]; const loc = webgl_uniforms[loc_handle]; if(loc === undefined) console.warn('uniform_1f: loc undefined', loc_handle); if(gl && loc !== undefined) gl.uniform1f(loc, val); }
+webgl|command|UNIFORM_1F|uniform_1f|handle(WebGLContext):ctx_handle handle(WebGLUniform):loc_handle float64:val|{ const gl = contexts[ctx_handle]; const loc = webgl_uniforms[loc_handle]; if(loc === undefined) console.warn('uniform_1f: loc undefined', loc_handle); if(gl && loc !== undefined) gl.uniform1f(loc, val); }
 webgl|command|VERTEX_ATTRIB_POINTER|vertex_attrib_pointer|handle(WebGLContext):ctx_handle uint32:index int32:size uint32:type uint8:normalized int32:stride int32:offset|{ const gl = contexts[ctx_handle]; if(gl) gl.vertexAttribPointer(index, size, type, normalized !== 0, stride, offset); }
 webgl|command|DRAW_ARRAYS|draw_arrays|handle(WebGLContext):ctx_handle uint32:mode int32:first int32:count|{ const gl = contexts[ctx_handle]; if(gl) gl.drawArrays(mode, first, count); }
 
@@ -202,7 +202,7 @@ wgpu|command|CREATE_SHADER_MODULE|create_shader_module|handle(WGPUDevice):device
 wgpu|command|CREATE_COMMAND_ENCODER|create_command_encoder|handle(WGPUDevice):device_handle RET:handle(WGPUCommandEncoder)|{ const d = webgpu_devices[device_handle]; if(!d) return -1; const h = (window.webcc_next_id = (window.webcc_next_id || 0) + 1); webgpu_encoders[h] = d.createCommandEncoder(); return h; }
 wgpu|command|CONFIGURE|configure|handle(WGPUContext):context_handle handle(WGPUDevice):device_handle string:format|{ const ctx = contexts[context_handle]; const dev = webgpu_devices[device_handle]; if(ctx && dev) ctx.configure({ device: dev, format: format === 'preferred' ? navigator.gpu.getPreferredCanvasFormat() : format, alphaMode: 'premultiplied' }); }
 wgpu|command|GET_CURRENT_TEXTURE_VIEW|get_current_texture_view|handle(WGPUContext):context_handle RET:handle(WGPUTextureView)|{ const ctx = contexts[context_handle]; if(!ctx) return -1; const h = (window.webcc_next_id = (window.webcc_next_id || 0) + 1); webgpu_views[h] = ctx.getCurrentTexture().createView(); return h; }
-wgpu|command|BEGIN_RENDER_PASS|begin_render_pass|handle(WGPUCommandEncoder):encoder_handle handle(WGPUTextureView):view_handle float32:r float32:g float32:b float32:a RET:handle(WGPURenderPass)|{ const enc = webgpu_encoders[encoder_handle]; const view = webgpu_views[view_handle]; if(!enc || !view) return -1; const h = (window.webcc_next_id = (window.webcc_next_id || 0) + 1); webgpu_passes[h] = enc.beginRenderPass({ colorAttachments: [{ view: view, clearValue: {r, g, b, a}, loadOp: 'clear', storeOp: 'store' }] }); return h; }
+wgpu|command|BEGIN_RENDER_PASS|begin_render_pass|handle(WGPUCommandEncoder):encoder_handle handle(WGPUTextureView):view_handle float64:r float64:g float64:b float64:a RET:handle(WGPURenderPass)|{ const enc = webgpu_encoders[encoder_handle]; const view = webgpu_views[view_handle]; if(!enc || !view) return -1; const h = (window.webcc_next_id = (window.webcc_next_id || 0) + 1); webgpu_passes[h] = enc.beginRenderPass({ colorAttachments: [{ view: view, clearValue: {r, g, b, a}, loadOp: 'clear', storeOp: 'store' }] }); return h; }
 wgpu|command|END_PASS|end_pass|handle(WGPURenderPass):pass_handle|{ const pass = webgpu_passes[pass_handle]; if(pass) pass.end(); }
 wgpu|command|FINISH_ENCODER|finish_encoder|handle(WGPUCommandEncoder):encoder_handle RET:handle(WGPUCommandBuffer)|{ const enc = webgpu_encoders[encoder_handle]; if(!enc) return -1; const h = (window.webcc_next_id = (window.webcc_next_id || 0) + 1); webgpu_buffers[h] = enc.finish(); return h; }
 wgpu|command|QUEUE_SUBMIT|queue_submit|handle(WGPUQueue):queue_handle handle(WGPUCommandBuffer):command_buffer_handle|{ const q = webgpu_queues[queue_handle]; const cb = webgpu_buffers[command_buffer_handle]; if(q && cb) q.submit([cb]); }
