@@ -1,7 +1,0 @@
-#pragma once
-#include "../core/initializer_list.h"
-
-namespace std {
-    template <typename T>
-    using initializer_list = webcc::initializer_list<T>;
-} // namespace std

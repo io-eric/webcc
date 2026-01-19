@@ -3,7 +3,6 @@
 #include "new.h"
 #include "utility.h"
 #include "algorithm.h" // for sort
-#include "../compat/initializer_list" // std::initializer_list shim for brace init
 #include <stdint.h>
 #include <stddef.h>
 
@@ -45,17 +44,13 @@ namespace webcc
 
         vector() = default;
 
-        // Initializer list constructor for {a,b,c} syntax
-        // Uses shim type, NOT webcc::initializer_list directly, because:
-        // - With stdlib: Need std::initializer_list for compiler brace magic
-        // - Without stdlib: Need our own implementation
-        vector(std::initializer_list<T> init)
+        // Variadic constructor for brace init {a,b,c} - works in freestanding/WASM
+        template<typename U, typename... Args>
+        vector(U&& first, Args&&... rest)
         {
-            reserve(init.size());
-            for (const auto &val : init)
-            {
-                push_back(val);
-            }
+            reserve(1 + sizeof...(rest));
+            push_back(static_cast<T>(first));
+            (push_back(static_cast<T>(rest)), ...);
         }
 
         explicit vector(size_t count)
