@@ -2,6 +2,7 @@
 #include "allocator.h"
 #include "new.h"
 #include "utility.h"
+#include "algorithm.h" // for sort
 #include "../compat/initializer_list" // std::initializer_list shim for brace init
 #include <stdint.h>
 #include <stddef.h>
@@ -242,6 +243,35 @@ namespace webcc
         size_t size() const { return m_size; }
         size_t capacity() const { return m_capacity; }
         bool empty() const { return m_size == 0; }
+
+        // Find index of first occurrence of value, returns -1 if not found
+        int index_of(const T& value) const
+        {
+            for (size_t i = 0; i < m_size; ++i)
+            {
+                if (m_data[i] == value)
+                    return static_cast<int>(i);
+            }
+            return -1;
+        }
+
+        // Check if vector contains value
+        bool contains(const T& value) const
+        {
+            return index_of(value) >= 0;
+        }
+
+        // Remove element at index (alias for erase for consistency with Coi naming)
+        void remove(size_t index)
+        {
+            erase(index);
+        }
+
+        // Sort elements in ascending order
+        void sort()
+        {
+            webcc::sort(begin(), end());
+        }
 
         iterator begin() { return m_data; }
         iterator end() { return m_data + m_size; }

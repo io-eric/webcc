@@ -175,6 +175,35 @@ namespace webcc
             return contains(string(needle));
         }
 
+        // Trim whitespace from start
+        string trim_start() const {
+            if (m_len == 0) return string();
+            uint32_t start = 0;
+            while (start < m_len && (m_data[start] == ' ' || m_data[start] == '\t' || 
+                                      m_data[start] == '\n' || m_data[start] == '\r')) {
+                start++;
+            }
+            if (start == m_len) return string();
+            return string(m_data + start, m_len - start);
+        }
+
+        // Trim whitespace from end
+        string trim_end() const {
+            if (m_len == 0) return string();
+            uint32_t end = m_len;
+            while (end > 0 && (m_data[end - 1] == ' ' || m_data[end - 1] == '\t' || 
+                               m_data[end - 1] == '\n' || m_data[end - 1] == '\r')) {
+                end--;
+            }
+            if (end == 0) return string();
+            return string(m_data, end);
+        }
+
+        // Trim whitespace from both ends
+        string trim() const {
+            return trim_start().trim_end();
+        }
+
         iterator begin() { return m_data; }
         iterator end() { return m_data + m_len; }
         const_iterator begin() const { return m_data; }
