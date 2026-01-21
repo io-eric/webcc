@@ -1040,6 +1040,33 @@ namespace webcc {
 
     bool compile_wasm(const std::vector<std::string> &input_files, const std::string &out_dir, const std::string &cache_dir, const std::set<std::string> &required_exports)
     {
+        // Check Clang version (requires 16+ for full C++20 support)
+        FILE *pipe = popen("clang++ --version 2>&1", "r");
+        if (pipe)
+        {
+            char buffer[256];
+            std::string version_output;
+            while (fgets(buffer, sizeof(buffer), pipe))
+            {
+                version_output += buffer;
+            }
+            pclose(pipe);
+
+            // Extract major version number
+            size_t pos = version_output.find("clang version ");
+            if (pos != std::string::npos)
+            {
+                int major_version = std::atoi(version_output.c_str() + pos + 14);
+                if (major_version > 0 && major_version < 16)
+                {
+                    std::cerr << "[WebCC] Error: Clang " << major_version << " detected. WebCC requires Clang 16+ for full C++20 support." << std::endl;
+                    std::cerr << "  Ubuntu/Debian: sudo apt install clang-16" << std::endl;
+                    std::cerr << "  macOS: brew install llvm" << std::endl;
+                    return false;
+                }
+            }
+        }
+
         std::cout << "[WebCC] Compiling..." << std::endl;
 
         // Ensure cache directory exists
