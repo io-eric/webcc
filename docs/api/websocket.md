@@ -10,15 +10,15 @@ The `webcc::websocket` module provides an interface for WebSocket connections.
 
 ## Functions
 
-### `create`
+### `connect`
 
-Creates a new WebSocket connection to the specified URL.
+Creates a new WebSocket connection to the specified URL with all event listeners automatically enabled.
 
 ```cpp
-webcc::WebSocket create(webcc::string_view url, uint32_t events);
+webcc::WebSocket connect(webcc::string_view url);
 ```
 
-The `events` parameter is a bitmask specifying which events to listen for (e.g., `MASK_MESSAGE | MASK_OPEN`).
+All events (message, open, close, error) are automatically subscribed.
 
 ### `send`
 
