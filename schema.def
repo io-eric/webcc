@@ -44,6 +44,7 @@ dom|event|KEYDOWN|handle(DOMElement):handle int32:keycode
 dom|command|ADD_KEYDOWN_LISTENER|add_keydown_listener|handle(DOMElement):handle|{ const el = elements[handle]; if(el) el.addEventListener('keydown', (e) => push_event_dom_KEYDOWN(handle, e.keyCode)); }
 dom|command|REQUEST_FULLSCREEN|request_fullscreen|handle(DOMElement):handle|{ const el = elements[handle] || document.body; el.requestFullscreen().catch(console.error); }
 dom|command|REQUEST_POINTER_LOCK|request_pointer_lock|handle(DOMElement):handle|{ const el = elements[handle] || document.body; el.requestPointerLock(); }
+dom|command|SCROLL_TO_TOP|scroll_to_top||{ window.scrollTo({ top: 0, left: 0, behavior: 'instant' }); }
 
 # ------------------------------------------------------------------------------
 # CANVAS 2D
