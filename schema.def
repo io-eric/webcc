@@ -129,6 +129,8 @@ system|command|GET_TIME|get_time|RET:float64|{ return performance.now(); }
 system|command|GET_DATE_NOW|get_date_now|RET:float64|{ return Date.now(); }
 system|command|GET_PATHNAME|get_pathname|RET:string|{ const ret = window.location.pathname || "/"; }
 system|command|PUSH_STATE|push_state|string:path|{ history.pushState(null, '', path); }
+system|event|POPSTATE|string:path
+system|command|INIT_POPSTATE|init_popstate||{ window.addEventListener('popstate', () => push_event_system_POPSTATE(window.location.pathname || '/')); }
 
 # ------------------------------------------------------------------------------
 # STORAGE (LocalStorage)
