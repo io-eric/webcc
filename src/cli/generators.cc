@@ -1093,7 +1093,14 @@ namespace webcc {
                                "-msign-ext ";       // Optimize sign extensions
 
         // include_flags: Tells the compiler where to find headers.
-        std::string include_flags = "-isystem " + exe_dir + "/include/webcc/compat " +
+        // On FreeBSD/other systems, wasm32 target needs explicit system include path for stdint.h etc.
+        std::string system_include;
+        struct stat st;
+        if (stat("/usr/include/stdint.h", &st) == 0) {
+            system_include = "-isystem /usr/include ";
+        }
+        std::string include_flags = system_include +
+                                    "-isystem " + exe_dir + "/include/webcc/compat " +
                                     "-I " + exe_dir + "/include ";
 
         // compile_only_flags: Settings applied only when generating .o files.
