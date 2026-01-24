@@ -16,7 +16,7 @@ jobs:
     - name: Install dependencies
       run: |
         sudo apt-get update
-        sudo apt-get install -y clang ninja-build
+        sudo apt-get install -y clang ninja-build lld
 
     - name: Build Toolchain
       run: ./build.sh
