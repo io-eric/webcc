@@ -1052,6 +1052,28 @@ namespace webcc {
             }
             pclose(pipe);
 
+#ifdef __APPLE__
+            // On macOS, check if using Homebrew LLVM (required for wasm-ld)
+            // Apple's clang says "Apple clang" while Homebrew's says "Homebrew clang"
+            if (version_output.find("Apple clang") != std::string::npos ||
+                version_output.find("Apple LLVM") != std::string::npos)
+            {
+                std::cerr << "[WebCC] Error: Apple's system clang detected. WebCC requires Homebrew LLVM." << std::endl;
+                std::cerr << "  Apple's clang does not include wasm-ld (WebAssembly linker)." << std::endl;
+                std::cerr << std::endl;
+                std::cerr << "  To fix:" << std::endl;
+                std::cerr << "    1. Install Homebrew LLVM: brew install llvm" << std::endl;
+                std::cerr << "    2. Add to PATH (add to ~/.zshrc to make permanent):" << std::endl;
+                std::cerr << "       export PATH=\"$(brew --prefix llvm)/bin:$PATH\"" << std::endl;
+                std::cerr << "    3. IMPORTANT - Clean old build files (mixing compilers causes errors):" << std::endl;
+                std::cerr << "       rm -rf build/ .cache/" << std::endl;
+                std::cerr << "    4. Rebuild from scratch" << std::endl;
+                std::cerr << std::endl;
+                std::cerr << "  Verify with: clang++ --version (should show 'Homebrew clang')" << std::endl;
+                return false;
+            }
+#endif
+
             // Extract major version number
             size_t pos = version_output.find("clang version ");
             if (pos != std::string::npos)
