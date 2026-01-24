@@ -1185,6 +1185,20 @@ namespace webcc {
             return false;
 
         // --- 3. LINKING ---
+        // Check for wasm-ld before attempting to link
+        if (system("command -v wasm-ld > /dev/null 2>&1") != 0)
+        {
+            std::cerr << "[WebCC] Error: wasm-ld not found. Required for WebAssembly linking." << std::endl;
+#ifdef __APPLE__
+            std::cerr << "  Install: brew install llvm" << std::endl;
+            std::cerr << "  Then add to PATH: export PATH=\"$(brew --prefix llvm)/bin:$PATH\"" << std::endl;
+#else
+            std::cerr << "  Ubuntu/Debian: sudo apt install lld" << std::endl;
+            std::cerr << "  Fedora: sudo dnf install lld" << std::endl;
+#endif
+            return false;
+        }
+
         std::cout << "[WebCC] Linking..." << std::endl;
         std::string wasm_path = out_dir + "/app.wasm";
         std::string link_full_cmd = base_cmd + link_only_flags + "-o " + wasm_path + " " + object_files_str;
