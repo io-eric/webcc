@@ -1195,6 +1195,7 @@ namespace webcc {
 #else
             std::cerr << "  Ubuntu/Debian: sudo apt install lld" << std::endl;
             std::cerr << "  Fedora: sudo dnf install lld" << std::endl;
+            std::cerr << "  Arch Linux: sudo pacman -S lld" << std::endl;
 #endif
             return false;
         }
