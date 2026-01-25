@@ -133,8 +133,6 @@ system|command|GET_PATHNAME|get_pathname|RET:string|{ const ret = window.locatio
 system|command|PUSH_STATE|push_state|string:path|{ history.pushState(null, '', path); }
 system|event|POPSTATE|string:path
 system|command|INIT_POPSTATE|init_popstate||{ window.addEventListener('popstate', () => push_event_system_POPSTATE(window.location.pathname || '/')); }
-system|event|AFTER_PAINT|float64:duration
-system|command|MEASURE_AFTER_PAINT|measure_after_paint|float64:start_time|{ requestAnimationFrame(() => { requestAnimationFrame(() => { const duration = performance.now() - start_time; push_event_system_AFTER_PAINT(duration); }); }); }
 
 # ------------------------------------------------------------------------------
 # STORAGE (LocalStorage)
