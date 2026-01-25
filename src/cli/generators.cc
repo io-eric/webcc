@@ -368,6 +368,8 @@ namespace webcc {
                         }
                         else if (p.type == "float64")
                         {
+                            // Align to 8 bytes based on actual address (matches JS alignment)
+                            w.write("{ uintptr_t addr = (uintptr_t)(data + offset); offset = ((addr + 7) & ~7) - (uintptr_t)data; }");
                             w.write("res." + p.name + " = *(double*)(data + offset); offset += 8;");
                         }
                         else if (p.type == "uint8")
@@ -881,6 +883,7 @@ namespace webcc {
         w.write("let event_u8 = new Uint8Array(memory.buffer, event_buffer_ptr_val);");
         w.write("let event_i32 = new Int32Array(memory.buffer, event_buffer_ptr_val);");
         w.write("let event_f32 = new Float32Array(memory.buffer, event_buffer_ptr_val);");
+        w.write("let event_f64 = new Float64Array(memory.buffer, event_buffer_ptr_val);");
         w.write("const text_encoder = new TextEncoder();");
         w.write("const EVENT_BUFFER_SIZE = webcc_event_buffer_capacity();");
         w.write("");
@@ -906,6 +909,7 @@ namespace webcc {
             w.write("event_u8 = new Uint8Array(memory.buffer, event_buffer_ptr_val);");
             w.write("event_i32 = new Int32Array(memory.buffer, event_buffer_ptr_val);");
             w.write("event_f32 = new Float32Array(memory.buffer, event_buffer_ptr_val);");
+            w.write("event_f64 = new Float64Array(memory.buffer, event_buffer_ptr_val);");
             w.write("event_offset_view = new Uint32Array(memory.buffer, event_offset_ptr_val, 1);");
             w.write("}");
 
@@ -929,6 +933,10 @@ namespace webcc {
                     w.write("event_i32[pos >> 2] = " + name + "; pos += 4;");
                 else if (p.type == "float32")
                     w.write("event_f32[pos >> 2] = " + name + "; pos += 4;");
+                else if (p.type == "float64") {
+                    w.write("pos = (pos + 7) & ~7;"); // Align to 8 bytes
+                    w.write("event_f64[pos >> 3] = " + name + "; pos += 8;");
+                }
                 else if (p.type == "string")
                 {
                     w.write("const encoded_" + std::to_string(i) + " = text_encoder.encode(" + name + ");");
