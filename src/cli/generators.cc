@@ -1062,7 +1062,7 @@ namespace webcc {
                 std::cerr << "  Apple's clang does not include wasm-ld (WebAssembly linker)." << std::endl;
                 std::cerr << std::endl;
                 std::cerr << "  To fix:" << std::endl;
-                std::cerr << "    1. Install Homebrew LLVM: brew install llvm" << std::endl;
+                std::cerr << "    1. Install Homebrew LLVM: brew install llvm lld" << std::endl;
                 std::cerr << "    2. Add to PATH (add to ~/.zshrc to make permanent):" << std::endl;
                 std::cerr << "       export PATH=\"$(brew --prefix llvm)/bin:$PATH\"" << std::endl;
                 std::cerr << "    3. IMPORTANT - Clean old build files (mixing compilers causes errors):" << std::endl;
@@ -1212,7 +1212,7 @@ namespace webcc {
         {
             std::cerr << "[WebCC] Error: wasm-ld not found. Required for WebAssembly linking." << std::endl;
 #ifdef __APPLE__
-            std::cerr << "  Install: brew install llvm" << std::endl;
+            std::cerr << "  Install: brew install llvm lld" << std::endl;
             std::cerr << "  Then add to PATH: export PATH=\"$(brew --prefix llvm)/bin:$PATH\"" << std::endl;
 #else
             std::cerr << "  Ubuntu/Debian: sudo apt install lld" << std::endl;
