@@ -15,7 +15,7 @@ rule cxx_bootstrap
   description = CXX [bootstrap] $in
 
 rule link
-  command = $cxx -o $out $in
+  command = $cxx $$LDFLAGS_LIBCXX -o $out $in
   description = LINK $out
 
 rule generate_schema

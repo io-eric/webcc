@@ -24,6 +24,14 @@ check_clang_version() {
 
 check_clang_version
 
+# Set linker flags for Homebrew LLVM on macOS (if not already set by parent build)
+if [ -z "$LDFLAGS_LIBCXX" ] && [[ "$OSTYPE" == "darwin"* ]]; then
+    LLVM_PREFIX=$(brew --prefix llvm 2>/dev/null || echo "")
+    if [ -n "$LLVM_PREFIX" ] && [ -d "$LLVM_PREFIX/lib/c++" ]; then
+        export LDFLAGS_LIBCXX="-L$LLVM_PREFIX/lib/c++ -Wl,-rpath,$LLVM_PREFIX/lib/c++"
+    fi
+fi
+
 FORCE_REBUILD=false
 for arg in "$@"; do
     case $arg in
