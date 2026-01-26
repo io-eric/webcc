@@ -257,6 +257,11 @@ namespace webcc
             *this = concat(*this, other);
             return *this;
         }
+        string& operator+=(char c) {
+            char buf[2] = {c, '\0'};
+            *this = concat(*this, buf);
+            return *this;
+        }
         string& operator+=(int val) {
             formatter<32> fmt;
             fmt << val;
