@@ -736,6 +736,7 @@ namespace webcc {
 
         std::set<std::string> used_namespaces;
         std::set<std::string> used_maps;
+        std::set<std::string> used_event_listeners; // Track which event types need delegation
         std::vector<std::string> generated_js_imports;
         CodeWriter cases_w;
         cases_w.set_indent(4);
@@ -845,6 +846,16 @@ namespace webcc {
                 auto maps = get_maps_from_action(d.action);
                 for (const auto &m : maps)
                     used_maps.insert(m);
+
+                // Track event listener types for delegation
+                if (d.func_name == "add_click_listener")
+                    used_event_listeners.insert("click");
+                else if (d.func_name == "add_input_listener")
+                    used_event_listeners.insert("input");
+                else if (d.func_name == "add_change_listener")
+                    used_event_listeners.insert("change");
+                else if (d.func_name == "add_keydown_listener")
+                    used_event_listeners.insert("keydown");
             }
         }
 
@@ -963,6 +974,20 @@ namespace webcc {
                     line += " elements[0] = document.body;";
                 w.write(line);
             }
+        }
+
+        // Emit global event delegation listeners (more efficient than per-element listeners)
+        if (used_event_listeners.count("click"))
+        {
+            w.write("");
+            w.write("// Global click event delegation - walks up DOM tree to find handler");
+            w.write("document.body.addEventListener('click', (e) => {");
+            w.write("    let el = e.target;");
+            w.write("    while (el && el !== document.body) {");
+            w.write("        if (el.dataset.c) { push_event_dom_CLICK(parseInt(el.dataset.c)); return; }");
+            w.write("        el = el.parentElement;");
+            w.write("    }");
+            w.write("});");
         }
 
         w.raw(JS_FLUSH_HEAD);

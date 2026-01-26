@@ -37,13 +37,13 @@ dom|command|SET_INNER_TEXT|set_inner_text|handle(DOMElement):handle string:text|
 dom|command|ADD_CLASS|add_class|handle(DOMElement):handle string:cls|{ const el = elements[handle]; if(el) el.classList.add(cls); }
 dom|command|REMOVE_CLASS|remove_class|handle(DOMElement):handle string:cls|{ const el = elements[handle]; if(el) el.classList.remove(cls); }
 dom|event|CLICK|handle(DOMElement):handle
-dom|command|ADD_CLICK_LISTENER|add_click_listener|handle(DOMElement):handle|{ const el = elements[handle]; if(el) el.addEventListener('click', () => push_event_dom_CLICK(handle)); }
+dom|command|ADD_CLICK_LISTENER|add_click_listener|handle(DOMElement):handle|{ const el = elements[handle]; if(el) el.dataset.c = handle; }
 dom|event|INPUT|handle(DOMElement):handle string:value
-dom|command|ADD_INPUT_LISTENER|add_input_listener|handle(DOMElement):handle|{ const el = elements[handle]; if(el) el.addEventListener('input', (e) => push_event_dom_INPUT(handle, e.target.value || '')); }
+dom|command|ADD_INPUT_LISTENER|add_input_listener|handle(DOMElement):handle|{ const el = elements[handle]; if(el) { el.dataset.i = handle; el.addEventListener('input', (e) => push_event_dom_INPUT(handle, e.target.value || '')); } }
 dom|event|CHANGE|handle(DOMElement):handle string:value
-dom|command|ADD_CHANGE_LISTENER|add_change_listener|handle(DOMElement):handle|{ const el = elements[handle]; if(el) el.addEventListener('change', (e) => push_event_dom_CHANGE(handle, e.target.type === 'checkbox' ? (e.target.checked ? 'true' : 'false') : (e.target.value || ''))); }
+dom|command|ADD_CHANGE_LISTENER|add_change_listener|handle(DOMElement):handle|{ const el = elements[handle]; if(el) { el.dataset.g = handle; el.addEventListener('change', (e) => push_event_dom_CHANGE(handle, e.target.type === 'checkbox' ? (e.target.checked ? 'true' : 'false') : (e.target.value || ''))); } }
 dom|event|KEYDOWN|handle(DOMElement):handle int32:keycode
-dom|command|ADD_KEYDOWN_LISTENER|add_keydown_listener|handle(DOMElement):handle|{ const el = elements[handle]; if(el) el.addEventListener('keydown', (e) => push_event_dom_KEYDOWN(handle, e.keyCode)); }
+dom|command|ADD_KEYDOWN_LISTENER|add_keydown_listener|handle(DOMElement):handle|{ const el = elements[handle]; if(el) { el.dataset.k = handle; el.addEventListener('keydown', (e) => push_event_dom_KEYDOWN(handle, e.keyCode)); } }
 dom|command|REQUEST_FULLSCREEN|request_fullscreen|handle(DOMElement):handle|{ const el = elements[handle] || document.body; el.requestFullscreen().catch(console.error); }
 dom|command|REQUEST_POINTER_LOCK|request_pointer_lock|handle(DOMElement):handle|{ const el = elements[handle] || document.body; el.requestPointerLock(); }
 dom|command|SCROLL_TO_TOP|scroll_to_top||{ window.scrollTo({ top: 0, left: 0, behavior: 'instant' }); }
