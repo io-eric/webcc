@@ -29,6 +29,19 @@ if [ -z "$LDFLAGS_LIBCXX" ] && [[ "$OSTYPE" == "darwin"* ]]; then
     LLVM_PREFIX=$(brew --prefix llvm 2>/dev/null || echo "")
     if [ -n "$LLVM_PREFIX" ] && [ -d "$LLVM_PREFIX/lib/c++" ]; then
         export LDFLAGS_LIBCXX="-L$LLVM_PREFIX/lib/c++ -Wl,-rpath,$LLVM_PREFIX/lib/c++"
+    else
+        echo "Error: Homebrew LLVM not found or incomplete installation."
+        echo "On macOS, this project requires Homebrew LLVM for proper linking."
+        echo ""
+        echo "To fix this:"
+        echo "  brew install llvm"
+        echo ""
+        echo "Then add Homebrew LLVM to your PATH by adding this to ~/.zshrc:"
+        echo "  export PATH=\"\$(brew --prefix llvm)/bin:\$PATH\""
+        echo ""
+        echo "Or run this command to add it automatically:"
+        echo "  echo 'export PATH=\"\$(brew --prefix llvm)/bin:\$PATH\"' >> ~/.zshrc"
+        exit 1
     fi
 fi
 
