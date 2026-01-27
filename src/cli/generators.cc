@@ -1148,8 +1148,8 @@ namespace webcc {
                                "-msign-ext ";       // Optimize sign extensions
 
         // include_flags: Tells the compiler where to find headers.
-        std::string include_flags = "-isystem " + exe_dir + "/include/webcc/compat " +
-                                    "-I " + exe_dir + "/include ";
+        std::string include_flags = "-isystem \"" + exe_dir + "/include/webcc/compat\" " +
+                                    "-I \"" + exe_dir + "/include\" ";
 
         // compile_only_flags: Settings applied only when generating .o files.
         std::string compile_only_flags = "-fvisibility=hidden "
@@ -1221,7 +1221,7 @@ namespace webcc {
             if (need_compile)
             {
                 std::cout << "  [CC] " << src << std::endl;
-                std::string cc_full_cmd = base_cmd + compile_only_flags + include_flags + "-o " + obj + " " + src;
+                std::string cc_full_cmd = base_cmd + compile_only_flags + include_flags + "-o \"" + obj + "\" \"" + src + "\"";
 
                 if (system(cc_full_cmd.c_str()) != 0)
                 {
@@ -1233,7 +1233,7 @@ namespace webcc {
             {
                 std::cout << "  [Cache] " << src << std::endl;
             }
-            object_files_str += obj + " ";
+            object_files_str += "\"" + obj + "\" ";
         }
 
         if (compilation_failed)
@@ -1257,7 +1257,7 @@ namespace webcc {
 
         std::cout << "[WebCC] Linking..." << std::endl;
         std::string wasm_path = out_dir + "/app.wasm";
-        std::string link_full_cmd = base_cmd + link_only_flags + "-o " + wasm_path + " " + object_files_str;
+        std::string link_full_cmd = base_cmd + link_only_flags + "-o \"" + wasm_path + "\" " + object_files_str;
 
         if (system(link_full_cmd.c_str()) != 0)
         {
