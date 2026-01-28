@@ -55,6 +55,13 @@ webcc::flush();
 
 Deferred handles start at `0x100000` and increment upward, while JS-assigned handles use lower values, ensuring no collisions. This pattern is essential for high-performance DOM manipulation.
 
+For APIs that need a contiguous range (e.g. `*_fill` APIs), use:
+
+```cpp
+int32_t start = webcc::reserve_deferred_handles(count);
+// range is [start, start+count)
+```
+
 ## C++ Standard Library Compatibility
 WebCC provides a lightweight compatibility layer for common C++ Standard Library headers (located in `include/webcc/compat/`). 
 
