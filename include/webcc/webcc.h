@@ -69,8 +69,14 @@ namespace webcc
     // JS-assigned handles. 
     // =========================================================================
     
-    inline int32_t next_deferred_handle() {
+    inline int32_t reserve_deferred_handles(int32_t count) {
         static int32_t counter = 0x100000;  // Start high to avoid JS collision
-        return counter++;
+        int32_t start = counter;
+        counter += count;
+        return start;
+    }
+
+    inline int32_t next_deferred_handle() {
+        return reserve_deferred_handles(1);
     }
 }
