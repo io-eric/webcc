@@ -204,6 +204,60 @@ namespace webcc
             return trim_start().trim_end();
         }
 
+        // Parse string as integer
+        int to_int() const {
+            if (m_len == 0 || !m_data) return 0;
+            int result = 0;
+            uint32_t i = 0;
+            bool negative = false;
+            // Skip leading whitespace
+            while (i < m_len && (m_data[i] == ' ' || m_data[i] == '\t')) i++;
+            // Handle sign
+            if (i < m_len && m_data[i] == '-') { negative = true; i++; }
+            else if (i < m_len && m_data[i] == '+') { i++; }
+            // Parse digits
+            while (i < m_len && m_data[i] >= '0' && m_data[i] <= '9') {
+                result = result * 10 + (m_data[i] - '0');
+                i++;
+            }
+            return negative ? -result : result;
+        }
+
+        // Parse string as float (stops at second decimal point or non-digit)
+        double to_float() const {
+            if (m_len == 0 || !m_data) return 0.0;
+            double result = 0.0;
+            double fraction = 0.0;
+            double divisor = 1.0;
+            uint32_t i = 0;
+            bool negative = false;
+            bool in_fraction = false;
+            // Skip leading whitespace
+            while (i < m_len && (m_data[i] == ' ' || m_data[i] == '\t')) i++;
+            // Handle sign
+            if (i < m_len && m_data[i] == '-') { negative = true; i++; }
+            else if (i < m_len && m_data[i] == '+') { i++; }
+            // Parse digits (stop at second decimal point)
+            while (i < m_len) {
+                if (m_data[i] == '.') {
+                    if (in_fraction) break;  // Second decimal point - stop parsing
+                    in_fraction = true;
+                    i++;
+                    continue;
+                }
+                if (m_data[i] < '0' || m_data[i] > '9') break;
+                if (in_fraction) {
+                    divisor *= 10.0;
+                    fraction += (m_data[i] - '0') / divisor;
+                } else {
+                    result = result * 10.0 + (m_data[i] - '0');
+                }
+                i++;
+            }
+            result += fraction;
+            return negative ? -result : result;
+        }
+
         iterator begin() { return m_data; }
         iterator end() { return m_data + m_len; }
         const_iterator begin() const { return m_data; }

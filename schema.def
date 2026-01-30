@@ -130,6 +130,8 @@ system|command|OPEN_URL|open_url|string:url|{ window.open(url, '_blank'); }
 system|command|GET_TIME|get_time|RET:float64|{ return performance.now(); }
 system|command|GET_DATE_NOW|get_date_now|RET:float64|{ return Date.now(); }
 system|command|GET_PATHNAME|get_pathname|RET:string|{ const ret = window.location.pathname || "/"; }
+system|command|GET_SEARCH|get_search|RET:string|{ const ret = window.location.search || ""; }
+system|command|GET_QUERY_PARAM|get_query_param|string:name RET:string|{ const ret = new URLSearchParams(window.location.search).get(name) || ""; }
 system|command|PUSH_STATE|push_state|string:path|{ history.pushState(null, '', path); }
 system|event|POPSTATE|string:path
 system|command|INIT_POPSTATE|init_popstate||{ window.addEventListener('popstate', () => push_event_system_POPSTATE(window.location.pathname || '/')); }
