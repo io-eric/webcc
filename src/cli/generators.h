@@ -13,10 +13,8 @@ namespace webcc
         std::set<std::string> required_exports;
     };
 
-    // Generates the `webcc_schema.h` header file.
-    void emit_schema_header(const SchemaDefs &defs);
-
     // Generates the C++ header files for each namespace (e.g., webcc/dom.h).
+    // Also saves a binary schema cache for fast runtime loading.
     void emit_headers(const SchemaDefs &defs);
 
     // Generates the JavaScript 'case' block for a single command's opcode.

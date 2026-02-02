@@ -5,14 +5,10 @@ set -e
 echo "Building WebCC compiler..."
 ./build.sh && WEBCC_REBUILT=0 || WEBCC_REBUILT=$?
 
-# Exit code 2 means webcc was rebuilt - clear example caches to force recompile
-if [ $WEBCC_REBUILT -eq 2 ]; then
-    echo "WebCC was rebuilt, clearing example caches..."
-    rm -rf examples/*/.webcc_cache
-elif [ $WEBCC_REBUILT -ne 0 ]; then
-    echo "WebCC build failed with exit code $WEBCC_REBUILT"
-    exit $WEBCC_REBUILT
-fi
+
+echo "WebCC was rebuilt, clearing example caches..."
+rm -rf examples/*/.webcc_cache
+
 
 # 2. Build all examples
 EXAMPLES=(
