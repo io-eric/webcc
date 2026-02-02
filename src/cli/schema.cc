@@ -5,6 +5,8 @@
 #include <cstdlib>
 #include <fstream>
 #include <cstring>
+#include <map>
+#include <set>
 
 namespace webcc
 {
@@ -238,6 +240,13 @@ namespace webcc
         uint8_t current_cmd_opcode = 1;
         uint8_t current_event_opcode = 1;
         int line_num = 0;
+        
+        // Track seen names per namespace for duplicate detection
+        // Maps namespace -> set of command/event names
+        std::map<std::string, std::set<std::string>> seen_commands;
+        std::map<std::string, std::set<std::string>> seen_events;
+        // Track func_names per namespace (they become C++ functions in that namespace)
+        std::map<std::string, std::set<std::string>> seen_func_names;
 
         while (std::getline(ss, line))
         {
@@ -294,9 +303,21 @@ namespace webcc
                 // NAMESPACE|event|NAME|ARGS
                 if (parts.size() <= name_idx + 1)
                     continue;
+                
+                std::string event_name = parts[name_idx];
+                
+                // Check for duplicate event name in this namespace
+                if (seen_events[ns].count(event_name))
+                {
+                    std::cerr << "[WebCC] Error: Duplicate event name '" << event_name 
+                              << "' in namespace '" << ns << "' at line " << line_num << std::endl;
+                    exit(1);
+                }
+                seen_events[ns].insert(event_name);
+                
                 SchemaEvent e;
                 e.ns = ns;
-                e.name = parts[name_idx];
+                e.name = event_name;
                 e.opcode = current_event_opcode++;
 
                 std::istringstream tss(parts[name_idx + 1]);
@@ -336,11 +357,34 @@ namespace webcc
                 // NAMESPACE|[command]|NAME|FUNC_NAME|TYPES|ACTION
                 if (parts.size() <= name_idx + 3)
                     continue;
+                
+                std::string cmd_name = parts[name_idx];
+                
+                // Check for duplicate command name in this namespace
+                if (seen_commands[ns].count(cmd_name))
+                {
+                    std::cerr << "[WebCC] Error: Duplicate command name '" << cmd_name 
+                              << "' in namespace '" << ns << "' at line " << line_num << std::endl;
+                    exit(1);
+                }
+                seen_commands[ns].insert(cmd_name);
+                
+                std::string func_name = parts[name_idx + 1];
+                
+                // Check for duplicate func_name within the same namespace
+                if (seen_func_names[ns].count(func_name))
+                {
+                    std::cerr << "[WebCC] Error: Duplicate func_name '" << func_name 
+                              << "' in namespace '" << ns << "' at line " << line_num << std::endl;
+                    exit(1);
+                }
+                seen_func_names[ns].insert(func_name);
+                
                 SchemaCommand c;
                 c.ns = ns;
-                c.name = parts[name_idx];
+                c.name = cmd_name;
                 c.opcode = current_cmd_opcode++;
-                c.func_name = parts[name_idx + 1];
+                c.func_name = func_name;
                 // types
                 std::istringstream tss(parts[name_idx + 2]);
                 std::string tkn;
