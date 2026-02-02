@@ -10,13 +10,6 @@
 #include <vector>
 #include <filesystem>
 
-#if !defined(WEBCC_BOOTSTRAP) && __has_include("webcc_schema.h")
-#include "webcc_schema.h"
-#define WEBCC_HAS_SCHEMA 1
-#else
-#define WEBCC_HAS_SCHEMA 0
-#endif
-
 int main(int argc, char **argv)
 {
     std::string defs_path = "schema.def";
@@ -105,11 +98,10 @@ int main(int argc, char **argv)
         cache_dir = source_dir + "/.webcc_cache";
     }
 
-#if WEBCC_HAS_SCHEMA
-    defs = webcc::load_defs_from_schema();
-#else
-    defs = webcc::load_defs(defs_path);
-#endif
+    // Load schema from binary cache (next to executable) or fall back to text parsing
+    std::string exe_dir = webcc::get_executable_dir();
+    std::string schema_cache_path = exe_dir + "/schema.cache";
+    defs = webcc::load_defs_cached(schema_cache_path, defs_path);
 
     std::string user_code;
     std::string source_files;

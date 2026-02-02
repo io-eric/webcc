@@ -56,29 +56,33 @@ done
 
 # Force clean if requested
 if [ "$FORCE_REBUILD" = true ]; then
-    rm -rf build src/cli/webcc_schema.h webcc
+    rm -rf build webcc schema.cache
 fi
 
 # Create build directories
-mkdir -p build/bootstrap build/final
+mkdir -p build/obj
 
-# Check if there's work to do BEFORE deleting anything
-if ninja -n 2>&1 | grep -q "no work to do"; then
+# Run ninja (handles C++ compilation)
+NINJA_STATUS=$(ninja -n 2>&1)
+if echo "$NINJA_STATUS" | grep -q "no work to do"; then
+    NEEDS_COMPILE=false
+else
+    NEEDS_COMPILE=true
+    echo "[WebCC] Building..."
+    ninja
+fi
+
+# Generate schema cache if it doesn't exist or schema.def changed
+if [ ! -f "schema.cache" ] || [ "schema.def" -nt "schema.cache" ]; then
+    echo "[WebCC] Generating schema cache..."
+    ./webcc --headers
+    NEEDS_COMPILE=true  # Mark as rebuilt since headers changed
+fi
+
+if [ "$NEEDS_COMPILE" = false ]; then
     echo "[WebCC] Up to date"
     exit 0  # 0 = no rebuild needed
 fi
-
-# CRITICAL: Remove the schema header before building bootstrap.
-# The bootstrap compiler must NOT find webcc_schema.h (it uses #include "webcc_schema.h"
-# which resolves relative to the source file, bypassing include path settings).
-# Ninja will regenerate it via the generate_schema rule.
-rm -f src/cli/webcc_schema.h
-# Also remove bootstrap objects to force recompilation without schema
-rm -f build/bootstrap/*.o
-
-# Actually run the build
-echo "[WebCC] Building..."
-ninja
 
 echo "[WebCC] Done."
 

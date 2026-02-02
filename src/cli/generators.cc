@@ -139,74 +139,6 @@ namespace webcc
         std::cout << "[WebCC] Emitted include/webcc/core/handles.h with " << handle_types.size() << " typed handles" << std::endl;
     }
 
-    void emit_schema_header(const SchemaDefs &defs)
-    {
-        CodeWriter w;
-        w.write(R"(// GENERATED FILE - DO NOT EDIT
-#pragma once
-#include "schema.h"
-#include <cstdint>
-
-namespace webcc {
-)");
-
-        // Output handle inheritance map
-        w.write("static const std::pair<const char*, const char*> HANDLE_INHERITANCE[] = {");
-        for (const auto &kv : defs.handle_inheritance)
-        {
-            w.write("{ \"" + kv.first + "\", \"" + kv.second + "\" },");
-        }
-        w.write("{ nullptr, nullptr }");
-        w.write("};");
-        w.write("");
-
-        w.write("static const SchemaCommand SCHEMA_COMMANDS[] = {");
-        for (const auto &d : defs.commands)
-        {
-            std::stringstream ss;
-            ss << "{ \"" << d.ns << "\", \"" << d.name << "\", " << (int)d.opcode << ", ";
-            ss << "\"" << d.func_name << "\", {";
-            for (size_t i = 0; i < d.params.size(); ++i)
-            {
-                if (i > 0)
-                    ss << ", ";
-                std::string name = d.params[i].name.empty() ? ("arg" + std::to_string(i)) : d.params[i].name;
-                ss << "{ \"" << d.params[i].type << "\", \"" << name << "\", \"" << d.params[i].handle_type << "\" }";
-            }
-            ss << "}, ";
-            ss << "R\"JS_ACTION(" << d.action << ")JS_ACTION\", ";
-            ss << "\"" << d.return_type << "\", \"" << d.return_handle_type << "\" },";
-            w.write(ss.str());
-        }
-        w.write("{ \"\", \"\", 0, \"\", {}, \"\", \"\", \"\" }");
-        w.write("};");
-        w.write("");
-
-        w.write("static const SchemaEvent SCHEMA_EVENTS[] = {");
-        for (const auto &d : defs.events)
-        {
-            std::stringstream ss;
-            ss << "{ \"" << d.ns << "\", \"" << d.name << "\", " << (int)d.opcode << ", {";
-            for (size_t i = 0; i < d.params.size(); ++i)
-            {
-                if (i > 0)
-                    ss << ", ";
-                std::string name = d.params[i].name.empty() ? ("arg" + std::to_string(i)) : d.params[i].name;
-                ss << "{ \"" << d.params[i].type << "\", \"" << name << "\", \"" << d.params[i].handle_type << "\" }";
-            }
-            ss << "} },";
-            w.write(ss.str());
-        }
-        w.write("{ \"\", \"\", 0, {} }");
-        w.write("};");
-        w.write("");
-
-        w.write("} // namespace webcc");
-
-        write_file("src/cli/webcc_schema.h", w.str());
-        std::cout << "[WebCC] Emitted src/cli/webcc_schema.h" << std::endl;
-    }
-
     void emit_headers(const SchemaDefs &defs)
     {
         std::cout << "[WebCC] Emitting headers..." << std::endl;
@@ -609,7 +541,9 @@ namespace webcc {
             write_file("include/webcc/" + ns + ".h", w.str());
             std::cout << "[WebCC] Emitted include/webcc/" << ns << ".h" << std::endl;
         }
-        emit_schema_header(defs);
+        
+        // Save binary cache for fast runtime loading (no need to recompile webcc)
+        save_defs_binary(defs, "schema.cache");
     }
 
     void gen_js_case(const SchemaCommand &c, CodeWriter &w)

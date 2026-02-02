@@ -51,4 +51,11 @@ namespace webcc
     // Loads definitions from the compiled-in schema header.
     SchemaDefs load_defs_from_schema();
 
+    // Binary cache functions for fast loading without recompilation
+    bool save_defs_binary(const SchemaDefs &defs, const std::string &path);
+    bool load_defs_binary(SchemaDefs &defs, const std::string &path);
+    
+    // Try to load from binary cache, falling back to text parsing
+    SchemaDefs load_defs_cached(const std::string &cache_path, const std::string &def_path = "");
+
 } // namespace webcc
