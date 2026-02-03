@@ -7,8 +7,8 @@
 # Build cache
 .webcc_cache/
 
-# Binary schema cache (generated from schema.def)
-schema.cache
+# Binary schema (generated from schema.def)
+schema.wcc.bin
 
 # Generated Web Artifacts (produced by the tool)
 app.wasm

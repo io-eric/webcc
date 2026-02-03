@@ -100,7 +100,7 @@ int main(int argc, char **argv)
 
     // Load schema from binary cache (next to executable) or fall back to text parsing
     std::string exe_dir = webcc::get_executable_dir();
-    std::string schema_cache_path = exe_dir + "/schema.cache";
+    std::string schema_cache_path = exe_dir + "/schema.wcc.bin";
     defs = webcc::load_defs_cached(schema_cache_path, defs_path);
 
     std::string user_code;

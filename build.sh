@@ -56,7 +56,7 @@ done
 
 # Force clean if requested
 if [ "$FORCE_REBUILD" = true ]; then
-    rm -rf build webcc schema.cache
+    rm -rf build webcc schema.wcc.bin
 fi
 
 # Create build directories
@@ -73,7 +73,7 @@ else
 fi
 
 # Generate schema cache if it doesn't exist or schema.def changed
-if [ ! -f "schema.cache" ] || [ "schema.def" -nt "schema.cache" ]; then
+if [ ! -f "schema.wcc.bin" ] || [ "schema.def" -nt "schema.wcc.bin" ]; then
     echo "[WebCC] Generating schema cache..."
     ./webcc --headers
     NEEDS_COMPILE=true  # Mark as rebuilt since headers changed
