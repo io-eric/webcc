@@ -543,7 +543,7 @@ namespace webcc
         }
         
         // Save binary cache for fast runtime loading (no need to recompile webcc)
-        save_defs_binary(defs, "schema.cache");
+        save_defs_binary(defs, "schema.wcc.bin");
     }
 
     void gen_js_case(const SchemaCommand &c, CodeWriter &w)
