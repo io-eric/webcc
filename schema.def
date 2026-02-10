@@ -39,11 +39,11 @@ dom|command|REMOVE_CLASS|remove_class|handle(DOMElement):handle string:cls|{ con
 dom|event|CLICK|handle(DOMElement):handle
 dom|command|ADD_CLICK_LISTENER|add_click_listener|handle(DOMElement):handle|{ const el = elements[handle]; if(el) el.dataset.c = handle; }
 dom|event|INPUT|handle(DOMElement):handle string:value
-dom|command|ADD_INPUT_LISTENER|add_input_listener|handle(DOMElement):handle|{ const el = elements[handle]; if(el) { el.dataset.i = handle; el.addEventListener('input', (e) => push_event_dom_INPUT(handle, e.target.value || '')); } }
+dom|command|ADD_INPUT_LISTENER|add_input_listener|handle(DOMElement):handle|{ const el = elements[handle]; if(el) el.dataset.i = handle; }
 dom|event|CHANGE|handle(DOMElement):handle string:value
-dom|command|ADD_CHANGE_LISTENER|add_change_listener|handle(DOMElement):handle|{ const el = elements[handle]; if(el) { el.dataset.g = handle; el.addEventListener('change', (e) => push_event_dom_CHANGE(handle, e.target.type === 'checkbox' ? (e.target.checked ? 'true' : 'false') : (e.target.value || ''))); } }
+dom|command|ADD_CHANGE_LISTENER|add_change_listener|handle(DOMElement):handle|{ const el = elements[handle]; if(el) el.dataset.g = handle; }
 dom|event|KEYDOWN|handle(DOMElement):handle int32:keycode
-dom|command|ADD_KEYDOWN_LISTENER|add_keydown_listener|handle(DOMElement):handle|{ const el = elements[handle]; if(el) { el.dataset.k = handle; el.addEventListener('keydown', (e) => push_event_dom_KEYDOWN(handle, e.keyCode)); } }
+dom|command|ADD_KEYDOWN_LISTENER|add_keydown_listener|handle(DOMElement):handle|{ const el = elements[handle]; if(el) el.dataset.k = handle; }
 dom|command|REQUEST_FULLSCREEN|request_fullscreen|handle(DOMElement):handle|{ const el = elements[handle] || document.body; el.requestFullscreen().catch(console.error); }
 dom|command|REQUEST_POINTER_LOCK|request_pointer_lock|handle(DOMElement):handle|{ const el = elements[handle] || document.body; el.requestPointerLock(); }
 dom|command|SCROLL_TO_TOP|scroll_to_top||{ window.scrollTo({ top: 0, left: 0, behavior: 'instant' }); }
@@ -113,8 +113,8 @@ input|event|KEY_UP|int32:key_code
 input|event|MOUSE_DOWN|int32:button int32:x int32:y
 input|event|MOUSE_UP|int32:button int32:x int32:y
 input|event|MOUSE_MOVE|int32:x int32:y
-input|command|INIT_KEYBOARD|init_keyboard||{ window.addEventListener('keydown', e => push_event_input_KEY_DOWN(e.keyCode)); window.addEventListener('keyup', e => push_event_input_KEY_UP(e.keyCode)); }
-input|command|INIT_MOUSE|init_mouse|handle(DOMElement):handle|{ const el = elements[handle] || document; el.addEventListener('mousedown', e => push_event_input_MOUSE_DOWN(e.button, e.offsetX, e.offsetY)); el.addEventListener('mouseup', e => push_event_input_MOUSE_UP(e.button, e.offsetX, e.offsetY)); el.addEventListener('mousemove', e => push_event_input_MOUSE_MOVE(e.offsetX, e.offsetY)); }
+input|command|INIT_KEYBOARD|init_keyboard||{ window.addEventListener('keydown', e => { push_event_input_KEY_DOWN(e.keyCode); _triggerDiscreteUpdate(); }); window.addEventListener('keyup', e => { push_event_input_KEY_UP(e.keyCode); _triggerDiscreteUpdate(); }); }
+input|command|INIT_MOUSE|init_mouse|handle(DOMElement):handle|{ const el = elements[handle] || document; el.addEventListener('mousedown', e => { push_event_input_MOUSE_DOWN(e.button, e.offsetX, e.offsetY); _triggerDiscreteUpdate(); }); el.addEventListener('mouseup', e => { push_event_input_MOUSE_UP(e.button, e.offsetX, e.offsetY); _triggerDiscreteUpdate(); }); el.addEventListener('mousemove', e => push_event_input_MOUSE_MOVE(e.offsetX, e.offsetY)); }
 input|command|EXIT_POINTER_LOCK|exit_pointer_lock||{ document.exitPointerLock(); }
 
 # ------------------------------------------------------------------------------
@@ -123,7 +123,7 @@ input|command|EXIT_POINTER_LOCK|exit_pointer_lock||{ document.exitPointerLock();
 system|command|LOG|log|string:msg|{ console.log(msg); }
 system|command|WARN|warn|string:msg|{ console.warn(msg); }
 system|command|ERROR|error|string:msg|{ console.error(msg); }
-system|command|SET_MAIN_LOOP|set_main_loop|func_ptr:func|{ const fn = table.get(func); if(!fn){ console.error('set_main_loop: function not found in table', func); continue; } const loop = (t) => { fn(t); requestAnimationFrame(loop); }; requestAnimationFrame(loop); }
+system|command|SET_MAIN_LOOP|set_main_loop|func_ptr:func|{ const fn = table.get(func); if(!fn){ console.error('set_main_loop: function not found in table', func); continue; } _updateFn = fn; const loop = (t) => { fn(t); requestAnimationFrame(loop); }; requestAnimationFrame(loop); }
 system|command|SET_TITLE|set_title|string:title|{ document.title = title; }
 system|command|RELOAD|reload||{ location.reload(); }
 system|command|OPEN_URL|open_url|string:url|{ window.open(url, '_blank'); }

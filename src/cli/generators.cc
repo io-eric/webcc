@@ -835,11 +835,25 @@ namespace webcc
         w.write("const text_encoder = new TextEncoder();");
         w.write("const EVENT_BUFFER_SIZE = webcc_event_buffer_capacity();");
         w.write("");
+        w.write("// Global update function reference for immediate discrete event processing");
+        w.write("let _updateFn = null;");
+        w.write("let _updatePending = false;");
+        w.write("function _triggerDiscreteUpdate() {");
+        w.write("    if (_updateFn && !_updatePending) {");
+        w.write("        _updatePending = true;");
+        w.write("        queueMicrotask(() => { _updatePending = false; _updateFn(performance.now()); });");
+        w.write("    }");
+        w.write("}");
+        w.write("");
 
-        // Generate push_event helpers in JS for each event type.
+        // Generate push_event helpers in JS only for event types that are actually used.
         for (const auto &d : defs.events)
         {
-            if (used_namespaces.find(d.ns) == used_namespaces.end())
+            // Convert event name to lowercase for matching against used_event_listeners
+            std::string event_lower = d.name;
+            for (auto &c : event_lower) c = std::tolower(c);
+            
+            if (used_event_listeners.find(event_lower) == used_event_listeners.end())
                 continue;
 
             std::stringstream sig;
@@ -921,7 +935,49 @@ namespace webcc
             w.write("document.body.addEventListener('click', (e) => {");
             w.write("    let el = e.target;");
             w.write("    while (el && el !== document.body) {");
-            w.write("        if (el.dataset.c) { push_event_dom_CLICK(parseInt(el.dataset.c)); return; }");
+            w.write("        if (el.dataset.c) { push_event_dom_CLICK(parseInt(el.dataset.c)); _triggerDiscreteUpdate(); return; }");
+            w.write("        el = el.parentElement;");
+            w.write("    }");
+            w.write("});");
+        }
+
+        if (used_event_listeners.count("input"))
+        {
+            w.write("");
+            w.write("// Global input event delegation - walks up DOM tree to find handler");
+            w.write("document.body.addEventListener('input', (e) => {");
+            w.write("    let el = e.target;");
+            w.write("    while (el && el !== document.body) {");
+            w.write("        if (el.dataset.i) { push_event_dom_INPUT(parseInt(el.dataset.i), e.target.value || ''); _triggerDiscreteUpdate(); return; }");
+            w.write("        el = el.parentElement;");
+            w.write("    }");
+            w.write("});");
+        }
+
+        if (used_event_listeners.count("change"))
+        {
+            w.write("");
+            w.write("// Global change event delegation - walks up DOM tree to find handler");
+            w.write("document.body.addEventListener('change', (e) => {");
+            w.write("    let el = e.target;");
+            w.write("    while (el && el !== document.body) {");
+            w.write("        if (el.dataset.g) {");
+            w.write("            const val = e.target.type === 'checkbox' ? (e.target.checked ? 'true' : 'false') : (e.target.value || '');");
+            w.write("            push_event_dom_CHANGE(parseInt(el.dataset.g), val); _triggerDiscreteUpdate(); return;");
+            w.write("        }");
+            w.write("        el = el.parentElement;");
+            w.write("    }");
+            w.write("});");
+        }
+
+        if (used_event_listeners.count("keydown"))
+        {
+            w.write("");
+            w.write("// Global keydown event delegation - walks up DOM tree to find handler");
+            w.write("document.body.addEventListener('keydown', (e) => {");
+            w.write("    let el = e.target;");
+            w.write("    while (el && el !== document.body) {");
+            w.write("        if (el.dataset.k) { push_event_dom_KEYDOWN(parseInt(el.dataset.k), e.keyCode); _triggerDiscreteUpdate(); return; }");
             w.write("        el = el.parentElement;");
             w.write("    }");
             w.write("});");
