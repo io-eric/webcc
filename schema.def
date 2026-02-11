@@ -25,6 +25,9 @@ dom|command|CREATE_ELEMENT_DEFERRED|create_element_deferred|int32:handle string:
 dom|command|CREATE_ELEMENT_DEFERRED_SCOPED|create_element_deferred_scoped|int32:handle string:tag string:scope|{ const el = document.createElement(tag); el.setAttribute('coi-scope', scope); elements[handle] = el; }
 dom|command|CREATE_COMMENT|create_comment|string:text RET:handle(DOMElement)|{ const handle = (window.webcc_next_id = (window.webcc_next_id || 0) + 1); const el = document.createComment(text); elements[handle] = el; return handle; }
 dom|command|CREATE_COMMENT_DEFERRED|create_comment_deferred|int32:handle string:text|{ const el = document.createComment(text); elements[handle] = el; }
+dom|command|CREATE_TEXT_NODE|create_text_node|string:text RET:handle(DOMElement)|{ const handle = (window.webcc_next_id = (window.webcc_next_id || 0) + 1); const el = document.createTextNode(text); elements[handle] = el; return handle; }
+dom|command|CREATE_TEXT_NODE_DEFERRED|create_text_node_deferred|int32:handle string:text|{ const el = document.createTextNode(text); elements[handle] = el; }
+dom|command|SET_NODE_VALUE|set_node_value|handle(DOMElement):handle string:text|{ const el = elements[handle]; if(el) el.nodeValue = text; }
 dom|command|SET_ATTRIBUTE|set_attribute|handle(DOMElement):handle string:name string:value|{ const el = elements[handle]; if(!el){ console.warn('set_attribute: unknown element handle', handle); continue; } el.setAttribute(name, value); }
 dom|command|SET_PROPERTY|set_property|handle(DOMElement):handle string:name string:value|{ const el = elements[handle]; if(!el){ console.warn('set_property: unknown element handle', handle); continue; } el[name] = value; }
 dom|command|GET_ATTRIBUTE|get_attribute|handle(DOMElement):handle string:name RET:string|{ const el = elements[handle]; if(!el){ console.warn('get_attribute: unknown element handle', handle); return 0; } const ret = el.getAttribute(name) || ""; }
