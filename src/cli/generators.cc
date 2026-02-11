@@ -793,6 +793,15 @@ namespace webcc
                     used_event_listeners.insert("change");
                 else if (d.func_name == "add_keydown_listener")
                     used_event_listeners.insert("keydown");
+                else if (d.func_name == "init_mouse") {
+                    used_event_listeners.insert("mouse_down");
+                    used_event_listeners.insert("mouse_up");
+                    used_event_listeners.insert("mouse_move");
+                }
+                else if (d.func_name == "init_keyboard") {
+                    used_event_listeners.insert("key_down");
+                    used_event_listeners.insert("key_up");
+                }
             }
         }
 
