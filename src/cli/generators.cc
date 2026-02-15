@@ -6,6 +6,7 @@
 #include <vector>
 #include <cctype>
 #include <set>
+#include <regex>
 #include <sys/stat.h>
 
 namespace webcc
@@ -659,6 +660,23 @@ namespace webcc
         return maps;
     }
 
+    std::set<std::string> get_pushed_events_from_action(const std::string &action)
+    {
+        std::set<std::string> events;
+        static const std::regex push_event_regex(R"(push_event_([a-zA-Z0-9]+)_([A-Z0-9_]+)\s*\()");
+
+        auto begin = std::sregex_iterator(action.begin(), action.end(), push_event_regex);
+        auto end = std::sregex_iterator();
+        for (auto it = begin; it != end; ++it)
+        {
+            std::string ns = (*it)[1].str();
+            std::string name = (*it)[2].str();
+            events.insert(ns + "::" + name);
+        }
+
+        return events;
+    }
+
     JsGenResult generate_js_runtime(const SchemaDefs &defs, const std::string &user_code, const std::string &out_dir)
     {
         CodeWriter w;
@@ -674,6 +692,7 @@ namespace webcc
         std::set<std::string> used_namespaces;
         std::set<std::string> used_maps;
         std::set<std::string> used_event_listeners; // Track which event types need delegation
+        std::set<std::string> used_event_helpers;   // Track which push_event helpers must exist
         std::vector<std::string> generated_js_imports;
         CodeWriter cases_w;
         cases_w.set_indent(4);
@@ -784,6 +803,10 @@ namespace webcc
                 for (const auto &m : maps)
                     used_maps.insert(m);
 
+                auto pushed_events = get_pushed_events_from_action(d.action);
+                for (const auto &e : pushed_events)
+                    used_event_helpers.insert(e);
+
                 // Track event listener types for delegation
                 if (d.func_name == "add_click_listener")
                     used_event_listeners.insert("click");
@@ -858,11 +881,13 @@ namespace webcc
         // Generate push_event helpers in JS only for event types that are actually used.
         for (const auto &d : defs.events)
         {
+            bool helper_needed = used_event_helpers.count(d.ns + "::" + d.name) > 0;
+
             // Convert event name to lowercase for matching against used_event_listeners
             std::string event_lower = d.name;
             for (auto &c : event_lower) c = std::tolower(c);
-            
-            if (used_event_listeners.find(event_lower) == used_event_listeners.end())
+
+            if (!helper_needed && used_event_listeners.find(event_lower) == used_event_listeners.end())
                 continue;
 
             std::stringstream sig;
