@@ -1,5 +1,5 @@
 <div align="center">
-  <img src="docs/images/logo.png" alt="WebCC Logo" width="400">
+  <img src="docs/images/logo.svg" alt="WebCC Logo" width="400">
 
 # WebCC
 
@@ -14,7 +14,7 @@ It provides a direct, high-performance bridge between C++ and HTML5 APIs (DOM, C
 </div>
 
 <p align="center">
-  <img src="docs/images/webcc_diagram.png" alt="WebCC Architecture Diagram" width=500">
+  <img src="docs/images/webcc_diagram.svg" alt="WebCC Architecture Diagram" width=500">
 </p>
 
 ## Features
