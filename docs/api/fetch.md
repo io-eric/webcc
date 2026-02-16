@@ -26,6 +26,14 @@ Initiates a POST request to the specified URL with the given body. Returns a han
 webcc::FetchRequest post(webcc::string_view url, webcc::string_view body);
 ```
 
+### `patch`
+
+Initiates a PATCH request to the specified URL with the given body. Returns a handle that identifies the request.
+
+```cpp
+webcc::FetchRequest patch(webcc::string_view url, webcc::string_view body);
+```
+
 ## Events
 
 Fetch operations are asynchronous. You must poll for events to receive the results.
