@@ -16,7 +16,10 @@ Initiates a GET request to the specified URL. Returns a handle that identifies t
 
 ```cpp
 webcc::FetchRequest get(webcc::string_view url);
+webcc::FetchRequest get(webcc::string_view url, webcc::string_view headers_json);
 ```
+
+The `headers_json` argument is a JSON string of HTTP headers, e.g. `{"apikey":"...","Authorization":"Bearer ..."}`. If omitted, no custom headers are sent.
 
 ### `post`
 
@@ -24,7 +27,10 @@ Initiates a POST request to the specified URL with the given body. Returns a han
 
 ```cpp
 webcc::FetchRequest post(webcc::string_view url, webcc::string_view body);
+webcc::FetchRequest post(webcc::string_view url, webcc::string_view body, webcc::string_view headers_json);
 ```
+
+The `headers_json` argument is a JSON string of HTTP headers, e.g. `{"apikey":"...","Authorization":"Bearer ..."}`. If omitted, no custom headers are sent.
 
 ### `patch`
 
@@ -32,7 +38,10 @@ Initiates a PATCH request to the specified URL with the given body. Returns a ha
 
 ```cpp
 webcc::FetchRequest patch(webcc::string_view url, webcc::string_view body);
+webcc::FetchRequest patch(webcc::string_view url, webcc::string_view body, webcc::string_view headers_json);
 ```
+
+The `headers_json` argument is a JSON string of HTTP headers, e.g. `{"apikey":"...","Authorization":"Bearer ..."}`. If omitted, no custom headers are sent.
 
 ## Events
 
