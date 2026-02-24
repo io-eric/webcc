@@ -35,9 +35,9 @@ const run = async () => {
 
     let mod;
     if (supportsStreaming()) {
-        mod = await WebAssembly.instantiateStreaming(fetch('app.wasm'), imports);
+        mod = await WebAssembly.instantiateStreaming(fetch('/app.wasm'), imports);
     } else {
-        const response = await fetch('app.wasm');
+        const response = await fetch('/app.wasm');
         const bytes = await response.arrayBuffer();
         mod = await WebAssembly.instantiate(bytes, imports);
     }

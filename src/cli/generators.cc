@@ -1028,7 +1028,7 @@ namespace webcc
 
     void generate_html(const std::string &out_dir, const std::string &template_path)
     {
-        const std::string script_tag = "    <script src=\"app.js\"></script>";
+        const std::string script_tag = "    <script src=\"/app.js\"></script>";
         std::string html;
 
         // Try to find a custom template
