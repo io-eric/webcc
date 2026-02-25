@@ -86,6 +86,35 @@ fi
 
 echo "[WebCC] Done."
 
+resolve_install_dir() {
+    local candidates=()
+
+    if [[ "$OSTYPE" == "darwin"* ]]; then
+        candidates=("/opt/homebrew/bin" "/usr/local/bin")
+    else
+        candidates=("/usr/local/bin")
+    fi
+
+    # Prefer a directory that exists and is already in PATH
+    for dir in "${candidates[@]}"; do
+        if [ -d "$dir" ] && [[ ":$PATH:" == *":$dir:"* ]]; then
+            echo "$dir"
+            return
+        fi
+    done
+
+    # Fallback to first existing candidate
+    for dir in "${candidates[@]}"; do
+        if [ -d "$dir" ]; then
+            echo "$dir"
+            return
+        fi
+    done
+
+    # Last resort for user-local installs
+    echo "$HOME/.local/bin"
+}
+
 # In CI, just exit successfully
 if [ -n "$CI" ]; then
     exit 0
@@ -98,23 +127,40 @@ if command -v webcc >/dev/null 2>&1 && [ "$(command -v webcc)" -ef "$PWD/webcc" 
     exit 2  # 2 = rebuilt
 fi
 
-# Only offer install if /usr/local/bin exists (common on Linux/macOS)
-# And we are in an interactive terminal and not in CIs
-if [ -d "/usr/local/bin" ] && [ -t 0 ] && [ -z "$CI" ]; then
+# Only offer install in interactive terminals outside CI
+if [ -t 0 ] && [ -z "$CI" ]; then
+    INSTALL_DIR=$(resolve_install_dir)
+
+    if [ "$INSTALL_DIR" = "$HOME/.local/bin" ] && [ ! -d "$INSTALL_DIR" ]; then
+        mkdir -p "$INSTALL_DIR"
+    fi
+
     echo ""
     echo "To use 'webcc' from anywhere, it needs to be in your PATH."
-    read -p "Would you like to create a symlink in /usr/local/bin? [y/N] " -n 1 -r
+    read -p "Would you like to create a symlink in $INSTALL_DIR? [y/N] " -n 1 -r
     echo
     if [[ $REPLY =~ ^[Yy]$ ]]; then
-        TARGET="/usr/local/bin/webcc"
-        if [ -w /usr/local/bin ]; then
+        TARGET="$INSTALL_DIR/webcc"
+        if [ -w "$INSTALL_DIR" ]; then
             ln -sf "$PWD/webcc" "$TARGET"
         else
-            echo "Need sudo access to write to /usr/local/bin"
+            echo "Need sudo access to write to $INSTALL_DIR"
             sudo ln -sf "$PWD/webcc" "$TARGET"
         fi
         echo "Symlink created: $TARGET -> $PWD/webcc"
         echo "You can now use 'webcc' command from any directory."
+
+        if [[ ":$PATH:" != *":$INSTALL_DIR:"* ]]; then
+            echo ""
+            echo "Note: $INSTALL_DIR is not currently in your PATH."
+            if [[ "$OSTYPE" == "darwin"* ]]; then
+                echo "Add this to ~/.zshrc:"
+                echo "  export PATH=\"$INSTALL_DIR:\$PATH\""
+            else
+                echo "Add this to your shell config (e.g. ~/.bashrc):"
+                echo "  export PATH=\"$INSTALL_DIR:\$PATH\""
+            fi
+        fi
     fi
 fi
 
