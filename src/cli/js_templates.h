@@ -17,6 +17,10 @@ const supportsStreaming = () => {
 };
 
 const run = async () => {
+    const scriptSrc = document.currentScript && document.currentScript.src;
+    const assetBase = new URL('.', scriptSrc || window.location.href);
+    const wasmUrl = new URL('app.wasm', assetBase);
+
     const imports = {
         env: {
             // C++ calls this function to tell JS "I wrote commands, please execute them"
@@ -35,9 +39,9 @@ const run = async () => {
 
     let mod;
     if (supportsStreaming()) {
-        mod = await WebAssembly.instantiateStreaming(fetch('/app.wasm'), imports);
+        mod = await WebAssembly.instantiateStreaming(fetch(wasmUrl), imports);
     } else {
-        const response = await fetch('/app.wasm');
+        const response = await fetch(wasmUrl);
         const bytes = await response.arrayBuffer();
         mod = await WebAssembly.instantiate(bytes, imports);
     }
