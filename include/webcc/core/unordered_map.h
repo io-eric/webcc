@@ -146,7 +146,7 @@ namespace webcc
             return m_data[insertion_idx].value;
         }
 
-        // Basic iterator support
+        // Basic iterator support - iterates over keys for clean "for key in map" syntax
         struct iterator {
             Entry* ptr;
             Entry* end;
@@ -160,13 +160,9 @@ namespace webcc
 
             bool operator!=(const iterator& other) const { return ptr != other.ptr; }
             
-            struct Pair {
-                Key& first;
-                T& second;
-            };
-
-            Pair operator*() { return {ptr->key, ptr->value}; }
-            Pair* operator->() { return (Pair*)ptr; } // Hacky, but works for simple usage
+            // Return key directly for "for key in map" syntax
+            const Key& operator*() const { return ptr->key; }
+            const Key* operator->() const { return &ptr->key; }
         };
 
         iterator begin() {
