@@ -84,6 +84,15 @@ Removes an element from the DOM.
 void remove_element(webcc::DOMElement handle);
 ```
 
+### Fullscreen and Pointer Lock
+
+Request fullscreen or pointer lock on a specific DOM element (or canvas).
+
+```cpp
+void request_fullscreen(webcc::DOMElement handle);
+void request_pointer_lock(webcc::DOMElement handle);
+```
+
 ### Attributes
 
 ```cpp

@@ -135,9 +135,13 @@ system|command|GET_DATE_NOW|get_date_now|RET:float64|{ return Date.now(); }
 system|command|GET_PATHNAME|get_pathname|RET:string|{ const ret = window.location.pathname || "/"; }
 system|command|GET_SEARCH|get_search|RET:string|{ const ret = window.location.search || ""; }
 system|command|GET_QUERY_PARAM|get_query_param|string:name RET:string|{ const ret = new URLSearchParams(window.location.search).get(name) || ""; }
+system|command|GET_VISIBILITY_STATE|get_visibility_state|RET:string|{ const ret = document.visibilityState || 'visible'; }
+system|command|IS_HIDDEN|is_hidden|RET:uint8|{ return document.hidden ? 1 : 0; }
 system|command|PUSH_STATE|push_state|string:path|{ history.pushState(null, '', path); }
 system|event|POPSTATE|string:path
 system|command|INIT_POPSTATE|init_popstate||{ window.addEventListener('popstate', () => push_event_system_POPSTATE(window.location.pathname || '/')); }
+system|event|VISIBILITY_CHANGE|uint8:hidden string:state
+system|command|INIT_VISIBILITY_CHANGE|init_visibility_change||{ document.addEventListener('visibilitychange', () => push_event_system_VISIBILITY_CHANGE(document.hidden ? 1 : 0, document.visibilityState || 'visible')); }
 
 # ------------------------------------------------------------------------------
 # STORAGE (LocalStorage)
