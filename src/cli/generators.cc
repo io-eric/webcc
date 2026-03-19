@@ -341,6 +341,8 @@ namespace webcc
                         ret_type = "int32_t";
                     else if (ret_type == "uint32")
                         ret_type = "uint32_t";
+                    else if (ret_type == "uint8")
+                        ret_type = "uint8_t";
                     else if (ret_type == "float32")
                         ret_type = "float";
                     else if (ret_type == "float64")
