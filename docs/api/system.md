@@ -79,16 +79,19 @@ double get_date_now();
 Page visibility lets your app detect whether it is currently visible to the user.
 
 ```cpp
-webcc::string get_visibility_state(); // "visible", "hidden", etc.
-uint8 is_hidden();                    // 1 when hidden, 0 otherwise
+webcc::string get_visibility_state(); // Usually "visible" or "hidden"
+uint8_t is_hidden();                  // 1 when hidden, 0 otherwise
 void init_visibility_change();
 ```
+
+Use `is_hidden()` when you only need a fast boolean-style check.
+Use `get_visibility_state()` when you want the exact browser-reported state string.
 
 After calling `init_visibility_change()`, visibility updates are emitted through the event system.
 
 ```cpp
 struct VisibilityChangeEvent {
-	uint8 hidden;
+	uint8_t hidden;
 	webcc::string_view state;
 };
 ```
