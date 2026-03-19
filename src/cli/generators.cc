@@ -965,55 +965,63 @@ namespace webcc
         if (used_event_listeners.count("click"))
         {
             w.write("");
-            w.write("// Global click event delegation - walks up DOM tree to find handler");
+            w.write("// Global click delegation with bubbling semantics (target -> ancestors)");
             w.write("document.body.addEventListener('click', (e) => {");
             w.write("    let el = e.target;");
+            w.write("    let pushed = false;");
             w.write("    while (el && el !== document.body) {");
-            w.write("        if (el.dataset.c) { push_event_dom_CLICK(parseInt(el.dataset.c)); _triggerDiscreteUpdate(); return; }");
+            w.write("        if (el.dataset.c) { push_event_dom_CLICK(parseInt(el.dataset.c)); pushed = true; }");
             w.write("        el = el.parentElement;");
             w.write("    }");
+            w.write("    if (pushed) _triggerDiscreteUpdate();");
             w.write("});");
         }
 
         if (used_event_listeners.count("input"))
         {
             w.write("");
-            w.write("// Global input event delegation - walks up DOM tree to find handler");
+            w.write("// Global input delegation with bubbling semantics (target -> ancestors)");
             w.write("document.body.addEventListener('input', (e) => {");
             w.write("    let el = e.target;");
+            w.write("    let pushed = false;");
             w.write("    while (el && el !== document.body) {");
-            w.write("        if (el.dataset.i) { push_event_dom_INPUT(parseInt(el.dataset.i), e.target.value || ''); _triggerDiscreteUpdate(); return; }");
+            w.write("        if (el.dataset.i) { push_event_dom_INPUT(parseInt(el.dataset.i), e.target.value || ''); pushed = true; }");
             w.write("        el = el.parentElement;");
             w.write("    }");
+            w.write("    if (pushed) _triggerDiscreteUpdate();");
             w.write("});");
         }
 
         if (used_event_listeners.count("change"))
         {
             w.write("");
-            w.write("// Global change event delegation - walks up DOM tree to find handler");
+            w.write("// Global change delegation with bubbling semantics (target -> ancestors)");
             w.write("document.body.addEventListener('change', (e) => {");
             w.write("    let el = e.target;");
+            w.write("    let pushed = false;");
             w.write("    while (el && el !== document.body) {");
             w.write("        if (el.dataset.g) {");
             w.write("            const val = e.target.type === 'checkbox' ? (e.target.checked ? 'true' : 'false') : (e.target.value || '');");
-            w.write("            push_event_dom_CHANGE(parseInt(el.dataset.g), val); _triggerDiscreteUpdate(); return;");
+            w.write("            push_event_dom_CHANGE(parseInt(el.dataset.g), val); pushed = true;");
             w.write("        }");
             w.write("        el = el.parentElement;");
             w.write("    }");
+            w.write("    if (pushed) _triggerDiscreteUpdate();");
             w.write("});");
         }
 
         if (used_event_listeners.count("keydown"))
         {
             w.write("");
-            w.write("// Global keydown event delegation - walks up DOM tree to find handler");
+            w.write("// Global keydown delegation with bubbling semantics (target -> ancestors)");
             w.write("document.body.addEventListener('keydown', (e) => {");
             w.write("    let el = e.target;");
+            w.write("    let pushed = false;");
             w.write("    while (el && el !== document.body) {");
-            w.write("        if (el.dataset.k) { push_event_dom_KEYDOWN(parseInt(el.dataset.k), e.keyCode); _triggerDiscreteUpdate(); return; }");
+            w.write("        if (el.dataset.k) { push_event_dom_KEYDOWN(parseInt(el.dataset.k), e.keyCode); pushed = true; }");
             w.write("        el = el.parentElement;");
             w.write("    }");
+            w.write("    if (pushed) _triggerDiscreteUpdate();");
             w.write("});");
         }
 
