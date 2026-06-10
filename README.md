@@ -234,6 +234,23 @@ Creating and styling HTML elements from C++.
 - **Tips:** Prefer returning integer handles for created resources (use `RET:int32`), register DOM/audio/image objects in the `elements` map when appropriate, and ensure your JS implementation is robust (checks for missing handles, etc.).
 ****
 
+## FAQ
+
+### Why no inline JS (`EM_JS` / `EM_ASM`)?
+
+Emscripten allows it because it has to support anything (game engines, Python, whole runtimes), so it can't map out every API ahead of time and just hands you raw JS access as the catch-all.
+
+WebCC does the opposite. The bridge is the schema: you declare what you need in [`schema.def`](schema.def) and get a typed C++ function plus the JS that runs it. We could add an inline-JS escape hatch too, but I'd rather just grow the schema until it covers the browser APIs, so you never need one.
+
+### Should I switch from Emscripten to WebCC?
+
+Depends on the project, honestly.
+
+- **Starting from scratch?** Go for it.
+- **Big existing Emscripten codebase?** Probably not yet. WebCC's STL compat layer is still limited and not every browser API is covered in the schema, so you'd hit gaps and end up filling them in yourself.
+
+It's growing over time, so the gap keeps shrinking. But for now: the smaller and fresher the project, the better the fit.
+
 ## Modules
 
 - **`webcc/dom.h`**: DOM manipulation (create, append, remove, attributes).
