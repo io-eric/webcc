@@ -2,6 +2,7 @@
 #include "schema.h"
 #include "js_templates.h"
 #include "generators.h"
+#include "wasm.h"
 #include <iostream>
 #include <sstream>
 #include <cstdlib>
@@ -103,34 +104,35 @@ int main(int argc, char **argv)
     std::string schema_cache_path = exe_dir + "/schema.wcc.bin";
     defs = webcc::load_defs_cached(schema_cache_path, defs_path);
 
+    // A. READ USER CODE (all files), concatenated for the void-command scan.
     std::string user_code;
-    std::string source_files;
-
-    // A. READ USER CODE (All files)
-    // Concatenate all input source files into a single string for analysis.
     for (const auto &path : input_files)
-    {
-        std::string content = webcc::read_file(path);
-        if (content.empty())
-        {
-            std::cerr << "Error: Could not read " << path << std::endl;
-            return 1;
-        }
-        user_code += content + "\n";
-        source_files += path + " ";
-    }
+        user_code += webcc::read_file(path) + "\n";
 
-    // B. GENERATE JS RUNTIME
-    webcc::JsGenResult js_result = webcc::generate_js_runtime(defs, user_code, out_dir);
-
-    // C. GENERATE HTML (Basic scaffolding)
-    webcc::generate_html(out_dir, template_path);
-
-    // D. COMPILE C++ TO WASM (Incremental)
-    if (!webcc::compile_wasm(input_files, out_dir, cache_dir, js_result.required_exports))
+    // B. COMPILE C++ TO WASM (Incremental).
+    // Link first, with a constant set of exports, so the linked module's import
+    // table becomes the ground-truth list of return-value commands the user's
+    // code references (the compiler resolves those names; we never guess them).
+    if (!webcc::compile_wasm(input_files, out_dir, cache_dir, webcc::required_wasm_exports()))
     {
         return 1;
     }
 
+    // C. READ the linked wasm's import table (return-value command detection).
+    std::string wasm_path = out_dir + "/app.wasm";
+    std::set<std::string> wasm_imports;
+    if (!webcc::read_wasm_imports(wasm_path, wasm_imports))
+    {
+        std::cerr << "[WebCC] Error: Could not read imports from " << wasm_path << std::endl;
+        return 1;
+    }
+
+    // D. GENERATE JS RUNTIME (return cmds from imports; void cmds from source).
+    webcc::generate_js_runtime(defs, wasm_imports, user_code, out_dir);
+
+    // E. GENERATE HTML (Basic scaffolding).
+    webcc::generate_html(out_dir, template_path);
+
+    std::cout << "[WebCC] Success! Run 'python3 -m http.server' in " << out_dir << " to view." << std::endl;
     return 0;
 }

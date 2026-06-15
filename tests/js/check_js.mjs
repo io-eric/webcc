@@ -63,18 +63,17 @@ for (const [name, src] of Object.entries(cases)) {
   writeFileSync(srcPath, src);
   execFileSync("mkdir", ["-p", outDir]);
 
-  // We only need JS generation, which happens before WASM compilation. We let
-  // webcc run fully; if the toolchain can compile it too, great, but a compile
-  // failure shouldn't mask a JS syntax check. So generate, then read app.js if
-  // present.
+  // app.js is generated from the linked wasm's import table (linker-driven
+  // feature detection), so a successful compile+link is now a prerequisite. We
+  // run webcc fully, then syntax-check whatever app.js it produced.
   try {
     execFileSync(webccBin, ["-o", outDir, srcPath], {
       cwd: repoRoot,
       stdio: "pipe",
     });
   } catch (e) {
-    // Compilation may fail in minimal CI (missing wasm libc bits) but app.js is
-    // written before compilation. Only treat as fatal if app.js is absent.
+    // webcc exited non-zero (e.g. compile/link failure). app.js won't exist;
+    // the readFileSync below reports it as a failure for this case.
   }
 
   let js;

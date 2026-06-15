@@ -20,8 +20,9 @@ build build/obj/main.o: cxx src/cli/main.cc
 build build/obj/utils.o: cxx src/cli/utils.cc
 build build/obj/schema.o: cxx src/cli/schema.cc
 build build/obj/generators.o: cxx src/cli/generators.cc
+build build/obj/wasm.o: cxx src/cli/wasm.cc
 
-build webcc: link build/obj/main.o build/obj/utils.o build/obj/schema.o build/obj/generators.o
+build webcc: link build/obj/main.o build/obj/utils.o build/obj/schema.o build/obj/generators.o build/obj/wasm.o
 
 # Generate headers and binary cache (requires webcc to exist first)
 build schema.wcc.bin: generate_schema webcc schema.def
