@@ -462,6 +462,17 @@ namespace webcc
                     continue;
                 }
 
+                // Mark this void command as "used" so linker-driven feature
+                // detection can see it in the wasm import table. Void commands
+                // all funnel through the single webcc_js_flush import and are
+                // dispatched by opcode, so without a marker the linker has no
+                // per-command signal. Zero runtime cost: the address lives in
+                // static data that is never read; the reference forces a
+                // webcc_use_<ns>_<func> import that --gc-sections retains only
+                // when this wrapper is actually called.
+                std::string marker = "webcc_use_" + d.ns + "_" + d.func_name;
+                w.write("extern \"C\" void " + marker + "();");
+
                 // Check if we need templates for func_ptr
                 std::vector<std::string> t_params;
                 for (size_t i = 0; i < d.params.size(); ++i)
@@ -509,6 +520,7 @@ namespace webcc
                 }
                 func << "){";
                 w.write(func.str());
+                w.write("static const void* webcc_mark __attribute__((used)) = (const void*)&" + marker + "; (void)webcc_mark;");
                 w.write("push_command((uint32_t)OP_" + d.name + ");");
                 for (size_t i = 0; i < d.params.size(); ++i)
                 {
@@ -679,17 +691,30 @@ namespace webcc
         return events;
     }
 
-    JsGenResult generate_js_runtime(const SchemaDefs &defs, const std::string &user_code, const std::string &out_dir)
+    const std::set<std::string> &required_wasm_exports()
+    {
+        // Symbols the JS runtime always reads from the instantiated module.
+        // This set is constant and independent of which features are used, so
+        // the wasm can be linked *before* feature detection runs -- which is
+        // what lets us read the import table to discover used commands.
+        static const std::set<std::string> exports = {
+            "memory",
+            "main",
+            "__indirect_function_table",
+            "webcc_event_buffer_ptr",
+            "webcc_event_offset_ptr",
+            "webcc_event_buffer_capacity",
+            "webcc_scratch_buffer_ptr",
+            "webcc_command_buffer_ptr",
+        };
+        return exports;
+    }
+
+    void generate_js_runtime(const SchemaDefs &defs, const std::set<std::string> &wasm_imports, const std::string &out_dir)
     {
         CodeWriter w;
-        JsGenResult result;
 
-        // Always-needed exports
-        result.required_exports.insert("memory");
-        result.required_exports.insert("main");
-        result.required_exports.insert("__indirect_function_table");
-
-        std::cout << "[WebCC] Scanning source files for features..." << std::endl;
+        std::cout << "[WebCC] Detecting features from wasm imports..." << std::endl;
 
         std::set<std::string> used_namespaces;
         std::set<std::string> used_maps;
@@ -699,51 +724,21 @@ namespace webcc
         CodeWriter cases_w;
         cases_w.set_indent(4);
 
-        // Analyze user code to find which webcc commands are used.
+        // A command is "used" iff the linker kept its symbol in the wasm import
+        // table. Return-value commands appear as their real import
+        // (webcc_<ns>_<func>); void commands appear via the webcc_use_<ns>_<func>
+        // marker emitted by emit_headers. This is exact and compiler-resolved --
+        // no source scanning, no false positives from comments or string
+        // literals, and iostream/chrono "just work" because std::cout and
+        // std::chrono lower to real webcc::system::* calls.
         for (const auto &d : defs.commands)
         {
-            bool used = false;
-            // 1. Check for qualified usage: ns::func or webcc::ns::func
-            if (contains_whole_word(user_code, d.ns + "::" + d.func_name))
-                used = true;
-            else if (contains_whole_word(user_code, "webcc::" + d.ns + "::" + d.func_name))
-                used = true;
+            std::string detect_sym = d.return_type.empty()
+                                         ? ("webcc_use_" + d.ns + "_" + d.func_name)
+                                         : ("webcc_" + d.ns + "_" + d.func_name);
+            if (wasm_imports.count(detect_sym) == 0)
+                continue;
 
-            // 2. Check for using namespace
-            if (!used)
-            {
-                bool ns_used = contains_whole_word(user_code, "using namespace webcc::" + d.ns) ||
-                               contains_whole_word(user_code, "using namespace webcc");
-                if (ns_used && contains_whole_word(user_code, d.func_name))
-                    used = true;
-            }
-
-            // 3. Special check for iostream which uses system::log and system::error implicitly
-            if (!used && d.ns == "system" && (d.func_name == "log" || d.func_name == "error"))
-            {
-                if (user_code.find("#include <iostream>") != std::string::npos ||
-                    user_code.find("#include \"webcc/compat/iostream\"") != std::string::npos ||
-                    contains_whole_word(user_code, "std::cout") ||
-                    contains_whole_word(user_code, "std::cerr"))
-                {
-                    used = true;
-                }
-            }
-
-            // 4. Special check for chrono which uses system::get_time and system::get_date_now implicitly
-            if (!used && d.ns == "system" && (d.func_name == "get_time" || d.func_name == "get_date_now"))
-            {
-                if (user_code.find("#include <webcc/compat/chrono>") != std::string::npos ||
-                    user_code.find("#include \"webcc/compat/chrono\"") != std::string::npos ||
-                    user_code.find("#include \"webcc/core/chrono.h\"") != std::string::npos ||
-                    contains_whole_word(user_code, "std::chrono") ||
-                    contains_whole_word(user_code, "webcc::chrono"))
-                {
-                    used = true;
-                }
-            }
-
-            if (used)
             {
                 std::cout << "  -> Found " << d.func_name << " (" << d.ns << "), embedding JS support." << std::endl;
 
@@ -798,6 +793,10 @@ namespace webcc
                 {
                     // For commands without a return value, generate a case in the flush switch.
                     gen_js_case(d, cases_w);
+                    // The wasm imports a no-op webcc_use_<ns>_<func> marker for
+                    // each used void command (see emit_headers); provide a stub
+                    // so module instantiation succeeds.
+                    generated_js_imports.push_back(detect_sym + ": () => {}");
                 }
 
                 used_namespaces.insert(d.ns);
@@ -840,13 +839,6 @@ namespace webcc
         }
         w.raw(JS_INIT_TAIL);
         w.set_indent(1);
-
-        // Track event system exports
-        result.required_exports.insert("webcc_event_buffer_ptr");
-        result.required_exports.insert("webcc_event_offset_ptr");
-        result.required_exports.insert("webcc_event_buffer_capacity");
-        result.required_exports.insert("webcc_scratch_buffer_ptr");
-        result.required_exports.insert("webcc_command_buffer_ptr");
 
         // Generate single unified exports destructuring
         std::stringstream exports_ss;
@@ -1032,8 +1024,6 @@ namespace webcc
         w.raw(JS_TAIL);
         write_file(out_dir + "/app.js", w.str());
         std::cout << "[WebCC] Generated " << out_dir << "/app.js" << std::endl;
-
-        return result;
     }
 
     void generate_html(const std::string &out_dir, const std::string &template_path)
@@ -1311,7 +1301,6 @@ namespace webcc
             system(opt_cmd.c_str());
         }
         */
-        std::cout << "[WebCC] Success! Run 'python3 -m http.server' in " << out_dir << " to view." << std::endl;
         return true;
     }
 } // namespace webcc

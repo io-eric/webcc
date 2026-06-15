@@ -7,11 +7,9 @@
 namespace webcc
 {
 
-    // Result of JS generation, including required WASM exports
-    struct JsGenResult
-    {
-        std::set<std::string> required_exports;
-    };
+    // The constant set of symbols the JS runtime always reads from the module.
+    // Independent of feature usage, so the wasm can be linked before detection.
+    const std::set<std::string> &required_wasm_exports();
 
     // Generates the C++ header files for each namespace (e.g., webcc/dom.h).
     // Also saves a binary schema cache for fast runtime loading.
@@ -27,8 +25,9 @@ namespace webcc
     bool contains_whole_word(const std::string &text, const std::string &word);
 
     // Generates the JavaScript runtime (app.js) based on used commands.
-    // Returns information about required WASM exports.
-    JsGenResult generate_js_runtime(const SchemaDefs &defs, const std::string &user_code, const std::string &out_dir);
+    // `wasm_imports` is the set of import field names from the linked module
+    // (see read_wasm_imports); a command is emitted iff its symbol is present.
+    void generate_js_runtime(const SchemaDefs &defs, const std::set<std::string> &wasm_imports, const std::string &out_dir);
 
     // Generates the HTML scaffolding (index.html).
     // If a template file exists (index.template.html), uses it and injects the script tag.

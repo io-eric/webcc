@@ -2,6 +2,7 @@
 #include "schema.h"
 #include "js_templates.h"
 #include "generators.h"
+#include "wasm.h"
 #include <iostream>
 #include <sstream>
 #include <cstdlib>
@@ -103,34 +104,30 @@ int main(int argc, char **argv)
     std::string schema_cache_path = exe_dir + "/schema.wcc.bin";
     defs = webcc::load_defs_cached(schema_cache_path, defs_path);
 
-    std::string user_code;
-    std::string source_files;
-
-    // A. READ USER CODE (All files)
-    // Concatenate all input source files into a single string for analysis.
-    for (const auto &path : input_files)
-    {
-        std::string content = webcc::read_file(path);
-        if (content.empty())
-        {
-            std::cerr << "Error: Could not read " << path << std::endl;
-            return 1;
-        }
-        user_code += content + "\n";
-        source_files += path + " ";
-    }
-
-    // B. GENERATE JS RUNTIME
-    webcc::JsGenResult js_result = webcc::generate_js_runtime(defs, user_code, out_dir);
-
-    // C. GENERATE HTML (Basic scaffolding)
-    webcc::generate_html(out_dir, template_path);
-
-    // D. COMPILE C++ TO WASM (Incremental)
-    if (!webcc::compile_wasm(input_files, out_dir, cache_dir, js_result.required_exports))
+    // A. COMPILE C++ TO WASM (Incremental).
+    // Link first, with a constant set of exports, so the linked module's import
+    // table becomes the ground-truth list of webcc features the user's code
+    // actually references. The compiler resolves names; we don't scan source.
+    if (!webcc::compile_wasm(input_files, out_dir, cache_dir, webcc::required_wasm_exports()))
     {
         return 1;
     }
 
+    // B. DETECT FEATURES from the linked wasm's import table.
+    std::string wasm_path = out_dir + "/app.wasm";
+    std::set<std::string> wasm_imports;
+    if (!webcc::read_wasm_imports(wasm_path, wasm_imports))
+    {
+        std::cerr << "[WebCC] Error: Could not read imports from " << wasm_path << std::endl;
+        return 1;
+    }
+
+    // C. GENERATE JS RUNTIME (only the features the wasm imports).
+    webcc::generate_js_runtime(defs, wasm_imports, out_dir);
+
+    // D. GENERATE HTML (Basic scaffolding).
+    webcc::generate_html(out_dir, template_path);
+
+    std::cout << "[WebCC] Success! Run 'python3 -m http.server' in " << out_dir << " to view." << std::endl;
     return 0;
 }

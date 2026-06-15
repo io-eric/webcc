@@ -13,6 +13,7 @@
 #include <cstdlib>
 #include <fstream>
 #include <string>
+#include <set>
 #include <unistd.h>
 
 using namespace webcc;
@@ -87,16 +88,16 @@ namespace
 TEST(codegen_js_canvas_snapshot)
 {
     SchemaDefs defs = real_defs();
-    // A canvas-only program: get a 2D context and fill a rect.
-    std::string user = R"(
-        #include "webcc/canvas.h"
-        int main() {
-            auto c = webcc::canvas::create_canvas("c", 640, 480);
-            auto ctx = webcc::canvas::get_context_2d(c);
-            webcc::canvas::fill_rect(ctx, 0, 0, 100, 100);
-        }
-    )";
-    generate_js_runtime(defs, user, "/tmp");
+    // Imports the linker emits for a canvas-only program (create a canvas, get a
+    // 2D context, fill a rect). Return commands -> webcc_<ns>_<func>; void
+    // commands -> webcc_use_<ns>_<func> markers.
+    std::set<std::string> imports = {
+        "webcc_js_flush",
+        "webcc_canvas_create_canvas",
+        "webcc_canvas_get_context_2d",
+        "webcc_use_canvas_fill_rect",
+    };
+    generate_js_runtime(defs, imports, "/tmp");
     std::string js = read_file("/tmp/app.js");
     check_snapshot("app_canvas.js", js);
 }
@@ -104,15 +105,14 @@ TEST(codegen_js_canvas_snapshot)
 TEST(codegen_js_treeshakes_unused_modules)
 {
     SchemaDefs defs = real_defs();
-    std::string user = R"(
-        #include "webcc/canvas.h"
-        int main() {
-            auto c = webcc::canvas::create_canvas("c", 640, 480);
-            auto ctx = webcc::canvas::get_context_2d(c);
-            webcc::canvas::fill_rect(ctx, 0, 0, 100, 100);
-        }
-    )";
-    generate_js_runtime(defs, user, "/tmp");
+    // Same canvas-only program as above, expressed as its linker import set.
+    std::set<std::string> imports = {
+        "webcc_js_flush",
+        "webcc_canvas_create_canvas",
+        "webcc_canvas_get_context_2d",
+        "webcc_use_canvas_fill_rect",
+    };
+    generate_js_runtime(defs, imports, "/tmp");
     std::string js = read_file("/tmp/app.js");
 
     // Canvas code IS present...
@@ -128,16 +128,15 @@ TEST(codegen_js_treeshakes_unused_modules)
 TEST(codegen_js_emits_event_delegation_only_when_used)
 {
     SchemaDefs defs = real_defs();
-    std::string user = R"(
-        #include "webcc/dom.h"
-        int main() {
-            auto b = webcc::dom::get_body();
-            auto btn = webcc::dom::create_element("button");
-            webcc::dom::append_child(b, btn);
-            webcc::dom::add_click_listener(btn);
-        }
-    )";
-    generate_js_runtime(defs, user, "/tmp");
+    // A DOM program that registers a click listener but no keydown listener.
+    std::set<std::string> imports = {
+        "webcc_js_flush",
+        "webcc_dom_get_body",
+        "webcc_dom_create_element",
+        "webcc_use_dom_append_child",
+        "webcc_use_dom_add_click_listener",
+    };
+    generate_js_runtime(defs, imports, "/tmp");
     std::string js = read_file("/tmp/app.js");
 
     // Click delegation wired up; keydown delegation not (unused).
@@ -149,16 +148,15 @@ TEST(codegen_js_emits_event_delegation_only_when_used)
 TEST(codegen_dom_user_snapshot)
 {
     SchemaDefs defs = real_defs();
-    std::string user = R"(
-        #include "webcc/dom.h"
-        int main() {
-            auto b = webcc::dom::get_body();
-            auto d = webcc::dom::create_element("div");
-            webcc::dom::set_inner_text(d, "hello");
-            webcc::dom::append_child(b, d);
-        }
-    )";
-    generate_js_runtime(defs, user, "/tmp");
+    // A DOM program: create a div, set its text, append it to the body.
+    std::set<std::string> imports = {
+        "webcc_js_flush",
+        "webcc_dom_get_body",
+        "webcc_dom_create_element",
+        "webcc_use_dom_set_inner_text",
+        "webcc_use_dom_append_child",
+    };
+    generate_js_runtime(defs, imports, "/tmp");
     std::string js = read_file("/tmp/app.js");
     check_snapshot("app_dom.js", js);
 }
