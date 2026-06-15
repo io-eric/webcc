@@ -31,10 +31,6 @@ const run = async () => {
                 const tag = decoder.decode(new Uint8Array(memory.buffer, tag_ptr, tag_len));
                 const handle = (window.webcc_next_id = (window.webcc_next_id || 0) + 1); const el = document.createElement(tag); elements[handle] = el; return handle;
             }
-,
-            webcc_use_dom_append_child: () => {}
-,
-            webcc_use_dom_set_inner_text: () => {}
 
         }
     };
