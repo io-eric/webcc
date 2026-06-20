@@ -262,23 +262,9 @@ Creating and styling HTML elements from C++.
 
 ## FAQ
 
-### Inline JS (`WEBCC_JS`): the escape hatch
+### The schema doesn't cover the API I need. Can I just write JS?
 
-The bridge is the schema: you declare what you need in [`schema.def`](schema.def) and get a typed C++ function plus the JS that runs it. Prefer that. It's typed, batched, and reusable.
-
-For the rare case the schema doesn't cover yet, there's an escape hatch. `WEBCC_JS` defines a function with a raw-JavaScript body, the way Emscripten's `EM_JS` does, but built the WebCC way so it stays consistent with everything else:
-
-```cpp
-WEBCC_JS(void, set_title, (const char* title), { document.title = title; });
-WEBCC_JS(int,  js_add,    (int a, int b),      { return a + b; });
-
-set_title("Hello");        // call it like a normal C++ function
-int s = js_add(2, 3);
-```
-
-The whole function (signature plus body) becomes a wasm import whose **name is the source itself**. So it's detected and tree-shaken exactly like every other feature (an unused function leaves no import and costs nothing), and dispatch is just the typed wasm import call, with no runtime lookup table. Arguments cross by name: numeric types arrive as JS numbers and `const char*` is auto-decoded to a JS string. Calls run **synchronously** and `flush()` the command buffer first, so the body observes preceding batched calls.
-
-Because every call is synchronous, prefer a real schema command on hot paths and keep `WEBCC_JS` for the gaps. Current limits (sync v1): numeric and `const char*` parameters, and `void`/`int`/`float`/`double` returns (for a string return, write it back yourself for now). Full details in [docs/api/inline_js.md](docs/api/inline_js.md).
+Yes, but prefer the schema. Declaring a command in [`schema.def`](schema.def) gives you a typed, batched, reusable C++ function, always the better option on hot paths. For the gaps, `WEBCC_JS` is the escape hatch: a C++ function with a raw-JavaScript body (like Emscripten's `EM_JS`, but built the WebCC way so it's tree-shaken and dispatched through the ordinary wasm import table — no runtime machinery). See [Inline JavaScript](docs/api/inline_js.md) for the full reference.
 
 The long game is still to grow the schema until you rarely reach for this.
 
