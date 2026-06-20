@@ -264,7 +264,7 @@ Creating and styling HTML elements from C++.
 
 ### The schema doesn't cover the API I need. Can I just write JS?
 
-Yes, but prefer the schema. Declaring a command in [`schema.def`](schema.def) gives you a typed, batched, reusable C++ function, always the better option on hot paths. For the gaps, `WEBCC_JS` is the escape hatch: a C++ function with a raw-JavaScript body (like Emscripten's `EM_JS`, but built the WebCC way so it's tree-shaken and dispatched through the ordinary wasm import table — no runtime machinery). See [Inline JavaScript](docs/api/inline_js.md) for the full reference.
+Yes, but prefer the schema. Declaring a command in [`schema.def`](schema.def) gives you a typed, batched, reusable C++ function, always the better option on hot paths. For the gaps, `WEBCC_JS` is the escape hatch: a C++ function with a raw-JavaScript body (like Emscripten's `EM_JS`, but built the WebCC way so it's tree-shaken and dispatched through the ordinary wasm import table, no runtime machinery). See [Inline JavaScript](docs/api/inline_js.md) for the full reference.
 
 The long game is still to grow the schema until you rarely reach for this.
 
