@@ -37,10 +37,10 @@ void log(const char* msg) {
 void draw_heap_viz() {
     if (!canvas_ctx.is_valid()) return;
 
-    uintptr_t base = (uintptr_t)&webcc::__heap_base;
-    uintptr_t current = webcc::heap_ptr;
-    size_t used = current - base;
-    
+    uintptr_t base = webcc::detail::backend_base();
+    uintptr_t current = webcc::detail::heap_ptr;
+    size_t used = webcc::detail::heap_used();
+
     // Get current memory size (in pages)
     size_t current_pages = __builtin_wasm_memory_size(0);
     size_t total_mem = current_pages * 64 * 1024;

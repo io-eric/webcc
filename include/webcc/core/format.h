@@ -178,15 +178,14 @@ private:
 
     void ensure_capacity(size_t needed) {
         if (m_pos + needed < m_capacity) return;
-        
+
         size_t new_cap = m_capacity == 0 ? 256 : m_capacity * 2;
         while (new_cap < m_pos + needed + 1) new_cap *= 2;
-        
-        char* new_data = (char*)webcc::malloc(new_cap);
-        if (m_data) {
-            for (size_t i = 0; i < m_pos; ++i) new_data[i] = m_data[i];
-            webcc::free(m_data);
-        }
+
+        // realloc grows in place when it can; otherwise it copies the existing
+        // bytes across for us. realloc(nullptr, ...) is just malloc.
+        char* new_data = (char*)webcc::realloc(m_data, new_cap);
+        if (!new_data) return; // allocation failed; keep the old buffer intact
         m_data = new_data;
         m_capacity = new_cap;
     }
@@ -290,23 +289,27 @@ private:
 
     void ensure_capacity(size_t needed) {
         if (m_pos + needed < m_capacity) return;
-        
+
         // Need to grow - switch to heap or grow heap
         size_t new_cap = m_capacity * 2;
         while (new_cap < m_pos + needed + 1) new_cap *= 2;
-        
-        char* new_data = (char*)webcc::malloc(new_cap);
-        
-        // Copy existing data
-        char* src = buffer();
-        for (size_t i = 0; i < m_pos; ++i) new_data[i] = src[i];
-        
-        // Free old heap if we had one
-        if (m_on_heap && m_heap) webcc::free(m_heap);
-        
-        m_heap = new_data;
+
+        if (m_on_heap) {
+            // Already on the heap: realloc grows in place when possible.
+            char* new_data = (char*)webcc::realloc(m_heap, new_cap);
+            if (!new_data) return; // keep the old buffer on failure
+            m_heap = new_data;
+        } else {
+            // First overflow off the stack buffer: must copy out of it (the
+            // stack storage isn't owned by the allocator, so realloc can't move it).
+            char* new_data = (char*)webcc::malloc(new_cap);
+            if (!new_data) return;
+            for (size_t i = 0; i < m_pos; ++i) new_data[i] = m_stack[i];
+            m_heap = new_data;
+            m_on_heap = true;
+        }
+
         m_capacity = new_cap;
-        m_on_heap = true;
     }
 
 public:

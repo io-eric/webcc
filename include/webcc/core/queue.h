@@ -18,6 +18,19 @@ namespace webcc
 
         void reallocate(size_t new_capacity)
         {
+            // Fast path: grow in place only when the ring is laid out linearly
+            // from index 0 (m_head == 0). Then the existing elements already sit
+            // at [0, m_size) and stay valid under the larger power-of-two mask, so
+            // no relinearization or element moves are needed. A wrapped/offset
+            // ring must fall through to the relinearizing copy below.
+            if (m_data && m_head == 0 && new_capacity > m_capacity &&
+                webcc::try_grow_inplace(m_data, new_capacity * sizeof(T)))
+            {
+                m_capacity = new_capacity;
+                m_tail = m_size;
+                return;
+            }
+
             T* new_data = (T*)webcc::malloc(new_capacity * sizeof(T));
             
             // Copy elements in order from head to tail
