@@ -18,6 +18,16 @@ namespace webcc
 
         void reallocate(size_t new_capacity)
         {
+            // Fast path: enlarge the existing block in place. No element moves,
+            // so this is safe for every T (no constructors run) and avoids the
+            // allocate-copy-free round trip entirely when the block can grow.
+            if (m_data && new_capacity > m_capacity &&
+                webcc::try_grow_inplace(m_data, new_capacity * sizeof(T)))
+            {
+                m_capacity = new_capacity;
+                return;
+            }
+
             // 1. Allocate new block
             T *new_block = (T *)webcc::malloc(new_capacity * sizeof(T));
             if (!new_block)

@@ -27,13 +27,15 @@ CXX="${CXX:-clang++}"
 
 echo "[tests] Compiling C++ test suite..."
 "$CXX" -std=c++20 -O1 -g \
-    -I "$ROOT/src/cli" -I "$ROOT/src/core" \
+    -I "$ROOT/src/cli" -I "$ROOT/src/core" -I "$ROOT/include" \
     -DWEBCC_SCHEMA_DEF="\"$ROOT/schema.def\"" \
     -DWEBCC_SNAPSHOT_DIR="\"$ROOT/tests/snapshots\"" \
     "$ROOT/tests/test_main.cc" \
     "$ROOT/tests/test_command_buffer.cc" \
     "$ROOT/tests/test_schema.cc" \
     "$ROOT/tests/test_codegen.cc" \
+    "$ROOT/tests/test_allocator.cc" \
+    "$ROOT/tests/test_containers.cc" \
     "$ROOT/src/cli/schema.cc" \
     "$ROOT/src/cli/utils.cc" \
     "$ROOT/src/cli/generators.cc" \
