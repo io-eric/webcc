@@ -24,6 +24,7 @@ It provides a direct, high-performance bridge between C++ and HTML5 APIs (DOM, C
 - Supports DOM, Canvas 2D, WebGL, WebGPU, Audio, Input, WebSockets, and more.
 - **Lightweight STL Compat**: Includes a minimal compatibility layer for common STL headers (`vector`, `string`, `iostream`, etc.) designed to be a fraction of the size of standard implementations.
 - A single CLI tool handles code generation and compilation.
+- **Inline JS escape hatch** (`WEBCC_JS`): drop raw JavaScript inline for APIs the schema doesn't cover yet. Still tree-shaken via the import table, with zero cost when unused.
 - Incremental compilation using `.webcc_cache` for faster rebuilds.
 - Easily extensible API: generates headers and glue code based on a schema definition.
 
@@ -117,6 +118,31 @@ int main() {
     return 0;
 }
 ```
+
+### Inline JavaScript (escape hatch)
+
+Need a browser API the schema doesn't cover yet? Define a function with a raw-JavaScript body using `WEBCC_JS`, then call it like any other C++ function. Its whole source is compiled into a wasm import name, so it's tree-shaken like everything else and costs nothing when unused.
+
+```cpp
+#include "webcc/system.h"   // any webcc header makes WEBCC_JS available
+
+// WEBCC_JS(return_type, name, (params), { body }): params are passed by name
+WEBCC_JS(void, set_title, (const char* title), {
+    document.title = title;
+});
+WEBCC_JS(int, js_add, (int a, int b), {
+    return a + b;
+});
+
+int main() {
+    set_title("Hello from C++");
+    int sum = js_add(2, 3);
+    (void)sum;
+    return 0;
+}
+```
+
+Parameters cross by name: numeric types arrive as JS numbers and `const char*` is auto-decoded to a JS string. Calls run **synchronously** and `flush()` first (so they see preceding batched commands), which also means each one crosses the JS boundary; on hot paths prefer a real schema command, which batches. See [docs/api/inline_js.md](docs/api/inline_js.md) for the full reference.
 
 ### Building & Running
 
@@ -236,11 +262,25 @@ Creating and styling HTML elements from C++.
 
 ## FAQ
 
-### Why no inline JS (`EM_JS` / `EM_ASM`)?
+### Inline JS (`WEBCC_JS`): the escape hatch
 
-Emscripten allows it because it has to support anything (game engines, Python, whole runtimes), so it can't map out every API ahead of time and just hands you raw JS access as the catch-all.
+The bridge is the schema: you declare what you need in [`schema.def`](schema.def) and get a typed C++ function plus the JS that runs it. Prefer that. It's typed, batched, and reusable.
 
-WebCC does the opposite. The bridge is the schema: you declare what you need in [`schema.def`](schema.def) and get a typed C++ function plus the JS that runs it. We could add an inline-JS escape hatch too, but I'd rather just grow the schema until it covers the browser APIs, so you never need one.
+For the rare case the schema doesn't cover yet, there's an escape hatch. `WEBCC_JS` defines a function with a raw-JavaScript body, the way Emscripten's `EM_JS` does, but built the WebCC way so it stays consistent with everything else:
+
+```cpp
+WEBCC_JS(void, set_title, (const char* title), { document.title = title; });
+WEBCC_JS(int,  js_add,    (int a, int b),      { return a + b; });
+
+set_title("Hello");        // call it like a normal C++ function
+int s = js_add(2, 3);
+```
+
+The whole function (signature plus body) becomes a wasm import whose **name is the source itself**. So it's detected and tree-shaken exactly like every other feature (an unused function leaves no import and costs nothing), and dispatch is just the typed wasm import call, with no runtime lookup table. Arguments cross by name: numeric types arrive as JS numbers and `const char*` is auto-decoded to a JS string. Calls run **synchronously** and `flush()` the command buffer first, so the body observes preceding batched calls.
+
+Because every call is synchronous, prefer a real schema command on hot paths and keep `WEBCC_JS` for the gaps. Current limits (sync v1): numeric and `const char*` parameters, and `void`/`int`/`float`/`double` returns (for a string return, write it back yourself for now). Full details in [docs/api/inline_js.md](docs/api/inline_js.md).
+
+The long game is still to grow the schema until you rarely reach for this.
 
 ### Should I switch from Emscripten to WebCC?
 

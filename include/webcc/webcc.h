@@ -6,6 +6,7 @@
 #include "../../src/core/event_buffer.h"
 #include "../../src/core/scratch_buffer.h"
 #include "core/optional.h"
+#include "core/js.h"
 
 namespace webcc
 {

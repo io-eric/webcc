@@ -110,7 +110,7 @@ TEST(codegen_js_canvas_snapshot)
         "webcc_canvas_get_context_2d",
     };
     auto markers = void_markers(defs, {"canvas::fill_rect"});
-    generate_js_runtime(defs, imports, markers, "/tmp");
+    generate_js_runtime(defs, imports, markers, {}, "/tmp");
     std::string js = read_file("/tmp/app.js");
     check_snapshot("app_canvas.js", js);
 }
@@ -125,7 +125,7 @@ TEST(codegen_js_treeshakes_unused_modules)
         "webcc_canvas_get_context_2d",
     };
     auto markers = void_markers(defs, {"canvas::fill_rect"});
-    generate_js_runtime(defs, imports, markers, "/tmp");
+    generate_js_runtime(defs, imports, markers, {}, "/tmp");
     std::string js = read_file("/tmp/app.js");
 
     // Canvas code IS present...
@@ -148,7 +148,7 @@ TEST(codegen_js_emits_event_delegation_only_when_used)
         "webcc_dom_create_element",
     };
     auto markers = void_markers(defs, {"dom::append_child", "dom::add_click_listener"});
-    generate_js_runtime(defs, imports, markers, "/tmp");
+    generate_js_runtime(defs, imports, markers, {}, "/tmp");
     std::string js = read_file("/tmp/app.js");
 
     // Click delegation wired up; keydown delegation not (unused).
@@ -167,9 +167,65 @@ TEST(codegen_dom_user_snapshot)
         "webcc_dom_create_element",
     };
     auto markers = void_markers(defs, {"dom::set_inner_text", "dom::append_child"});
-    generate_js_runtime(defs, imports, markers, "/tmp");
+    generate_js_runtime(defs, imports, markers, {}, "/tmp");
     std::string js = read_file("/tmp/app.js");
     check_snapshot("app_dom.js", js);
+}
+
+// --- WEBCC_JS inline-JavaScript escape hatch -------------------------------
+// Named WEBCC_JS functions reach the generator as imports from module "wjs_fn",
+// each of the form `name(params){body}` (the JS source itself). main.cc reads
+// them into a set; here we feed that set directly, mirroring the import table.
+
+TEST(codegen_js_inline_js_fn_handlers)
+{
+    SchemaDefs defs = real_defs();
+    std::set<std::string> imports = {"webcc_js_flush"};
+    std::set<std::string> markers;
+    std::set<std::string> fns = {
+        "js_add(int a, int b){ return a + b; }",
+        "set_title(const char* title){ document.title = title; }",
+    };
+    generate_js_runtime(defs, imports, markers, fns, "/tmp");
+    std::string js = read_file("/tmp/app.js");
+
+    // The wjs_fn import module is emitted.
+    CHECK(js.find("wjs_fn:") != std::string::npos);
+    // Named params become the handler's params; the body is reproduced verbatim.
+    CHECK(js.find("(a, b) => {") != std::string::npos);
+    CHECK(js.find("return a + b;") != std::string::npos);
+    // The object key is the full source, JS-escaped, so it parses back to the
+    // exact import name the wasm expects.
+    CHECK(js.find("\"js_add(int a, int b){ return a + b; }\"") != std::string::npos);
+    // A const char* parameter is auto-decoded from the pointer to a JS string.
+    CHECK(js.find("title = __webcc_utf8(title)") != std::string::npos);
+    CHECK(js.find("const __webcc_utf8 = ") != std::string::npos);
+}
+
+TEST(codegen_js_inline_js_fn_no_utf8_without_string_params)
+{
+    SchemaDefs defs = real_defs();
+    std::set<std::string> imports = {"webcc_js_flush"};
+    std::set<std::string> markers;
+    // Only numeric params -> the UTF-8 string decoder must NOT be emitted.
+    std::set<std::string> fns = {"js_add(int a, int b){ return a + b; }"};
+    generate_js_runtime(defs, imports, markers, fns, "/tmp");
+    std::string js = read_file("/tmp/app.js");
+
+    CHECK(js.find("js_add") != std::string::npos);
+    CHECK(js.find("__webcc_utf8") == std::string::npos);
+}
+
+TEST(codegen_js_no_inline_js_when_none_used)
+{
+    SchemaDefs defs = real_defs();
+    std::set<std::string> imports = {"webcc_js_flush", "webcc_canvas_create_canvas"};
+    std::set<std::string> markers;
+    // A build with no WEBCC_JS functions emits no wjs_fn module at all.
+    generate_js_runtime(defs, imports, markers, {}, "/tmp");
+    std::string js = read_file("/tmp/app.js");
+    CHECK(js.find("wjs_fn") == std::string::npos);
+    CHECK(js.find("__webcc_utf8") == std::string::npos);
 }
 
 // emit_headers() writes to hard-coded relative paths (include/webcc/...). Run it
