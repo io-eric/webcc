@@ -5,7 +5,9 @@
 #include <sstream>
 #include <vector>
 #include <cctype>
+#include <cstdio>
 #include <set>
+#include <map>
 #include <regex>
 #include <sys/stat.h>
 
@@ -710,7 +712,170 @@ namespace webcc
         return exports;
     }
 
-    void generate_js_runtime(const SchemaDefs &defs, const std::set<std::string> &wasm_imports, const std::set<std::string> &void_markers, const std::string &out_dir)
+    // Escape a raw byte string into a JS string literal (including the quotes).
+    // Used to turn a WEBCC_JS snippet's source -- which is also its wasm import
+    // name -- into a valid object key that parses back to the identical bytes.
+    static std::string js_quote(const std::string &s)
+    {
+        std::string out = "\"";
+        for (unsigned char c : s)
+        {
+            switch (c)
+            {
+            case '\\': out += "\\\\"; break;
+            case '"': out += "\\\""; break;
+            case '\n': out += "\\n"; break;
+            case '\r': out += "\\r"; break;
+            case '\t': out += "\\t"; break;
+            default:
+                if (c < 0x20)
+                {
+                    char buf[8];
+                    std::snprintf(buf, sizeof(buf), "\\u%04x", c);
+                    out += buf;
+                }
+                else
+                    out += (char)c;
+            }
+        }
+        out += "\"";
+        return out;
+    }
+
+    // A parsed WEBCC_JS parameter: the identifier plus how the JS handler
+    // should adapt the incoming wasm value.
+    struct JsFnParam
+    {
+        std::string name;
+        bool is_string;   // const char*: decode the pointer to a JS string
+        bool is_unsigned; // unsigned/uint*: reinterpret the i32 as unsigned
+    };
+
+    // Split a WEBCC_JS import name -- "name(params){body}" -- into its parts.
+    // The shape is guaranteed by the macro: an identifier, a balanced paren
+    // group, then the brace body.
+    static bool parse_js_fn(const std::string &imp, std::string &name,
+                            std::string &params_raw, std::string &body)
+    {
+        size_t i = 0;
+        while (i < imp.size() && (std::isalnum((unsigned char)imp[i]) || imp[i] == '_'))
+            ++i;
+        if (i == 0 || i >= imp.size() || imp[i] != '(')
+            return false;
+        name = imp.substr(0, i);
+
+        int depth = 0;
+        size_t j = i;
+        for (; j < imp.size(); ++j)
+        {
+            if (imp[j] == '(')
+                ++depth;
+            else if (imp[j] == ')' && --depth == 0)
+                break;
+        }
+        if (j >= imp.size())
+            return false;
+        params_raw = imp.substr(i + 1, j - i - 1); // inside the outer parens
+        body = imp.substr(j + 1);                  // the "{ ... }" remainder
+        return true;
+    }
+
+    // Extract one entry per declared parameter (name + marshalling hints). The
+    // name is the trailing identifier of each comma-separated declaration; the
+    // type prefix decides string/unsigned handling. Unnamed params and `void`
+    // are skipped.
+    static std::vector<JsFnParam> parse_js_fn_params(const std::string &params_raw)
+    {
+        std::vector<JsFnParam> out;
+        std::vector<std::string> parts;
+        int depth = 0;
+        std::string cur;
+        for (char c : params_raw)
+        {
+            if (c == '(' || c == '<' || c == '[')
+                ++depth;
+            else if (c == ')' || c == '>' || c == ']')
+                --depth;
+            if (c == ',' && depth == 0)
+            {
+                parts.push_back(cur);
+                cur.clear();
+            }
+            else
+                cur += c;
+        }
+        if (!cur.empty())
+            parts.push_back(cur);
+
+        for (auto &p : parts)
+        {
+            size_t a = p.find_first_not_of(" \t");
+            size_t b = p.find_last_not_of(" \t");
+            if (a == std::string::npos)
+                continue;
+            std::string t = p.substr(a, b - a + 1);
+            if (t == "void")
+                continue;
+            size_t e = t.size();
+            while (e > 0 && (std::isalnum((unsigned char)t[e - 1]) || t[e - 1] == '_'))
+                --e;
+            std::string pname = t.substr(e);
+            if (pname.empty())
+                continue; // unnamed parameter: nothing to bind in JS
+            std::string type = t.substr(0, e);
+            bool is_string = type.find("char") != std::string::npos && type.find('*') != std::string::npos;
+            bool is_unsigned = type.find("unsigned") != std::string::npos || type.find("uint") != std::string::npos;
+            out.push_back({pname, is_string, is_unsigned});
+        }
+        return out;
+    }
+
+    // Emit the "wjs_fn" import module: one handler per named WEBCC_JS. The
+    // import name carries the full `name(params){body}` source; we reproduce it
+    // as `(names) => { <marshalling> <body> }`. Sets need_utf8 if any handler
+    // needs the NUL-terminated string decoder.
+    static void emit_inline_js_fn_module(CodeWriter &w, const std::set<std::string> &fns, bool &need_utf8)
+    {
+        if (fns.empty())
+            return;
+        w.raw(",\n        wjs_fn: {");
+        bool first = true;
+        for (const auto &imp : fns)
+        {
+            std::string name, params_raw, body;
+            if (!parse_js_fn(imp, name, params_raw, body))
+                continue;
+            auto params = parse_js_fn_params(params_raw);
+
+            // Strip the body's outer braces so we can wrap it in the handler.
+            std::string inner = body;
+            size_t ob = inner.find('{'), cb = inner.rfind('}');
+            if (ob != std::string::npos && cb != std::string::npos && cb > ob)
+                inner = inner.substr(ob + 1, cb - ob - 1);
+
+            std::string namelist, prelude;
+            for (size_t k = 0; k < params.size(); ++k)
+            {
+                if (k)
+                    namelist += ", ";
+                namelist += params[k].name;
+                if (params[k].is_string)
+                {
+                    prelude += params[k].name + " = __webcc_utf8(" + params[k].name + "); ";
+                    need_utf8 = true;
+                }
+                else if (params[k].is_unsigned)
+                    prelude += params[k].name + " = " + params[k].name + " >>> 0; ";
+            }
+
+            w.raw(first ? "\n" : ",\n");
+            first = false;
+            w.raw("            " + js_quote(imp) + ": (" + namelist + ") => {" + prelude + inner + "}");
+        }
+        w.raw("\n        }");
+    }
+
+    void generate_js_runtime(const SchemaDefs &defs, const std::set<std::string> &wasm_imports, const std::set<std::string> &void_markers, const std::set<std::string> &inline_js_fns, const std::string &out_dir)
     {
         CodeWriter w;
 
@@ -855,6 +1020,11 @@ namespace webcc
         if (any_void_command_used)
             w.raw(",\n        w: new Proxy({}, { get: () => _wm })");
 
+        // Inline-JS escape hatch (WEBCC_JS): one sibling "wjs_fn" handler per
+        // named function the link actually retained.
+        bool need_js_utf8 = false;
+        emit_inline_js_fn_module(w, inline_js_fns, need_js_utf8);
+
         w.raw(JS_INIT_INSTANTIATE);
         w.set_indent(1);
 
@@ -877,6 +1047,17 @@ namespace webcc
         w.write("let event_f32 = new Float32Array(memory.buffer, event_buffer_ptr_val);");
         w.write("let event_f64 = new Float64Array(memory.buffer, event_buffer_ptr_val);");
         w.write("const text_encoder = new TextEncoder();");
+
+        // Decoder for `const char*` parameters of named WEBCC_JS functions:
+        // read the NUL-terminated UTF-8 string at `ptr` from linear memory.
+        if (need_js_utf8)
+        {
+            w.write("const __webcc_utf8 = (ptr) => {");
+            w.write("    const m = new Uint8Array(memory.buffer);");
+            w.write("    let e = ptr; while (m[e] !== 0) e++;");
+            w.write("    return decoder.decode(m.subarray(ptr, e));");
+            w.write("};");
+        }
         w.write("const EVENT_BUFFER_SIZE = webcc_event_buffer_capacity();");
         w.write("");
         w.write("// Global update function reference for immediate discrete event processing");

@@ -126,8 +126,18 @@ int main(int argc, char **argv)
         return 1;
     }
 
+    // Inline-JS escape hatch (WEBCC_JS): each named function is imported from
+    // module "wjs_fn" with import name `name(params){body}` (the JS source
+    // itself), so generate_js_runtime can mirror back a matching handler.
+    std::set<std::string> inline_js_fns;
+    if (!webcc::read_wasm_imports(wasm_path, inline_js_fns, "wjs_fn"))
+    {
+        std::cerr << "[WebCC] Error: Could not read inline-JS imports from " << wasm_path << std::endl;
+        return 1;
+    }
+
     // C. GENERATE JS RUNTIME (both command kinds detected from the import table).
-    webcc::generate_js_runtime(defs, wasm_imports, void_markers, out_dir);
+    webcc::generate_js_runtime(defs, wasm_imports, void_markers, inline_js_fns, out_dir);
 
     // E. GENERATE HTML (Basic scaffolding).
     webcc::generate_html(out_dir, template_path);

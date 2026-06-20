@@ -52,6 +52,27 @@ int main(){ webcc::fetch::get("/api","{}");
 
   webgpu: `#include "webcc/wgpu.h"
 int main(){ webcc::wgpu::request_adapter(); }`,
+
+  // WEBCC_JS inline-JavaScript escape hatch: each named function becomes a wasm
+  // import whose name carries its full source, mirrored back into app.js as a
+  // handler. Numeric + const char* params, a quoted/multi-line body, and the
+  // void/int/double return types must all produce syntactically valid JS.
+  inline_js: `#include "webcc/system.h"
+WEBCC_JS(void, log_msg, (const char* m), { console.log("inline:", m); });
+WEBCC_JS(int, js_add, (int a, int b), { return a + b; });
+WEBCC_JS(double, js_now, (), { return performance.now(); });
+WEBCC_JS(void, add_para, (const char* text), {
+  const p = document.createElement('p');
+  p.textContent = text;
+  document.body.appendChild(p);
+});
+int main(){
+  log_msg("hello");
+  int s = js_add(2, 3);
+  double t = js_now();
+  add_para("made in raw JS");
+  (void)s; (void)t;
+}`,
 };
 
 const work = mkdtempSync(join(tmpdir(), "webcc-js-"));

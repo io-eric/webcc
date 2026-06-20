@@ -30,7 +30,12 @@ namespace webcc
     // (`wasm_imports`); void commands appear as per-opcode marker imports in
     // module "w" (`void_markers`, field name = decimal opcode). See
     // read_wasm_imports and emit_headers.
-    void generate_js_runtime(const SchemaDefs &defs, const std::set<std::string> &wasm_imports, const std::set<std::string> &void_markers, const std::string &out_dir);
+    //
+    // `inline_js_fns` holds the WEBCC_JS escape-hatch functions: the set of
+    // import names from module "wjs_fn", each of the form `name(params){body}`
+    // (the JS source itself). Every entry is mirrored back into app.js as a
+    // matching handler. See js.h.
+    void generate_js_runtime(const SchemaDefs &defs, const std::set<std::string> &wasm_imports, const std::set<std::string> &void_markers, const std::set<std::string> &inline_js_fns, const std::string &out_dir);
 
     // Generates the HTML scaffolding (index.html).
     // If a template file exists (index.template.html), uses it and injects the script tag.
