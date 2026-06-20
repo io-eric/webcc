@@ -83,27 +83,34 @@ namespace
     {
         return load_defs(std::string(WEBCC_SCHEMA_DEF));
     }
+
+    // Build the module-"w" marker set (opcode strings) for the given void
+    // commands, mirroring what the linker emits when those wrappers are
+    // referenced by user code. generate_js_runtime detects void commands from
+    // this set, exactly as it does from the real wasm import table.
+    std::set<std::string> void_markers(const SchemaDefs &defs,
+                                       const std::set<std::string> &qualified_names)
+    {
+        std::set<std::string> out;
+        for (const auto &c : defs.commands)
+            if (qualified_names.count(c.ns + "::" + c.func_name))
+                out.insert(std::to_string((int)c.opcode));
+        return out;
+    }
 }
 
 TEST(codegen_js_canvas_snapshot)
 {
     SchemaDefs defs = real_defs();
     // A canvas-only program. Return commands are detected from the linker import
-    // set; void commands (fill_rect) are detected by scanning the source.
+    // set; void commands (fill_rect) are detected from their module-"w" markers.
     std::set<std::string> imports = {
         "webcc_js_flush",
         "webcc_canvas_create_canvas",
         "webcc_canvas_get_context_2d",
     };
-    std::string user = R"(
-        #include "webcc/canvas.h"
-        int main() {
-            auto c = webcc::canvas::create_canvas("c", 640, 480);
-            auto ctx = webcc::canvas::get_context_2d(c);
-            webcc::canvas::fill_rect(ctx, 0, 0, 100, 100);
-        }
-    )";
-    generate_js_runtime(defs, imports, user, "/tmp");
+    auto markers = void_markers(defs, {"canvas::fill_rect"});
+    generate_js_runtime(defs, imports, markers, "/tmp");
     std::string js = read_file("/tmp/app.js");
     check_snapshot("app_canvas.js", js);
 }
@@ -111,21 +118,14 @@ TEST(codegen_js_canvas_snapshot)
 TEST(codegen_js_treeshakes_unused_modules)
 {
     SchemaDefs defs = real_defs();
-    // Same canvas-only program as above (return imports + source for void cmds).
+    // Same canvas-only program as above (return imports + void-command markers).
     std::set<std::string> imports = {
         "webcc_js_flush",
         "webcc_canvas_create_canvas",
         "webcc_canvas_get_context_2d",
     };
-    std::string user = R"(
-        #include "webcc/canvas.h"
-        int main() {
-            auto c = webcc::canvas::create_canvas("c", 640, 480);
-            auto ctx = webcc::canvas::get_context_2d(c);
-            webcc::canvas::fill_rect(ctx, 0, 0, 100, 100);
-        }
-    )";
-    generate_js_runtime(defs, imports, user, "/tmp");
+    auto markers = void_markers(defs, {"canvas::fill_rect"});
+    generate_js_runtime(defs, imports, markers, "/tmp");
     std::string js = read_file("/tmp/app.js");
 
     // Canvas code IS present...
@@ -147,16 +147,8 @@ TEST(codegen_js_emits_event_delegation_only_when_used)
         "webcc_dom_get_body",
         "webcc_dom_create_element",
     };
-    std::string user = R"(
-        #include "webcc/dom.h"
-        int main() {
-            auto b = webcc::dom::get_body();
-            auto btn = webcc::dom::create_element("button");
-            webcc::dom::append_child(b, btn);
-            webcc::dom::add_click_listener(btn);
-        }
-    )";
-    generate_js_runtime(defs, imports, user, "/tmp");
+    auto markers = void_markers(defs, {"dom::append_child", "dom::add_click_listener"});
+    generate_js_runtime(defs, imports, markers, "/tmp");
     std::string js = read_file("/tmp/app.js");
 
     // Click delegation wired up; keydown delegation not (unused).
@@ -174,16 +166,8 @@ TEST(codegen_dom_user_snapshot)
         "webcc_dom_get_body",
         "webcc_dom_create_element",
     };
-    std::string user = R"(
-        #include "webcc/dom.h"
-        int main() {
-            auto b = webcc::dom::get_body();
-            auto d = webcc::dom::create_element("div");
-            webcc::dom::set_inner_text(d, "hello");
-            webcc::dom::append_child(b, d);
-        }
-    )";
-    generate_js_runtime(defs, imports, user, "/tmp");
+    auto markers = void_markers(defs, {"dom::set_inner_text", "dom::append_child"});
+    generate_js_runtime(defs, imports, markers, "/tmp");
     std::string js = read_file("/tmp/app.js");
     check_snapshot("app_dom.js", js);
 }

@@ -21,6 +21,7 @@ const run = async () => {
     const assetBase = new URL('.', scriptSrc || window.location.href);
     const wasmUrl = new URL('app.wasm', assetBase);
 
+    const _wm = () => {}; // shared no-op for void-command feature markers (never called)
     const imports = {
         env: {
             // C++ calls this function to tell JS "I wrote commands, please execute them"
@@ -31,10 +32,15 @@ const run = async () => {
             __cxa_finalize: () => {}
 )";
 
+    // Closes the `env` import object. The generator may then append sibling
+    // import modules (e.g. the "w" marker-stub module) before JS_INIT_INSTANTIATE
+    // closes the `imports` object and instantiates the module.
+    const std::string JS_INIT_ENV_CLOSE = R"(
+        })";
+
     // JS code to finalize WASM instantiation.
     // Note: The exports destructuring is now generated dynamically based on what's needed.
-    const std::string JS_INIT_TAIL = R"(
-        }
+    const std::string JS_INIT_INSTANTIATE = R"(
     };
 
     let mod;

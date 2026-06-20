@@ -104,31 +104,30 @@ int main(int argc, char **argv)
     std::string schema_cache_path = exe_dir + "/schema.wcc.bin";
     defs = webcc::load_defs_cached(schema_cache_path, defs_path);
 
-    // A. READ USER CODE (all files), concatenated for the void-command scan.
-    std::string user_code;
-    for (const auto &path : input_files)
-        user_code += webcc::read_file(path) + "\n";
-
-    // B. COMPILE C++ TO WASM (Incremental).
+    // A. COMPILE C++ TO WASM (Incremental).
     // Link first, with a constant set of exports, so the linked module's import
-    // table becomes the ground-truth list of return-value commands the user's
-    // code references (the compiler resolves those names; we never guess them).
+    // table becomes the ground-truth list of commands the user's code references
+    // (the compiler/linker resolves those names; we never guess them).
     if (!webcc::compile_wasm(input_files, out_dir, cache_dir, webcc::required_wasm_exports()))
     {
         return 1;
     }
 
-    // C. READ the linked wasm's import table (return-value command detection).
+    // B. READ the linked wasm's import table for feature detection.
+    //    env."webcc_<ns>_<func>"  -> return-value commands (real imports)
+    //    w."<opcode>"             -> void commands (per-opcode marker imports)
     std::string wasm_path = out_dir + "/app.wasm";
     std::set<std::string> wasm_imports;
-    if (!webcc::read_wasm_imports(wasm_path, wasm_imports))
+    std::set<std::string> void_markers;
+    if (!webcc::read_wasm_imports(wasm_path, wasm_imports) ||
+        !webcc::read_wasm_imports(wasm_path, void_markers, "w"))
     {
         std::cerr << "[WebCC] Error: Could not read imports from " << wasm_path << std::endl;
         return 1;
     }
 
-    // D. GENERATE JS RUNTIME (return cmds from imports; void cmds from source).
-    webcc::generate_js_runtime(defs, wasm_imports, user_code, out_dir);
+    // C. GENERATE JS RUNTIME (both command kinds detected from the import table).
+    webcc::generate_js_runtime(defs, wasm_imports, void_markers, out_dir);
 
     // E. GENERATE HTML (Basic scaffolding).
     webcc::generate_html(out_dir, template_path);
