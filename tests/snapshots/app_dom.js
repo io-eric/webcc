@@ -14,6 +14,7 @@ const run = async () => {
     const assetBase = new URL('.', scriptSrc || window.location.href);
     const wasmUrl = new URL('app.wasm', assetBase);
 
+    const _wm = () => {}; // shared no-op for void-command feature markers (never called)
     const imports = {
         env: {
             // C++ calls this function to tell JS "I wrote commands, please execute them"
@@ -32,6 +33,10 @@ const run = async () => {
                 const handle = (window.webcc_next_id = (window.webcc_next_id || 0) + 1); const el = document.createElement(tag); elements[handle] = el; return handle;
             }
 
+        },
+        w: {
+            "15": _wm,
+            "20": _wm
         }
     };
 
