@@ -14,6 +14,7 @@ const run = async () => {
     const assetBase = new URL('.', scriptSrc || window.location.href);
     const wasmUrl = new URL('app.wasm', assetBase);
 
+    const _wm = () => {}; // shared no-op for void-command feature markers (never called)
     const imports = {
         env: {
             // C++ calls this function to tell JS "I wrote commands, please execute them"
@@ -32,7 +33,8 @@ const run = async () => {
                 const handle = (window.webcc_next_id = (window.webcc_next_id || 0) + 1); const c = elements[canvas_handle]; if(!c) { console.warn('get_context_2d: unknown canvas', canvas_handle); return -1; } contexts[handle] = c.getContext('2d'); return handle;
             }
 
-        }
+        },
+        w: new Proxy({}, { get: () => _wm })
     };
 
     let mod;

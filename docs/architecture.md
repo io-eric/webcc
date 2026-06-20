@@ -22,10 +22,13 @@ The build uses Ninja for incremental compilation:
 
 ## Compilation & Linking
 WebCC acts as a wrapper around `clang++`. It:
-1.  **Scans** your code to determine which Web APIs are used.
-2.  **Generates** a tree-shaken `app.js` containing only the necessary JS glue code for the features you use.
-3.  **Compiles** your C++ code to WebAssembly.
+1.  **Compiles & links** your C++ code to WebAssembly first.
+2.  **Detects features from the linked module's import table** - never by scanning source text. Every API the code references leaves an import: return-value commands appear as real `webcc_<ns>_<func>` imports (they call into JS), and void commands appear as per-opcode marker imports in module `w`. Because the linker resolves these, detection is exact and immune to aliases, macros, or compat-header lowering (e.g. `std::cout` → `system::log`).
+3.  **Generates** a tree-shaken `app.js` containing only the necessary JS glue code for the features you use.
 4.  **Caches** compiled object files in a `.webcc_cache` directory (located inside the output directory) to speed up subsequent builds.
+
+### Void-command feature markers
+Void commands are batched through the command buffer and never call across the JS boundary, so they would leave no import on their own. To make them linker-detectable, each generated void wrapper parks the address of a tiny imported function (module `w`, field = opcode) in a `used` static. The marker is **never called** - it adds no runtime cost - but it appears in the import table if and only if that wrapper is live in the final module. The generated `app.js` supplies a shared no-op stub for each marker at instantiation.
 
 ## Resource Handles
 To maximize performance, WebCC uses **typed integer handles** to reference resources (like DOM elements, Canvases, Audio objects, and WebGL programs).

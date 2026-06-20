@@ -25,11 +25,12 @@ namespace webcc
     bool contains_whole_word(const std::string &text, const std::string &word);
 
     // Generates the JavaScript runtime (app.js) based on used commands.
-    // Return-value commands are detected from `wasm_imports` (the import field
-    // names of the linked module, see read_wasm_imports); void commands are
-    // detected by scanning `user_code` (comments/strings stripped) for a
-    // qualified call.
-    void generate_js_runtime(const SchemaDefs &defs, const std::set<std::string> &wasm_imports, const std::string &user_code, const std::string &out_dir);
+    // Both command kinds are detected from the linked module's import table:
+    // return-value commands appear as `webcc_<ns>_<func>` imports in `env`
+    // (`wasm_imports`); void commands appear as per-opcode marker imports in
+    // module "w" (`void_markers`, field name = decimal opcode). See
+    // read_wasm_imports and emit_headers.
+    void generate_js_runtime(const SchemaDefs &defs, const std::set<std::string> &wasm_imports, const std::set<std::string> &void_markers, const std::string &out_dir);
 
     // Generates the HTML scaffolding (index.html).
     // If a template file exists (index.template.html), uses it and injects the script tag.

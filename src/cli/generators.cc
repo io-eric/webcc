@@ -462,6 +462,17 @@ namespace webcc
                     continue;
                 }
 
+                // Per-command feature marker: an imported function (module "w",
+                // field = opcode) whose address is parked in a `used` static
+                // inside the wrapper below. It is never called -- so it costs
+                // nothing at runtime -- but it appears in the linked module's
+                // import table iff this wrapper is actually referenced by user
+                // code. That import is how generate_js_runtime detects, exactly
+                // and without scanning source text, that this void command is
+                // used (return-value commands are caught via their real import).
+                std::string mark_op = std::to_string((int)d.opcode);
+                w.write("extern \"C\" __attribute__((import_module(\"w\"), import_name(\"" + mark_op + "\"))) void __webcc_m_" + mark_op + "(void);");
+
                 // Check if we need templates for func_ptr
                 std::vector<std::string> t_params;
                 for (size_t i = 0; i < d.params.size(); ++i)
@@ -509,6 +520,7 @@ namespace webcc
                 }
                 func << "){";
                 w.write(func.str());
+                w.write("[[maybe_unused]] static void (*const __webcc_keep)(void) __attribute__((used)) = &__webcc_m_" + mark_op + ";");
                 w.write("push_command((uint32_t)OP_" + d.name + ");");
                 for (size_t i = 0; i < d.params.size(); ++i)
                 {
@@ -679,72 +691,6 @@ namespace webcc
         return events;
     }
 
-    // Replace C/C++ comments and string/char literals with spaces so the void
-    // command scan can't be fooled by an API name that appears inside a comment,
-    // a string, or a raw-string (e.g. GLSL shader source). Handles //, /* */,
-    // "...", '...', and R"delim(...)delim".
-    std::string strip_comments_and_strings(const std::string &code)
-    {
-        std::string out;
-        out.reserve(code.size());
-        size_t i = 0, n = code.size();
-        while (i < n)
-        {
-            char c = code[i];
-
-            if (c == '/' && i + 1 < n && code[i + 1] == '/') // line comment
-            {
-                i += 2;
-                while (i < n && code[i] != '\n')
-                    ++i;
-                continue;
-            }
-            if (c == '/' && i + 1 < n && code[i + 1] == '*') // block comment
-            {
-                i += 2;
-                while (i + 1 < n && !(code[i] == '*' && code[i + 1] == '/'))
-                    ++i;
-                i = (i + 2 > n) ? n : i + 2;
-                out += ' ';
-                continue;
-            }
-            if (c == 'R' && i + 1 < n && code[i + 1] == '"') // raw string R"delim(...)delim"
-            {
-                size_t j = i + 2;
-                std::string delim;
-                while (j < n && code[j] != '(' && delim.size() < 16)
-                    delim += code[j++];
-                if (j < n && code[j] == '(')
-                {
-                    std::string closer = ")" + delim + "\"";
-                    size_t end = code.find(closer, j + 1);
-                    i = (end == std::string::npos) ? n : end + closer.size();
-                    out += ' ';
-                    continue;
-                }
-                // not actually a raw string; fall through and treat 'R' normally
-            }
-            if (c == '"' || c == '\'') // string / char literal
-            {
-                char quote = c;
-                ++i;
-                while (i < n && code[i] != quote)
-                {
-                    if (code[i] == '\\' && i + 1 < n)
-                        ++i;
-                    ++i;
-                }
-                ++i; // closing quote
-                out += ' ';
-                continue;
-            }
-
-            out += c;
-            ++i;
-        }
-        return out;
-    }
-
     const std::set<std::string> &required_wasm_exports()
     {
         // Symbols the JS runtime always reads from the instantiated module.
@@ -764,7 +710,7 @@ namespace webcc
         return exports;
     }
 
-    void generate_js_runtime(const SchemaDefs &defs, const std::set<std::string> &wasm_imports, const std::string &user_code, const std::string &out_dir)
+    void generate_js_runtime(const SchemaDefs &defs, const std::set<std::string> &wasm_imports, const std::set<std::string> &void_markers, const std::string &out_dir)
     {
         CodeWriter w;
 
@@ -775,42 +721,30 @@ namespace webcc
         std::set<std::string> used_event_listeners; // Track which event types need delegation
         std::set<std::string> used_event_helpers;   // Track which push_event helpers must exist
         std::vector<std::string> generated_js_imports;
+        bool any_void_command_used = false; // whether any void command (and thus marker import) is used
         CodeWriter cases_w;
         cases_w.set_indent(4);
 
-        // Detect which commands are used. The two kinds of command leave
-        // different traces, so we use the right tool for each:
+        // Detect which commands are used entirely from the linked module's
+        // import table -- no source scanning. Both kinds of command leave an
+        // import when (and only when) the user's code references them:
         //   * Return-value commands are real wasm imports (webcc_<ns>_<func>),
-        //     read straight from the linked module's import table. Exact, and
-        //     impossible to desync from what the module actually needs.
-        //   * Void commands are dispatched by opcode through the shared
-        //     webcc_js_flush import and leave no unique symbol, so we fall back
-        //     to scanning the user source -- with comments and string literals
-        //     stripped first to avoid false positives -- for a qualified call.
-        std::string scan_code = strip_comments_and_strings(user_code);
+        //     called directly from the wrapper.
+        //   * Void commands are batched and never call across the boundary, so
+        //     each wrapper instead parks the address of a per-command marker
+        //     import (module "w", field = opcode) in a `used` static. The
+        //     marker is never called, but it appears in the import table iff
+        //     the wrapper is live -- which `void_markers` reflects exactly.
+        // This is immune to aliases, macros, and compat-header lowering (e.g.
+        // std::cout -> system::log) that a text scan would silently miss.
 
         for (const auto &d : defs.commands)
         {
             bool used;
             if (!d.return_type.empty())
-            {
                 used = wasm_imports.count("webcc_" + d.ns + "_" + d.func_name) > 0;
-            }
             else
-            {
-                used = contains_whole_word(scan_code, d.ns + "::" + d.func_name) ||
-                       contains_whole_word(scan_code, "webcc::" + d.ns + "::" + d.func_name);
-
-                // std::cout / std::cerr lower to webcc::system::log / error via
-                // the iostream compat header, so the qualified name never appears
-                // in user code. (std::chrono -> get_time / get_date_now needs no
-                // special case: those are return commands, caught via imports.)
-                if (!used && d.ns == "system" && (d.func_name == "log" || d.func_name == "error"))
-                {
-                    used = contains_whole_word(scan_code, "std::cout") ||
-                           contains_whole_word(scan_code, "std::cerr");
-                }
-            }
+                used = void_markers.count(std::to_string((int)d.opcode)) > 0;
 
             if (!used)
                 continue;
@@ -868,8 +802,10 @@ namespace webcc
                 else
                 {
                     // For commands without a return value, generate a case in the flush switch.
-                    // (Dispatched by opcode -- no JS import needed.)
+                    // (Dispatched by opcode -- no JS import needed.) Its marker
+                    // import still needs a no-op stub at instantiation time.
                     gen_js_case(d, cases_w);
+                    any_void_command_used = true;
                 }
 
                 used_namespaces.insert(d.ns);
@@ -910,7 +846,16 @@ namespace webcc
             w.raw(",\n");
             w.write(imp);
         }
-        w.raw(JS_INIT_TAIL);
+        w.raw(JS_INIT_ENV_CLOSE);
+
+        // Sibling "w" import module: every used void command leaves a marker
+        // import (see emit_headers) that must be supplied at instantiation even
+        // though it is never called. A Proxy returns the shared no-op for any
+        // marker name, so this stays one line no matter how many are used.
+        if (any_void_command_used)
+            w.raw(",\n        w: new Proxy({}, { get: () => _wm })");
+
+        w.raw(JS_INIT_INSTANTIATE);
         w.set_indent(1);
 
         // Generate single unified exports destructuring
@@ -1293,6 +1238,18 @@ namespace webcc
         std::string object_files_str;
         bool compilation_failed = false;
 
+        // Toolchain-version guard for the object cache. The cache keys only on
+        // source mtime, so a rebuilt webcc -- or headers regenerated in the same
+        // build step -- would otherwise leave stale objects in place. That now
+        // matters for correctness, not just freshness: feature detection reads
+        // per-command markers out of the compiled object, so a stale object
+        // compiled against old headers silently under-detects commands. Treat
+        // the webcc binary's mtime as the toolchain version and recompile any
+        // object older than it. (Only triggers right after a toolchain rebuild;
+        // ordinary app edits leave the binary's mtime untouched.)
+        struct stat exe_stat;
+        bool have_exe_mtime = (stat(get_executable_path().c_str(), &exe_stat) == 0);
+
         for (const auto &src : all_sources)
         {
             std::string obj_name = src;
@@ -1308,7 +1265,8 @@ namespace webcc
             {
                 if (stat(obj.c_str(), &obj_stat) == 0)
                 {
-                    if (obj_stat.st_mtime >= src_stat.st_mtime)
+                    if (obj_stat.st_mtime >= src_stat.st_mtime &&
+                        (!have_exe_mtime || obj_stat.st_mtime >= exe_stat.st_mtime))
                         need_compile = false;
                 }
             }
