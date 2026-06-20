@@ -721,7 +721,7 @@ namespace webcc
         std::set<std::string> used_event_listeners; // Track which event types need delegation
         std::set<std::string> used_event_helpers;   // Track which push_event helpers must exist
         std::vector<std::string> generated_js_imports;
-        std::vector<int> used_void_opcodes; // opcodes of used void commands (need import stubs)
+        bool any_void_command_used = false; // whether any void command (and thus marker import) is used
         CodeWriter cases_w;
         cases_w.set_indent(4);
 
@@ -805,7 +805,7 @@ namespace webcc
                     // (Dispatched by opcode -- no JS import needed.) Its marker
                     // import still needs a no-op stub at instantiation time.
                     gen_js_case(d, cases_w);
-                    used_void_opcodes.push_back((int)d.opcode);
+                    any_void_command_used = true;
                 }
 
                 used_namespaces.insert(d.ns);
@@ -850,18 +850,10 @@ namespace webcc
 
         // Sibling "w" import module: every used void command leaves a marker
         // import (see emit_headers) that must be supplied at instantiation even
-        // though it is never called. Provide the shared no-op for each.
-        if (!used_void_opcodes.empty())
-        {
-            std::string wmod = ",\n        w: {\n";
-            for (size_t i = 0; i < used_void_opcodes.size(); ++i)
-            {
-                wmod += "            \"" + std::to_string(used_void_opcodes[i]) + "\": _wm";
-                wmod += (i + 1 < used_void_opcodes.size()) ? ",\n" : "\n";
-            }
-            wmod += "        }";
-            w.raw(wmod);
-        }
+        // though it is never called. A Proxy returns the shared no-op for any
+        // marker name, so this stays one line no matter how many are used.
+        if (any_void_command_used)
+            w.raw(",\n        w: new Proxy({}, { get: () => _wm })");
 
         w.raw(JS_INIT_INSTANTIATE);
         w.set_indent(1);

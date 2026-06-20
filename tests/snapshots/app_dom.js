@@ -34,10 +34,7 @@ const run = async () => {
             }
 
         },
-        w: {
-            "15": _wm,
-            "20": _wm
-        }
+        w: new Proxy({}, { get: () => _wm })
     };
 
     let mod;
