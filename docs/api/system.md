@@ -70,8 +70,12 @@ These functions provide access to the system time.
 // Returns the time in milliseconds since the page started loading (performance.now())
 double get_time();
 
-// Returns the number of milliseconds elapsed since the epoch (Date.now())
+// Returns the number of milliseconds elapsed since the epoch, UTC (Date.now())
 double get_date_now();
+
+// Returns the local timezone offset from UTC in milliseconds.
+// Add it to a UTC epoch-ms value to convert it to local time.
+double get_timezone_offset_ms();
 ```
 
 ## Visibility API
