@@ -18,6 +18,15 @@ Saves a key-value pair to local storage.
 void set_item(webcc::string_view key, webcc::string_view value);
 ```
 
+### `get_item`
+
+Reads a value from local storage by its key. Returns an empty string if the key
+does not exist.
+
+```cpp
+webcc::string get_item(webcc::string_view key);
+```
+
 ### `remove_item`
 
 Removes an item from local storage by its key.

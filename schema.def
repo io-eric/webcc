@@ -147,6 +147,7 @@ system|command|INIT_VISIBILITY_CHANGE|init_visibility_change||{ document.addEven
 # STORAGE (LocalStorage)
 # ------------------------------------------------------------------------------
 storage|command|SET_ITEM|set_item|string:key string:value|{ localStorage.setItem(key, value); }
+storage|command|GET_ITEM|get_item|string:key RET:string|{ const ret = localStorage.getItem(key) || ""; }
 storage|command|REMOVE_ITEM|remove_item|string:key|{ localStorage.removeItem(key); }
 storage|command|CLEAR|clear||{ localStorage.clear(); }
 
