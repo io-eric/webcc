@@ -12,7 +12,7 @@ namespace webcc
 {
     // Binary cache magic and version for validation
     static constexpr uint32_t SCHEMA_MAGIC = 0x57434353; // "WCCS" (WebCC Schema)
-    static constexpr uint32_t SCHEMA_VERSION = 1;
+    static constexpr uint32_t SCHEMA_VERSION = 2;
 
     // Helper functions for binary serialization
     static void write_string(std::ostream &out, const std::string &s)
@@ -237,8 +237,8 @@ namespace webcc
         }
         std::istringstream ss(contents);
         std::string line;
-        uint8_t current_cmd_opcode = 1;
-        uint8_t current_event_opcode = 1;
+        uint32_t current_cmd_opcode = 1;
+        uint32_t current_event_opcode = 1;
         int line_num = 0;
         
         // Track seen names per namespace for duplicate detection
@@ -315,10 +315,16 @@ namespace webcc
                 }
                 seen_events[ns].insert(event_name);
                 
+                if (current_event_opcode > 0xFF)
+                {
+                    std::cerr << "[WebCC] Error: Too many events (max 255) at line " << line_num << std::endl;
+                    exit(1);
+                }
+
                 SchemaEvent e;
                 e.ns = ns;
                 e.name = event_name;
-                e.opcode = current_event_opcode++;
+                e.opcode = static_cast<uint8_t>(current_event_opcode++);
 
                 std::istringstream tss(parts[name_idx + 1]);
                 std::string tkn;
@@ -383,7 +389,12 @@ namespace webcc
                 SchemaCommand c;
                 c.ns = ns;
                 c.name = cmd_name;
-                c.opcode = current_cmd_opcode++;
+                if (current_cmd_opcode > 0xFFFF)
+                {
+                    std::cerr << "[WebCC] Error: Too many commands (max 65535) at line " << line_num << std::endl;
+                    exit(1);
+                }
+                c.opcode = static_cast<uint16_t>(current_cmd_opcode++);
                 c.func_name = func_name;
                 // types
                 std::istringstream tss(parts[name_idx + 2]);

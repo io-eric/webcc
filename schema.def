@@ -10,6 +10,11 @@
 # This generates type-safe handle wrappers in C++ that are distinct at compile time.
 #
 # Binary data: Use bytes:name for raw bytes (webcc::bytes_view in C++, Uint8Array in JS).
+#   RET:bytes returns webcc::vector<uint8_t>; the action sets `ret` to a Uint8Array.
+#   Data too big for an event (files, responses) goes through a Blob handle, see BLOB.
+#
+# Events: an action that pushes an input event the app must react to right away
+#   (click, key, pointer down/up, paste, drop) calls _triggerDiscreteUpdate() after it.
 #
 # Inheritance: Use meta|inherit|Derived|Base to allow implicit conversion:
 meta|inherit|Canvas|DOMElement
@@ -164,6 +169,17 @@ audio|command|SET_VOLUME|set_volume|handle(Audio):handle float64:vol|{ const a =
 audio|command|SET_LOOP|set_loop|handle(Audio):handle uint8:loop|{ const a = audios[handle]; if(a) a.loop = (loop !== 0); }
 audio|command|GET_CURRENT_TIME|get_current_time|handle(Audio):handle RET:float64|{ const a = audios[handle]; return (a ? (a.currentTime || 0) : 0); }
 audio|command|GET_DURATION|get_duration|handle(Audio):handle RET:float64|{ const a = audios[handle]; return (a ? (a.duration || 0) : 0); }
+
+# ------------------------------------------------------------------------------
+# BLOB
+# ------------------------------------------------------------------------------
+# Binary data held on the JS side until C++ asks for it
+blob|command|CREATE|create|bytes:data RET:handle(Blob)|{ const handle = (window.webcc_next_id = (window.webcc_next_id || 0) + 1); blobs[handle] = data.slice(); return handle; }
+blob|command|SIZE|size|handle(Blob):handle RET:uint32|{ const b = blobs[handle]; return b ? b.length : 0; }
+blob|command|READ|read|handle(Blob):handle RET:bytes|{ const ret = blobs[handle] || new Uint8Array(0); }
+# Reads and frees
+blob|command|TAKE|take|handle(Blob):handle RET:bytes|{ const ret = blobs[handle] || new Uint8Array(0); blobs[handle] = undefined; }
+blob|command|FREE|free|handle(Blob):handle|{ blobs[handle] = undefined; }
 
 # ------------------------------------------------------------------------------
 # WEBSOCKETS

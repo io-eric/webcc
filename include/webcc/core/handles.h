@@ -7,6 +7,10 @@ namespace webcc {
     // Type-safe handle types auto-generated from schema.def
     // Each type is a distinct compile-time type wrapping int32_t
 
+    // Tag struct for Blob
+    struct Blob_tag {};
+    using Blob = typed_handle<Blob_tag>;
+
     // Tag struct for CanvasContext2D
     struct CanvasContext2D_tag {};
     using CanvasContext2D = typed_handle<CanvasContext2D_tag>;

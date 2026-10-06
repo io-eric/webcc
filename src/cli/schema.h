@@ -20,7 +20,7 @@ namespace webcc
     {
         std::string ns;   // Namespace
         std::string name; // NAME token
-        uint8_t opcode;
+        uint16_t opcode;
         std::string func_name;           // C++ function name to search for
         std::vector<SchemaParam> params; // list of parameters
         std::string action;              // JS action body (using arg0.. or custom names)
@@ -33,7 +33,7 @@ namespace webcc
     {
         std::string ns;
         std::string name;
-        uint8_t opcode;
+        uint8_t opcode; // one byte in the event header
         std::vector<SchemaParam> params;
     };
 

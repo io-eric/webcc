@@ -285,6 +285,107 @@ TEST(codegen_js_event_size_check_uses_payload_length)
     CHECK(js.find("| (len >> 16 << 8) | (len << 16);") != std::string::npos);
 }
 
+// Opcodes past 255 reach the header, the JS switch and the marker import intact.
+TEST(codegen_command_opcodes_past_255)
+{
+    const char *def_path = "/tmp/webcc_test_many_ops.def";
+    {
+        std::ofstream out(def_path);
+        for (int i = 1; i <= 300; ++i)
+            out << "big|command|C" << i << "|f" << i << "|int32:v|{ sink(v); }\n";
+    }
+    SchemaDefs defs = load_defs(def_path);
+    std::remove(def_path);
+
+    char cwd[4096];
+    if (!getcwd(cwd, sizeof(cwd)))
+    {
+        ::webcc_test::record_failure("getcwd failed");
+        return;
+    }
+    const char *tmp = "/tmp/webcc_many_ops_test";
+    std::string mk = std::string("mkdir -p ") + tmp;
+    (void)system(mk.c_str());
+    if (chdir(tmp) != 0)
+    {
+        ::webcc_test::record_failure("chdir to temp failed");
+        return;
+    }
+    emit_headers(defs);
+    std::string header = read_file("include/webcc/big.h");
+    if (chdir(cwd) != 0)
+    {
+        ::webcc_test::record_failure("chdir back failed - subsequent tests unsafe");
+        return;
+    }
+
+    CHECK(header.find("OP_C300 = 0x12c,") != std::string::npos);
+    CHECK(header.find("import_name(\"300\")") != std::string::npos);
+
+    auto markers = void_markers(defs, {"big::f44", "big::f300"});
+    generate_js_runtime(defs, {"webcc_js_flush"}, markers, {}, "/tmp");
+    std::string js = read_file("/tmp/app.js");
+    CHECK(js.find("case 300: {") != std::string::npos);
+    CHECK(js.find("case 44: {") != std::string::npos);
+}
+
+// RET:bytes returns a vector<uint8_t>, small results via the scratch buffer.
+TEST(codegen_bytes_return)
+{
+    const char *def_path = "/tmp/webcc_test_bytes_ret.def";
+    {
+        std::ofstream out(def_path);
+        out << "net|command|READ|read|int32:id RET:bytes|{ const ret = store[id]; }\n";
+    }
+    SchemaDefs defs = load_defs(def_path);
+    std::remove(def_path);
+
+    char cwd[4096];
+    if (!getcwd(cwd, sizeof(cwd)))
+    {
+        ::webcc_test::record_failure("getcwd failed");
+        return;
+    }
+    const char *tmp = "/tmp/webcc_bytes_ret_test";
+    std::string mk = std::string("mkdir -p ") + tmp;
+    (void)system(mk.c_str());
+    if (chdir(tmp) != 0)
+    {
+        ::webcc_test::record_failure("chdir to temp failed");
+        return;
+    }
+    emit_headers(defs);
+    std::string header = read_file("include/webcc/net.h");
+    if (chdir(cwd) != 0)
+    {
+        ::webcc_test::record_failure("chdir back failed - subsequent tests unsafe");
+        return;
+    }
+
+    CHECK(header.find("extern \"C\" uint32_t webcc_net_read(int32_t id);") != std::string::npos);
+    CHECK(header.find("inline webcc::vector<uint8_t> read(") != std::string::npos);
+    CHECK(header.find("return ::webcc::take_bytes_result(len);") != std::string::npos);
+
+    generate_js_runtime(defs, {"webcc_js_flush", "webcc_net_read"}, {}, {}, "/tmp");
+    std::string js = read_file("/tmp/app.js");
+    CHECK(js.find("if (ret.length > 4096) _big_result = ret;") != std::string::npos);
+    CHECK(js.find("return ret.length;") != std::string::npos);
+    CHECK(js.find("webcc_js_read_result: (ptr) =>") != std::string::npos);
+}
+
+// The blobs map is only emitted when a blob command is used.
+TEST(codegen_js_blob_map)
+{
+    SchemaDefs defs = real_defs();
+    generate_js_runtime(defs, {"webcc_js_flush", "webcc_blob_take"}, {}, {}, "/tmp");
+    std::string js = read_file("/tmp/app.js");
+    CHECK(js.find("const blobs = [];") != std::string::npos);
+
+    generate_js_runtime(defs, {"webcc_js_flush", "webcc_canvas_create_canvas"}, {}, {}, "/tmp");
+    js = read_file("/tmp/app.js");
+    CHECK(js.find("blobs") == std::string::npos);
+}
+
 // `bytes` as a void command param, a return command param, and an event field.
 TEST(codegen_bytes_type)
 {

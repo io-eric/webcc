@@ -7,10 +7,11 @@
 #include "../../src/core/scratch_buffer.h"
 #include "core/optional.h"
 #include "core/string.h"
+#include "core/vector.h"
 #include "core/js.h"
 
-// Copies a string result too large for the scratch buffer into dst
-extern "C" void webcc_js_read_result(char* dst);
+// Copies a string/bytes result too large for the scratch buffer into dst
+extern "C" void webcc_js_read_result(void* dst);
 
 namespace webcc
 {
@@ -50,6 +51,18 @@ namespace webcc
         webcc_js_read_result(buf);
         buf[len] = '\0';
         return string::adopt(buf, len);
+    }
+
+    // Result of a bytes-returning command, `len` as returned by the import
+    inline vector<uint8_t> take_bytes_result(uint32_t len){
+        vector<uint8_t> out;
+        out.resize(len);
+        if (out.size() != len) return vector<uint8_t>();
+        if (len <= SCRATCH_BUFFER_SIZE)
+            __builtin_memcpy(out.data(), scratch_buffer_data(), len);
+        else
+            webcc_js_read_result(out.data());
+        return out;
     }
 
     inline void push_command(uint32_t opcode){

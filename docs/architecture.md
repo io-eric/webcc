@@ -14,6 +14,7 @@ String return values up to 4KB are passed through a fixed scratch buffer without
 WebCC uses a secondary shared memory buffer for sending events (like mouse clicks, key presses, or WebSocket messages) from JavaScript to C++.
 - **Zero-Copy**: Events are written directly into WASM memory by the JS runtime.
 - **Polling**: The C++ application polls this buffer (e.g., once per frame) to process pending events.
+- **Immediate for input**: Events the application should react to right away (click, key and mouse down/up) run the main loop function once immediately instead of waiting for the next frame. This also keeps the handler inside the browser's user gesture, which APIs like the clipboard or file pickers require. A schema action opts in by calling `_triggerDiscreteUpdate()` after pushing the event.
 - **Bounded**: The buffer is 1MB. An event is only written if all of it fits; otherwise it is dropped and a warning is logged to the console. Views into an event (`string_view`, `bytes_view`) are valid until the next poll.
 
 ## Schema Generation
@@ -87,6 +88,8 @@ The entire API surface is defined in a single configuration file: `schema.def`.
 
 To add a new Web API feature, simply add a line to `schema.def` and run `./build.sh` to regenerate the toolchain and headers.
 
+The schema can hold up to 65535 commands and 255 events.
+
 ### Argument Types
 
 | Schema type | C++ type | In the JS action |
@@ -98,6 +101,10 @@ To add a new Web API feature, simply add a line to `schema.def` and run `./build
 | `handle(Type)` | `webcc::Type` | number (index into a resource map) |
 | `func_ptr` | function pointer | index into the WASM function table |
 
-Commands can use every type as a parameter; events can use all but `func_ptr`. `RET:` supports the numeric types, `string`, and `handle(Type)`.
+Commands can use every type as a parameter; events can use all but `func_ptr`. `RET:` supports the numeric types, `string`, `bytes` (returned as `webcc::vector<uint8_t>`), and `handle(Type)`.
+
+To return a `string` or `bytes`, the action declares a local named `ret` (`const ret = ...;`) instead of using `return`.
+
+Binary data too large for an event goes through a [`Blob`](api/blob.md) handle: the JS side stores a `Uint8Array` in the `blobs` map and sends the handle.
 
 A `bytes` parameter is a `Uint8Array` view directly into WASM memory, valid only while the action runs: pass it straight to a browser API that copies (e.g. `WebSocket.send`) or `.slice()` it to keep it. For an event, pass a `Uint8Array` to the `push_event_*` helper.

@@ -87,6 +87,48 @@ TEST(schema_assigns_sequential_opcodes_per_kind)
     CHECK_EQ((int)find_event(d, "E2")->opcode, 2);
 }
 
+// Command opcodes are 16 bit
+TEST(schema_command_opcodes_past_255)
+{
+    std::string def;
+    for (int i = 1; i <= 300; ++i)
+        def += "ns|command|C" + std::to_string(i) + "|f" + std::to_string(i) + "||{}\n";
+    std::string path = write_temp(def, "many_cmds");
+    SchemaDefs d = load_defs(path);
+    std::remove(path.c_str());
+
+    CHECK_EQ(d.commands.size(), (size_t)300);
+    CHECK_EQ((int)find_cmd(d, "C255")->opcode, 255);
+    CHECK_EQ((int)find_cmd(d, "C256")->opcode, 256);
+    CHECK_EQ((int)find_cmd(d, "C300")->opcode, 300);
+
+    // Survives the binary cache
+    std::string cache = "/tmp/webcc_test_many_cmds.bin";
+    CHECK(save_defs_binary(d, cache));
+    SchemaDefs loaded;
+    CHECK(load_defs_binary(loaded, cache));
+    std::remove(cache.c_str());
+    CHECK_EQ(loaded.commands.size(), (size_t)300);
+    if (loaded.commands.size() == 300)
+        CHECK_EQ((int)loaded.commands[299].opcode, 300);
+}
+
+TEST(schema_parses_bytes_return)
+{
+    std::string path = write_temp(
+        "net|command|READ|read|handle(Blob):handle RET:bytes|{ const ret = blobs[handle]; }\n",
+        "bytes_ret");
+    SchemaDefs d = load_defs(path);
+    std::remove(path.c_str());
+
+    const SchemaCommand *c = find_cmd(d, "READ");
+    CHECK(c != nullptr);
+    if (!c)
+        return;
+    CHECK_EQ(c->return_type, std::string("bytes"));
+    CHECK_EQ(c->params.size(), (size_t)1);
+}
+
 TEST(schema_extracts_handle_param_types)
 {
     std::string path = write_temp(

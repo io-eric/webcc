@@ -55,6 +55,14 @@ int main(){ namespace w=webcc::websocket;
   w::get_protocol(ws); w::get_extensions(ws); w::get_url(ws);
   w::close_with_code(ws,1000,"bye"); w::close(ws); }`,
 
+  // RET:bytes and the blobs map
+  blob: `#include "webcc/blob.h"
+int main(){ namespace b=webcc::blob;
+  uint8_t d[3]={1,2,3};
+  auto h=b::create(webcc::bytes_view(d,3));
+  b::size(h); auto r=b::read(h); auto t=b::take(h); b::free(h);
+  return (int)(r.size()+t.size()); }`,
+
   fetch_storage: `#include "webcc/fetch.h"
 #include "webcc/storage.h"
 int main(){ webcc::fetch::get("/api","{}");

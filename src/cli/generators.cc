@@ -362,7 +362,7 @@ namespace webcc
 
                     // Generate extern "C" import
                     std::string c_ret_type = ret_type;
-                    if (ret_type == "string")
+                    if (ret_type == "string" || ret_type == "bytes")
                         c_ret_type = "uint32_t"; // Returns length
                     if (ret_type == "handle")
                         c_ret_type = "int32_t"; // Handles are int32 at the ABI level
@@ -407,6 +407,8 @@ namespace webcc
                         wrapper_ret_type = "webcc::handle";
                     else if (ret_type == "string")
                         wrapper_ret_type = "webcc::string";
+                    else if (ret_type == "bytes")
+                        wrapper_ret_type = "webcc::vector<uint8_t>";
                     else
                         wrapper_ret_type = ret_type;
 
@@ -425,7 +427,7 @@ namespace webcc
                     w.write("::webcc::flush();");
 
                     std::stringstream call;
-                    if (ret_type == "string")
+                    if (ret_type == "string" || ret_type == "bytes")
                     {
                         call << "uint32_t len = webcc_" << d.ns << "_" << d.func_name << "(";
                     }
@@ -467,6 +469,8 @@ namespace webcc
 
                     if (ret_type == "string")
                         w.write("return ::webcc::take_string_result(len);");
+                    else if (ret_type == "bytes")
+                        w.write("return ::webcc::take_bytes_result(len);");
 
                     w.write("}");
                     w.write("");
@@ -676,7 +680,7 @@ namespace webcc
     }
 
     static const std::vector<std::string> RESOURCE_MAPS = {
-        "elements", "contexts", "audios", "websockets", "images",
+        "elements", "contexts", "audios", "websockets", "images", "blobs",
         "webgl_contexts", "webgl_shaders", "webgl_programs", "webgl_buffers",
         "textures", "webgl_uniforms",
         "webgpu_adapters", "webgpu_devices", "webgpu_queues", "webgpu_shaders",
@@ -907,7 +911,7 @@ namespace webcc
         std::set<std::string> used_event_helpers;   // Track which push_event helpers must exist
         std::vector<std::string> generated_js_imports;
         bool any_void_command_used = false; // whether any void command (and thus marker import) is used
-        bool any_string_return = false;     // whether any string-returning command is used
+        bool any_buffered_return = false;   // whether any string/bytes-returning command is used
         CodeWriter cases_w;
         cases_w.set_indent(4);
 
@@ -988,7 +992,15 @@ namespace webcc
                         ss << "if (encoded.length > " << SCRATCH_BUFFER_SIZE << ") _big_result = encoded;\n";
                         ss << "else new Uint8Array(memory.buffer, scratch_buffer_ptr_val).set(encoded);\n";
                         ss << "return encoded.length;\n";
-                        any_string_return = true;
+                        any_buffered_return = true;
+                    }
+                    else if (d.return_type == "bytes")
+                    {
+                        // Same path as strings, `ret` is a Uint8Array
+                        ss << "if (ret.length > " << SCRATCH_BUFFER_SIZE << ") _big_result = ret;\n";
+                        ss << "else new Uint8Array(memory.buffer, scratch_buffer_ptr_val).set(ret);\n";
+                        ss << "return ret.length;\n";
+                        any_buffered_return = true;
                     }
                     ss << "}";
                     generated_js_imports.push_back(ss.str());
@@ -1032,7 +1044,7 @@ namespace webcc
             }
         }
 
-        if (any_string_return)
+        if (any_buffered_return)
             generated_js_imports.push_back("webcc_js_read_result: (ptr) => { new Uint8Array(memory.buffer, ptr, _big_result.length).set(_big_result); _big_result = null; }");
 
         w.raw(JS_INIT_HEAD);
@@ -1079,7 +1091,7 @@ namespace webcc
         w.write("let event_f32 = new Float32Array(memory.buffer, event_buffer_ptr_val);");
         w.write("let event_f64 = new Float64Array(memory.buffer, event_buffer_ptr_val);");
         w.write("const text_encoder = new TextEncoder();");
-        if (any_string_return)
+        if (any_buffered_return)
             w.write("let _big_result = null;");
 
         // Decoder for `const char*` parameters of named WEBCC_JS functions:
