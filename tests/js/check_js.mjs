@@ -55,6 +55,13 @@ int main(){ namespace w=webcc::websocket;
   w::get_protocol(ws); w::get_extensions(ws); w::get_url(ws);
   w::close_with_code(ws,1000,"bye"); w::close(ws); }`,
 
+  // Pointer listener: event helper, coalesced samples, immediate update
+  pointer: `#include "webcc/dom.h"
+int main(){ auto el=webcc::dom::create_element("canvas");
+  webcc::dom::append_child(webcc::dom::get_body(),el);
+  webcc::dom::add_pointer_listener(el,7);
+  webcc::dom::remove_pointer_listener(el); }`,
+
   // RET:bytes and the blobs map
   blob: `#include "webcc/blob.h"
 int main(){ namespace b=webcc::blob;

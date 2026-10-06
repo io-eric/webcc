@@ -28,14 +28,6 @@ namespace webcc
                 return "webcc::" + handle_type;
             return "webcc::handle";
         }
-        if ((type == "int32" || type == "uint32") &&
-            (name.find("handle") != std::string::npos || name == "id" || name.find("_id") != std::string::npos))
-        {
-            // Use typed handle if available, otherwise fall back to generic handle
-            if (!handle_type.empty())
-                return "webcc::" + handle_type;
-            return "webcc::handle";
-        }
         if (type == "int32")
             return "int32_t";
         if (type == "uint32")

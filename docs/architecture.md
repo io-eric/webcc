@@ -99,7 +99,10 @@ The schema can hold up to 65535 commands and 255 events.
 | `string` | `webcc::string_view` | string (UTF-8 decoded) |
 | `bytes` | `webcc::bytes_view` | `Uint8Array` |
 | `handle(Type)` | `webcc::Type` | number (index into a resource map) |
+| `handle` | `webcc::handle` (untyped) | number |
 | `func_ptr` | function pointer | index into the WASM function table |
+
+A parameter is only a handle when written as one: an `int32` is a plain number whatever its name.
 
 Commands can use every type as a parameter; events can use all but `func_ptr`. `RET:` supports the numeric types, `string`, `bytes` (returned as `webcc::vector<uint8_t>`), and `handle(Type)`.
 

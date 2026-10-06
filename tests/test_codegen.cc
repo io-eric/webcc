@@ -373,6 +373,66 @@ TEST(codegen_bytes_return)
     CHECK(js.find("webcc_js_read_result: (ptr) =>") != std::string::npos);
 }
 
+// A param is only a handle when the schema says so, whatever its name.
+TEST(codegen_handle_types_are_explicit)
+{
+    const char *def_path = "/tmp/webcc_test_names.def";
+    {
+        std::ofstream out(def_path);
+        out << "ns|event|EV|int32:pointer_id uint32:id int32:handle handle(Thing):thing\n"
+               "ns|command|CMD|cmd|int32:user_id handle:raw handle(Thing):thing|{}\n";
+    }
+    SchemaDefs defs = load_defs(def_path);
+    std::remove(def_path);
+
+    char cwd[4096];
+    if (!getcwd(cwd, sizeof(cwd)))
+    {
+        ::webcc_test::record_failure("getcwd failed");
+        return;
+    }
+    const char *tmp = "/tmp/webcc_names_test";
+    std::string mk = std::string("mkdir -p ") + tmp;
+    (void)system(mk.c_str());
+    if (chdir(tmp) != 0)
+    {
+        ::webcc_test::record_failure("chdir to temp failed");
+        return;
+    }
+    emit_headers(defs);
+    std::string header = read_file("include/webcc/ns.h");
+    if (chdir(cwd) != 0)
+    {
+        ::webcc_test::record_failure("chdir back failed - subsequent tests unsafe");
+        return;
+    }
+
+    CHECK(header.find("int32_t pointer_id;") != std::string::npos);
+    CHECK(header.find("uint32_t id;") != std::string::npos);
+    CHECK(header.find("int32_t handle;") != std::string::npos);
+    CHECK(header.find("webcc::Thing thing;") != std::string::npos);
+    CHECK(header.find("inline void cmd(int32_t user_id, webcc::handle raw, webcc::Thing thing){") != std::string::npos);
+}
+
+// add_pointer_listener pulls in the POINTER event helper.
+TEST(codegen_js_pointer_listener)
+{
+    SchemaDefs defs = real_defs();
+    auto markers = void_markers(defs, {"dom::add_pointer_listener"});
+    generate_js_runtime(defs, {"webcc_js_flush"}, markers, {}, "/tmp");
+    std::string js = read_file("/tmp/app.js");
+
+    CHECK(js.find("function push_event_dom_POINTER(handle, phase, pointer_id, pointer_type, buttons, x, y, pressure, tilt_x, tilt_y, time)") != std::string::npos);
+    CHECK(js.find("getCoalescedEvents") != std::string::npos);
+    CHECK(js.find("setPointerCapture") != std::string::npos);
+    CHECK(js.find("_triggerDiscreteUpdate()") != std::string::npos);
+    // Not pulled in by unrelated DOM use
+    markers = void_markers(defs, {"dom::append_child"});
+    generate_js_runtime(defs, {"webcc_js_flush"}, markers, {}, "/tmp");
+    js = read_file("/tmp/app.js");
+    CHECK(js.find("push_event_dom_POINTER") == std::string::npos);
+}
+
 // The blobs map is only emitted when a blob command is used.
 TEST(codegen_js_blob_map)
 {

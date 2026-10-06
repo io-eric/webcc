@@ -3,7 +3,7 @@
 # NAMESPACE|TYPE|NAME|FUNC_NAME|TYPES(space-separated)|JS_ACTION
 # Lines starting with '#' are comments.
 #
-# Handle types: Use handle(TypeName) for typed handles, e.g.:
+# Handle types: Use handle(TypeName) for typed handles, or handle:name for an untyped one, e.g.:
 #   RET:handle(DOMElement) - returns a DOMElement handle
 #   handle(CanvasContext2D):ctx - takes a CanvasContext2D handle named ctx
 #
@@ -28,12 +28,12 @@ dom|command|GET_BODY|get_body|RET:handle(DOMElement)|{ if(!elements[0]) elements
 dom|command|GET_ELEMENT_BY_ID|get_element_by_id|string:id RET:handle(DOMElement)|{ const el = document.getElementById(id); if(!el) { console.warn('get_element_by_id: element not found', id); return -1; } const handle = (window.webcc_next_id = (window.webcc_next_id || 0) + 1); elements[handle] = el; return handle; }
 dom|command|CREATE_ELEMENT|create_element|string:tag RET:handle(DOMElement)|{ const handle = (window.webcc_next_id = (window.webcc_next_id || 0) + 1); const el = document.createElement(tag); elements[handle] = el; return handle; }
 dom|command|CREATE_ELEMENT_SCOPED|create_element_scoped|string:tag string:scope RET:handle(DOMElement)|{ const handle = (window.webcc_next_id = (window.webcc_next_id || 0) + 1); const el = document.createElement(tag); el.setAttribute('coi-scope', scope); elements[handle] = el; return handle; }
-dom|command|CREATE_ELEMENT_DEFERRED|create_element_deferred|int32:handle string:tag|{ const el = document.createElement(tag); elements[handle] = el; }
-dom|command|CREATE_ELEMENT_DEFERRED_SCOPED|create_element_deferred_scoped|int32:handle string:tag string:scope|{ const el = document.createElement(tag); el.setAttribute('coi-scope', scope); elements[handle] = el; }
+dom|command|CREATE_ELEMENT_DEFERRED|create_element_deferred|handle:handle string:tag|{ const el = document.createElement(tag); elements[handle] = el; }
+dom|command|CREATE_ELEMENT_DEFERRED_SCOPED|create_element_deferred_scoped|handle:handle string:tag string:scope|{ const el = document.createElement(tag); el.setAttribute('coi-scope', scope); elements[handle] = el; }
 dom|command|CREATE_COMMENT|create_comment|string:text RET:handle(DOMElement)|{ const handle = (window.webcc_next_id = (window.webcc_next_id || 0) + 1); const el = document.createComment(text); elements[handle] = el; return handle; }
-dom|command|CREATE_COMMENT_DEFERRED|create_comment_deferred|int32:handle string:text|{ const el = document.createComment(text); elements[handle] = el; }
+dom|command|CREATE_COMMENT_DEFERRED|create_comment_deferred|handle:handle string:text|{ const el = document.createComment(text); elements[handle] = el; }
 dom|command|CREATE_TEXT_NODE|create_text_node|string:text RET:handle(DOMElement)|{ const handle = (window.webcc_next_id = (window.webcc_next_id || 0) + 1); const el = document.createTextNode(text); elements[handle] = el; return handle; }
-dom|command|CREATE_TEXT_NODE_DEFERRED|create_text_node_deferred|int32:handle string:text|{ const el = document.createTextNode(text); elements[handle] = el; }
+dom|command|CREATE_TEXT_NODE_DEFERRED|create_text_node_deferred|handle:handle string:text|{ const el = document.createTextNode(text); elements[handle] = el; }
 dom|command|SET_NODE_VALUE|set_node_value|handle(DOMElement):handle string:text|{ const el = elements[handle]; if(el) el.nodeValue = text; }
 dom|command|SET_ATTRIBUTE|set_attribute|handle(DOMElement):handle string:name string:value|{ const el = elements[handle]; if(!el){ console.warn('set_attribute: unknown element handle', handle); continue; } el.setAttribute(name, value); }
 dom|command|SET_PROPERTY|set_property|handle(DOMElement):handle string:name string:value|{ const el = elements[handle]; if(!el){ console.warn('set_property: unknown element handle', handle); continue; } el[name] = value; }
@@ -48,6 +48,12 @@ dom|command|ADD_CLASS|add_class|handle(DOMElement):handle string:cls|{ const el 
 dom|command|REMOVE_CLASS|remove_class|handle(DOMElement):handle string:cls|{ const el = elements[handle]; if(el) el.classList.remove(cls); }
 dom|event|CLICK|handle(DOMElement):handle
 dom|command|ADD_CLICK_LISTENER|add_click_listener|handle(DOMElement):handle|{ const el = elements[handle]; if(el) el.dataset.c = handle; }
+# Pointer (mouse, pen, touch). phase: 0 down, 1 move, 2 up, 3 cancel. pointer_type: 0 mouse, 1 pen, 2 touch
+# x/y in CSS pixels from the element's top-left corner
+# flags: 1 capture the pointer on down, 2 coalesced move samples, 4 block touch scrolling and default actions
+dom|event|POINTER|handle(DOMElement):handle uint8:phase int32:pointer_id uint8:pointer_type uint32:buttons float32:x float32:y float32:pressure float32:tilt_x float32:tilt_y float64:time
+dom|command|ADD_POINTER_LISTENER|add_pointer_listener|handle(DOMElement):handle uint8:flags|{ const el = elements[handle]; if(!el || el.__wcc_ptr) continue; const capture = flags & 1, coalesce = flags & 2, block = flags & 4; if (block) el.style.touchAction = 'none'; const types = { mouse: 0, pen: 1, touch: 2 }; const send = (phase, e, r, s) => push_event_dom_POINTER(handle, phase, e.pointerId, types[e.pointerType] ?? 0, s.buttons, s.clientX - r.left, s.clientY - r.top, s.pressure, s.tiltX, s.tiltY, s.timeStamp); const on = (phase) => (e) => { const r = el.getBoundingClientRect(); if (phase === 0) { if (capture) el.setPointerCapture(e.pointerId); if (block) e.preventDefault(); } if (phase === 1 && coalesce && e.getCoalescedEvents) { const list = e.getCoalescedEvents(); if (list.length) { for (const c of list) send(1, e, r, c); return; } } send(phase, e, r, e); if (phase !== 1) _triggerDiscreteUpdate(); }; const h = [['pointerdown', on(0)], ['pointermove', on(1)], ['pointerup', on(2)], ['pointercancel', on(3)]]; for (const [n, f] of h) el.addEventListener(n, f); el.__wcc_ptr = h; }
+dom|command|REMOVE_POINTER_LISTENER|remove_pointer_listener|handle(DOMElement):handle|{ const el = elements[handle]; if(!el || !el.__wcc_ptr) continue; for (const [n, f] of el.__wcc_ptr) el.removeEventListener(n, f); el.__wcc_ptr = undefined; }
 dom|event|INPUT|handle(DOMElement):handle string:value
 dom|command|ADD_INPUT_LISTENER|add_input_listener|handle(DOMElement):handle|{ const el = elements[handle]; if(el) el.dataset.i = handle; }
 dom|event|CHANGE|handle(DOMElement):handle string:value

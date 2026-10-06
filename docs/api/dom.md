@@ -134,6 +134,50 @@ struct ClickEvent {
 };
 ```
 
+#### `add_pointer_listener`
+
+Reports mouse, pen and touch input on an element as `PointerEvent`s.
+
+```cpp
+void add_pointer_listener(webcc::DOMElement handle, uint8_t flags);
+```
+
+`flags` is a combination of:
+
+| Flag | Effect |
+| --- | --- |
+| `1` | Capture the pointer on down, so moves and the final up keep arriving when it leaves the element. |
+| `2` | Report every coalesced sample of a move instead of one per event. Pens and fast mice produce several samples per frame; without this, fast strokes look jagged. |
+| `4` | Set `touch-action: none` and cancel the default action on down, so touch and pen don't scroll the page or select text. |
+
+For a drawing surface use `7`. Calling it again on the same element does nothing.
+
+Down, up and cancel run the main loop function right away; moves arrive with the next frame.
+
+#### `remove_pointer_listener`
+
+```cpp
+void remove_pointer_listener(webcc::DOMElement handle);
+```
+
+#### `PointerEvent`
+
+```cpp
+struct PointerEvent {
+    webcc::DOMElement handle;
+    uint8_t phase;        // 0 down, 1 move, 2 up, 3 cancel
+    int32_t pointer_id;   // tells apart fingers and devices
+    uint8_t pointer_type; // 0 mouse, 1 pen, 2 touch
+    uint32_t buttons;     // 1 primary (pen tip), 2 secondary (barrel), 32 pen eraser
+    float x, y;           // CSS pixels from the element's top-left corner
+    float pressure;       // 0..1; a mouse reports 0.5 while a button is down
+    float tilt_x, tilt_y; // pen tilt in degrees, -90..90
+    double time;          // event timestamp in milliseconds
+};
+```
+
+Moves are also reported while nothing is pressed (`buttons == 0`), e.g. a pen hovering over the screen. A stroke ends with either up or cancel; cancel means the browser took over the pointer (e.g. a touch turned into a scroll), so don't treat it as a finished stroke.
+
 ## Deferred Handles
 
 WebCC uses a command buffer architecture where API calls are batched and sent to JavaScript in bulk (see [Architecture](../architecture.md)). However, functions that return values, like `create_element`, must synchronously call into JavaScript and trigger a `flush()` to ensure correct execution order. This can be expensive when creating many elements in a loop.
