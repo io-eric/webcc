@@ -62,6 +62,11 @@ int main(){ auto el=webcc::dom::create_element("canvas");
   webcc::dom::add_pointer_listener(el,7);
   webcc::dom::remove_pointer_listener(el); }`,
 
+  // Keyboard with mods/repeat/key and shortcut blocking
+  keyboard: `#include "webcc/input.h"
+int main(){ webcc::input::init_keyboard();
+  webcc::input::prevent_key(83,2); webcc::input::allow_key(83,2); }`,
+
   // Wheel listener with Safari gesture fallback
   wheel: `#include "webcc/dom.h"
 int main(){ auto el=webcc::dom::create_element("canvas");

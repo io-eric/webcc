@@ -433,6 +433,19 @@ TEST(codegen_js_pointer_listener)
     CHECK(js.find("push_event_dom_POINTER") == std::string::npos);
 }
 
+// Key events carry mods, repeat and the key string.
+TEST(codegen_js_keyboard_events)
+{
+    SchemaDefs defs = real_defs();
+    auto markers = void_markers(defs, {"input::init_keyboard", "input::prevent_key"});
+    generate_js_runtime(defs, {"webcc_js_flush"}, markers, {}, "/tmp");
+    std::string js = read_file("/tmp/app.js");
+
+    CHECK(js.find("function push_event_input_KEY_DOWN(key_code, mods, repeat, key)") != std::string::npos);
+    CHECK(js.find("function push_event_input_KEY_UP(key_code, mods, key)") != std::string::npos);
+    CHECK(js.find("e.preventDefault()") != std::string::npos);
+}
+
 // add_wheel_listener pulls in the WHEEL event helper.
 TEST(codegen_js_wheel_listener)
 {

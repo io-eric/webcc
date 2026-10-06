@@ -136,13 +136,17 @@ canvas|command|MEASURE_TEXT_WIDTH|measure_text_width|handle(CanvasContext2D):han
 # ------------------------------------------------------------------------------
 # INPUT
 # ------------------------------------------------------------------------------
-input|event|KEY_DOWN|int32:key_code
-input|event|KEY_UP|int32:key_code
+# key_code = KeyboardEvent.keyCode, key = KeyboardEvent.key ("z", "+", "Enter"), mods: 1 shift, 2 ctrl, 4 alt, 8 meta
+input|event|KEY_DOWN|int32:key_code uint8:mods uint8:repeat string:key
+input|event|KEY_UP|int32:key_code uint8:mods string:key
 input|event|MOUSE_DOWN|int32:button int32:x int32:y
 input|event|MOUSE_UP|int32:button int32:x int32:y
 input|event|MOUSE_MOVE|int32:x int32:y
-input|command|INIT_KEYBOARD|init_keyboard||{ window.addEventListener('keydown', e => { push_event_input_KEY_DOWN(e.keyCode); _triggerDiscreteUpdate(); }); window.addEventListener('keyup', e => { push_event_input_KEY_UP(e.keyCode); _triggerDiscreteUpdate(); }); }
+input|command|INIT_KEYBOARD|init_keyboard||{ const mods = (e) => (e.shiftKey ? 1 : 0) | (e.ctrlKey ? 2 : 0) | (e.altKey ? 4 : 0) | (e.metaKey ? 8 : 0); window.addEventListener('keydown', e => { push_event_input_KEY_DOWN(e.keyCode, mods(e), e.repeat ? 1 : 0, e.key || ''); _triggerDiscreteUpdate(); }); window.addEventListener('keyup', e => { push_event_input_KEY_UP(e.keyCode, mods(e), e.key || ''); _triggerDiscreteUpdate(); }); }
 input|command|INIT_MOUSE|init_mouse|handle(DOMElement):handle|{ const el = elements[handle] || document; el.addEventListener('mousedown', e => { push_event_input_MOUSE_DOWN(e.button, e.offsetX, e.offsetY); _triggerDiscreteUpdate(); }); el.addEventListener('mouseup', e => { push_event_input_MOUSE_UP(e.button, e.offsetX, e.offsetY); _triggerDiscreteUpdate(); }); el.addEventListener('mousemove', e => push_event_input_MOUSE_MOVE(e.offsetX, e.offsetY)); }
+# Stop the browser's default action for a key combination (e.g. ctrl+S saving the page). mods must match exactly.
+input|command|PREVENT_KEY|prevent_key|int32:key_code uint8:mods|{ let pk = window.__wcc_pk; if (!pk) { pk = window.__wcc_pk = new Set(); window.addEventListener('keydown', (e) => { const m = (e.shiftKey ? 1 : 0) | (e.ctrlKey ? 2 : 0) | (e.altKey ? 4 : 0) | (e.metaKey ? 8 : 0); if (pk.has(e.keyCode * 16 + m)) e.preventDefault(); }, true); } pk.add(key_code * 16 + mods); }
+input|command|ALLOW_KEY|allow_key|int32:key_code uint8:mods|{ const pk = window.__wcc_pk; if (pk) pk.delete(key_code * 16 + mods); }
 input|command|EXIT_POINTER_LOCK|exit_pointer_lock||{ document.exitPointerLock(); }
 
 # ------------------------------------------------------------------------------
