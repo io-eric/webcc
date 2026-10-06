@@ -263,7 +263,7 @@ WebCC uses a command buffer architecture where API calls are batched and sent to
 
 ### How It Works
 
-1. **Generate a deferred handle** using `webcc::next_deferred_handle()`. This returns a unique integer handle that won't collide with handles assigned by JavaScript.
+1. **Generate a deferred handle** using `webcc::next_deferred_handle()` (or reserve several at once with `webcc::reserve_deferred_handles(n)`). This returns a unique integer handle that won't collide with handles assigned by JavaScript.
 2. **Create the element** using `create_element_deferred(handle, tag)`. This buffers the command without flushing.
 3. **Use the handle immediately** in subsequent buffered commands (e.g., `set_attribute`, `append_child`).
 4. **Flush** when ready. All commands execute in order, and the element is created with the pre-assigned handle.
@@ -304,9 +304,14 @@ void create_many_elements(webcc::DOMElement parent, int count) {
 
 Deferred handles are allocated starting from `0x100000` (1,048,576) and increment upward. JavaScript-assigned handles start from lower values. This ensures there are no collisions between the two allocation schemes.
 
+### Reserving a Block
+
+When you know how many nodes you are about to create, `webcc::reserve_deferred_handles(n)` reserves `n` consecutive handles in one step and returns the first. It shares the counter with `next_deferred_handle()`, so the two can be mixed freely. This is smaller and faster than calling `next_deferred_handle()` per node, since the counter is read and written once.
+
 ```cpp
-inline int32_t next_deferred_handle() {
-    static int32_t counter = 0x100000;  // Start high to avoid JS collision
-    return counter++;
-}
+int32_t base = webcc::reserve_deferred_handles(3);
+webcc::DOMElement list(base), first(base + 1), second(base + 2);
+webcc::dom::create_element_deferred(list, "ul");
+webcc::dom::create_element_deferred(first, "li");
+webcc::dom::create_element_deferred(second, "li");
 ```
