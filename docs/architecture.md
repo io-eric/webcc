@@ -104,6 +104,16 @@ The schema can hold up to 65535 commands and 255 events.
 
 A parameter is only a handle when written as one: an `int32` is a plain number whatever its name.
 
+A command parameter can have a default, written `type:name=value` (e.g. `uint8:flags=0`, `string:protocols=""`). It becomes a C++ default argument, so like in C++ only trailing parameters can have one.
+
+Named constants are their own lines, `NAMESPACE|const|NAME|VALUE`, and become `inline constexpr int32_t NAME` in `webcc::NAMESPACE`. Use them for flags and enum-like values instead of raw numbers:
+
+```
+canvas|const|CONTEXT_LOW_LATENCY|1
+canvas|const|CONTEXT_OPAQUE|2
+canvas|command|GET_CONTEXT_2D|get_context_2d|handle(Canvas):canvas_handle uint8:flags=0 RET:handle(CanvasContext2D)|{ ... }
+```
+
 Commands can use every type as a parameter; events can use all but `func_ptr`. `RET:` supports the numeric types, `string`, `bytes` (returned as `webcc::vector<uint8_t>`), and `handle(Type)`.
 
 To return a `string` or `bytes`, the action declares a local named `ret` (`const ret = ...;`) instead of using `return`.

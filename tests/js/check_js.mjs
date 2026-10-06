@@ -42,13 +42,15 @@ int main(){ auto c=webcc::canvas::create_canvas("c",640,480);
   webcc::webgl::clear(gl,16384); }`,
 
   websocket: `#include "webcc/websocket.h"
-int main(){ auto ws=webcc::websocket::connect("wss://x","");
+int main(){ auto ws=webcc::websocket::connect("wss://x");
   webcc::websocket::send(ws,"hello"); }`,
 
   // Subprotocols, binary send, close code/reason, state getters
   websocket_full: `#include "webcc/websocket.h"
 int main(){ namespace w=webcc::websocket;
   auto ws=w::connect("wss://x","chat, other");
+  auto ws2=w::connect("wss://y"); w::close(ws2);
+  if (w::get_ready_state(ws)==w::STATE_OPEN) w::close(ws);
   uint8_t b[3]={1,2,3};
   w::send_binary(ws,webcc::bytes_view(b,3));
   w::get_ready_state(ws); w::get_buffered_amount(ws);

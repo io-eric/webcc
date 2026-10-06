@@ -15,13 +15,13 @@ The `webcc::websocket` module mirrors the browser's [WebSocket](https://develope
 Creates a new WebSocket connection to the specified URL. All events (open, message, binary message, close, error) are subscribed automatically.
 
 ```cpp
-webcc::WebSocket connect(webcc::string_view url, webcc::string_view protocols);
+webcc::WebSocket connect(webcc::string_view url, webcc::string_view protocols = "");
 ```
 
-`protocols` is a comma-separated list of subprotocols to offer the server, e.g. `"chat, superchat"`. Pass `""` for none. The one the server picked is available from `get_protocol` once the connection is open.
+`protocols` is an optional comma-separated list of subprotocols to offer the server, e.g. `"chat, superchat"`. The one the server picked is available from `get_protocol` once the connection is open.
 
 ```cpp
-auto ws = webcc::websocket::connect("wss://example.com/socket", "");
+auto ws = webcc::websocket::connect("wss://example.com/socket");
 ```
 
 If the URL or a protocol name is invalid the browser refuses to create the socket: an error is logged to the console and the returned handle is invalid (`handle.is_valid()` is `false`). No events are generated for it.
@@ -72,14 +72,14 @@ The browser only accepts `1000` or a code in the range `3000`-`4999`, and a reas
 ### State
 
 ```cpp
-int32_t       get_ready_state(webcc::WebSocket handle);     // 0 CONNECTING, 1 OPEN, 2 CLOSING, 3 CLOSED
+int32_t       get_ready_state(webcc::WebSocket handle);     // STATE_CONNECTING, STATE_OPEN, STATE_CLOSING, STATE_CLOSED
 uint32_t      get_buffered_amount(webcc::WebSocket handle); // bytes queued by send but not yet transmitted
 webcc::string get_protocol(webcc::WebSocket handle);        // subprotocol selected by the server ("" if none)
 webcc::string get_extensions(webcc::WebSocket handle);      // extensions selected by the server
 webcc::string get_url(webcc::WebSocket handle);             // resolved URL of the connection
 ```
 
-A socket stays queryable until its `CloseEvent` has been delivered. After that (or for an invalid handle) `get_ready_state` returns `3` and the others return `0` / `""`.
+A socket stays queryable until its `CloseEvent` has been delivered. After that (or for an invalid handle) `get_ready_state` returns `STATE_CLOSED` and the others return `0` / `""`.
 
 ## Events
 

@@ -7,12 +7,13 @@
 #include <cstring>
 #include <map>
 #include <set>
+#include <cctype>
 
 namespace webcc
 {
     // Binary cache magic and version for validation
     static constexpr uint32_t SCHEMA_MAGIC = 0x57434353; // "WCCS" (WebCC Schema)
-    static constexpr uint32_t SCHEMA_VERSION = 2;
+    static constexpr uint32_t SCHEMA_VERSION = 3;
 
     // Helper functions for binary serialization
     static void write_string(std::ostream &out, const std::string &s)
@@ -36,6 +37,7 @@ namespace webcc
         write_string(out, p.type);
         write_string(out, p.name);
         write_string(out, p.handle_type);
+        write_string(out, p.default_value);
     }
 
     static SchemaParam read_param(std::istream &in)
@@ -44,6 +46,7 @@ namespace webcc
         p.type = read_string(in);
         p.name = read_string(in);
         p.handle_type = read_string(in);
+        p.default_value = read_string(in);
         return p;
     }
 
@@ -105,6 +108,16 @@ namespace webcc
             {
                 write_param(out, p);
             }
+        }
+
+        // Constants
+        uint32_t const_count = static_cast<uint32_t>(defs.consts.size());
+        out.write(reinterpret_cast<const char *>(&const_count), sizeof(const_count));
+        for (const auto &k : defs.consts)
+        {
+            write_string(out, k.ns);
+            write_string(out, k.name);
+            write_string(out, k.value);
         }
 
         std::cout << "[WebCC] Saved binary cache: " << path << std::endl;
@@ -189,6 +202,18 @@ namespace webcc
                 e.params.push_back(read_param(in));
             }
             defs.events.push_back(std::move(e));
+        }
+
+        // Constants
+        uint32_t const_count = 0;
+        in.read(reinterpret_cast<char *>(&const_count), sizeof(const_count));
+        for (uint32_t i = 0; in && i < const_count; ++i)
+        {
+            SchemaConst k;
+            k.ns = read_string(in);
+            k.name = read_string(in);
+            k.value = read_string(in);
+            defs.consts.push_back(std::move(k));
         }
 
         if (!in)
@@ -288,6 +313,32 @@ namespace webcc
                     // meta|inherit|Derived|Base
                     out.handle_inheritance[parts[2]] = parts[3];
                 }
+                continue;
+            }
+
+            // NAMESPACE|const|NAME|VALUE
+            if (parts[1] == "const")
+            {
+                const std::string &name = parts[2];
+                const std::string &value = parts[3];
+                bool upper = !name.empty();
+                for (char ch : name)
+                    if (!(std::isupper((unsigned char)ch) || std::isdigit((unsigned char)ch) || ch == '_'))
+                        upper = false;
+                if (!upper || value.empty())
+                {
+                    std::cerr << "[WebCC] Error: Constant must be UPPER_CASE with a value at line " << line_num << std::endl;
+                    exit(1);
+                }
+                for (const auto &k : out.consts)
+                {
+                    if (k.ns == ns && k.name == name)
+                    {
+                        std::cerr << "[WebCC] Error: Duplicate constant '" << name << "' in namespace '" << ns << "' at line " << line_num << std::endl;
+                        exit(1);
+                    }
+                }
+                out.consts.push_back({ns, name, value});
                 continue;
             }
 
@@ -414,6 +465,14 @@ namespace webcc
                         p.name = tkn.substr(colon + 1);
                     }
 
+                    // Default argument: type:name=value
+                    size_t eq = p.name.find('=');
+                    if (eq != std::string::npos)
+                    {
+                        p.default_value = p.name.substr(eq + 1);
+                        p.name = p.name.substr(0, eq);
+                    }
+
                     // Check for handle(TypeName) syntax
                     if (p.type.substr(0, 7) == "handle(")
                     {
@@ -456,6 +515,20 @@ namespace webcc
                     action_pos = line.find('|', action_pos) + 1;
                 }
                 c.action = line.substr(action_pos);
+
+                // Like C++: once a parameter has a default, the following ones need one too
+                bool seen_default = false;
+                for (const auto &p : c.params)
+                {
+                    if (!p.default_value.empty())
+                        seen_default = true;
+                    else if (seen_default)
+                    {
+                        std::cerr << "[WebCC] Error: Parameter '" << p.name << "' of '" << c.func_name
+                                  << "' needs a default because an earlier one has one, at line " << line_num << std::endl;
+                        exit(1);
+                    }
+                }
                 out.commands.push_back(c);
             }
         }

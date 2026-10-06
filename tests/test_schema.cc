@@ -129,6 +129,36 @@ TEST(schema_parses_bytes_return)
     CHECK_EQ(c->params.size(), (size_t)1);
 }
 
+TEST(schema_parses_consts_and_defaults)
+{
+    std::string path = write_temp(
+        "ui|const|BIG|42\n"
+        "ui|command|SHOW|show|handle(DOMElement):el uint8:flags=3 string:label=\"hi\"|{}\n",
+        "consts");
+    SchemaDefs d = load_defs(path);
+    std::remove(path.c_str());
+
+    CHECK_EQ(d.consts.size(), (size_t)1);
+    if (d.consts.size() == 1)
+    {
+        CHECK_EQ(d.consts[0].ns, std::string("ui"));
+        CHECK_EQ(d.consts[0].name, std::string("BIG"));
+        CHECK_EQ(d.consts[0].value, std::string("42"));
+    }
+    // Constants don't take command opcodes
+    const SchemaCommand *c = find_cmd(d, "SHOW");
+    CHECK(c != nullptr);
+    if (!c)
+        return;
+    CHECK_EQ((int)c->opcode, 1);
+    CHECK_EQ(c->params.size(), (size_t)3);
+    CHECK_EQ(c->params[0].default_value, std::string(""));
+    CHECK_EQ(c->params[1].name, std::string("flags"));
+    CHECK_EQ(c->params[1].default_value, std::string("3"));
+    CHECK_EQ(c->params[2].name, std::string("label"));
+    CHECK_EQ(c->params[2].default_value, std::string("\"hi\""));
+}
+
 TEST(schema_extracts_handle_param_types)
 {
     std::string path = write_temp(
@@ -237,7 +267,17 @@ TEST(binary_cache_roundtrips_real_schema)
             CHECK_EQ(a.params[j].type, b.params[j].type);
             CHECK_EQ(a.params[j].name, b.params[j].name);
             CHECK_EQ(a.params[j].handle_type, b.params[j].handle_type);
+            CHECK_EQ(a.params[j].default_value, b.params[j].default_value);
         }
+    }
+
+    CHECK(original.consts.size() > 0);
+    CHECK_EQ(loaded.consts.size(), original.consts.size());
+    for (size_t i = 0; i < original.consts.size() && i < loaded.consts.size(); ++i)
+    {
+        CHECK_EQ(loaded.consts[i].ns, original.consts[i].ns);
+        CHECK_EQ(loaded.consts[i].name, original.consts[i].name);
+        CHECK_EQ(loaded.consts[i].value, original.consts[i].value);
     }
 }
 

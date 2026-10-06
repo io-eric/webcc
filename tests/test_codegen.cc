@@ -131,7 +131,7 @@ TEST(codegen_js_treeshakes_unused_modules)
 
     // Canvas code IS present...
     CHECK(js.find("fillRect") != std::string::npos);
-    CHECK(js.find("getContext('2d')") != std::string::npos);
+    CHECK(js.find("getContext('2d', { desynchronized: !!(flags & 1), alpha: !(flags & 2) })") != std::string::npos);
     // ...but unused modules are tree-shaken out.
     CHECK(js.find("webcc_dom_get_element_by_id") == std::string::npos);
     CHECK(js.find("new WebSocket") == std::string::npos);
@@ -483,6 +483,50 @@ TEST(codegen_js_blob_map)
     generate_js_runtime(defs, {"webcc_js_flush", "webcc_canvas_create_canvas"}, {}, {}, "/tmp");
     js = read_file("/tmp/app.js");
     CHECK(js.find("blobs") == std::string::npos);
+}
+
+// Constants become constexpr, defaults become C++ default arguments.
+TEST(codegen_consts_and_defaults)
+{
+    const char *def_path = "/tmp/webcc_test_consts.def";
+    {
+        std::ofstream out(def_path);
+        out << "gfx|const|FAST|1\n"
+               "gfx|const|SLOW|0x10\n"
+               "gfx|command|DRAW|draw|int32:x uint8:flags=0|{ sink(x, flags); }\n"
+               "gfx|command|OPEN|open|string:url string:opts=\"\" RET:int32|{ return 1; }\n";
+    }
+    SchemaDefs defs = load_defs(def_path);
+    std::remove(def_path);
+
+    char cwd[4096];
+    if (!getcwd(cwd, sizeof(cwd)))
+    {
+        ::webcc_test::record_failure("getcwd failed");
+        return;
+    }
+    const char *tmp = "/tmp/webcc_consts_test";
+    std::string mk = std::string("mkdir -p ") + tmp;
+    (void)system(mk.c_str());
+    if (chdir(tmp) != 0)
+    {
+        ::webcc_test::record_failure("chdir to temp failed");
+        return;
+    }
+    emit_headers(defs);
+    std::string header = read_file("include/webcc/gfx.h");
+    if (chdir(cwd) != 0)
+    {
+        ::webcc_test::record_failure("chdir back failed - subsequent tests unsafe");
+        return;
+    }
+
+    CHECK(header.find("inline constexpr int32_t FAST = 1;") != std::string::npos);
+    CHECK(header.find("inline constexpr int32_t SLOW = 0x10;") != std::string::npos);
+    CHECK(header.find("inline void draw(int32_t x, uint8_t flags = 0){") != std::string::npos);
+    CHECK(header.find("inline int32_t open(webcc::string_view url, webcc::string_view opts = \"\"){") != std::string::npos);
+    // The extern declaration has no defaults
+    CHECK(header.find("webcc_gfx_open(const char* url, uint32_t url_len, const char* opts, uint32_t opts_len);") != std::string::npos);
 }
 
 // `bytes` as a void command param, a return command param, and an event field.

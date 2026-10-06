@@ -13,6 +13,15 @@ namespace webcc
         std::string type;        // Base type: string, int32, handle, etc.
         std::string name;        // optional; if empty we'll generate argN
         std::string handle_type; // For handle types: DOMElement, CanvasContext2D, etc.
+        std::string default_value; // C++ default argument, e.g. "0" or "\"\"" (commands only)
+    };
+
+    // Named constant from `NAMESPACE|const|NAME|VALUE`, emitted as constexpr in the namespace header.
+    struct SchemaConst
+    {
+        std::string ns;
+        std::string name;
+        std::string value;
     };
 
     // Represents a command definition from `schema.def`.
@@ -43,6 +52,7 @@ namespace webcc
         std::vector<SchemaCommand> commands;
         std::vector<SchemaEvent> events;
         std::map<std::string, std::string> handle_inheritance;
+        std::vector<SchemaConst> consts;
     };
 
     // Loads and parses the command and event definitions from a file (e.g., schema.def).

@@ -7,6 +7,9 @@
 #include "webcc/core/string.h"
 #include "webcc/core/bytes_view.h"
 namespace webcc::canvas {
+    inline constexpr int32_t CONTEXT_LOW_LATENCY = 1;
+    inline constexpr int32_t CONTEXT_OPAQUE = 2;
+
     enum OpCode {
         OP_CREATE_CANVAS = 0x24,
         OP_GET_CONTEXT_2D = 0x25,
@@ -69,10 +72,10 @@ namespace webcc::canvas {
         return webcc::Canvas(webcc_canvas_create_canvas(dom_id.data(), dom_id.length(), width, height));
     }
 
-    extern "C" int32_t webcc_canvas_get_context_2d(int32_t canvas_handle);
-    inline webcc::CanvasContext2D get_context_2d(webcc::Canvas canvas_handle){
+    extern "C" int32_t webcc_canvas_get_context_2d(int32_t canvas_handle, uint8_t flags);
+    inline webcc::CanvasContext2D get_context_2d(webcc::Canvas canvas_handle, uint8_t flags = 0){
         ::webcc::flush();
-        return webcc::CanvasContext2D(webcc_canvas_get_context_2d((int32_t)canvas_handle));
+        return webcc::CanvasContext2D(webcc_canvas_get_context_2d((int32_t)canvas_handle, flags));
     }
 
     extern "C" int32_t webcc_canvas_get_context_webgl(int32_t canvas_handle);

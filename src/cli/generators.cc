@@ -164,6 +164,8 @@ namespace webcc
             namespaces.insert(d.ns);
         for (const auto &d : defs.events)
             namespaces.insert(d.ns);
+        for (const auto &k : defs.consts)
+            namespaces.insert(k.ns);
 
         std::cout << "[WebCC] Found namespaces: ";
         for (const auto &ns : namespaces)
@@ -185,6 +187,18 @@ namespace webcc
             w.write("#include \"webcc/core/string.h\"");
             w.write("#include \"webcc/core/bytes_view.h\"");
             w.write("namespace webcc::" + ns + " {");
+
+            // Named constants
+            bool has_consts = false;
+            for (const auto &k : defs.consts)
+            {
+                if (k.ns != ns)
+                    continue;
+                w.write("inline constexpr int32_t " + k.name + " = " + k.value + ";");
+                has_consts = true;
+            }
+            if (has_consts)
+                w.write("");
 
             // Commands
             w.write("enum OpCode {");
@@ -413,6 +427,8 @@ namespace webcc
                         const auto &p = d.params[i];
                         std::string name = p.name.empty() ? ("arg" + std::to_string(i)) : p.name;
                         wrap << map_cpp_type(p.type, p.name, p.handle_type) << " " << name;
+                        if (!p.default_value.empty())
+                            wrap << " = " << p.default_value;
                     }
                     wrap << "){";
                     w.write(wrap.str());
@@ -523,6 +539,8 @@ namespace webcc
                     else
                     {
                         func << map_cpp_type(p.type, p.name, p.handle_type) << " " << name;
+                        if (!p.default_value.empty())
+                            func << " = " << p.default_value;
                     }
                 }
                 func << "){";

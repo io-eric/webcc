@@ -29,8 +29,8 @@ const run = async () => {
                 const handle = (window.webcc_next_id = (window.webcc_next_id || 0) + 1); const c = document.createElement('canvas'); c.id = dom_id; c.width = width; c.height = height; elements[dom_id] = c; elements[handle] = c; return handle;
             }
 ,
-            webcc_canvas_get_context_2d: (canvas_handle) => {
-                const handle = (window.webcc_next_id = (window.webcc_next_id || 0) + 1); const c = elements[canvas_handle]; if(!c) { console.warn('get_context_2d: unknown canvas', canvas_handle); return -1; } contexts[handle] = c.getContext('2d'); return handle;
+            webcc_canvas_get_context_2d: (canvas_handle, flags) => {
+                const handle = (window.webcc_next_id = (window.webcc_next_id || 0) + 1); const c = elements[canvas_handle]; if(!c) { console.warn('get_context_2d: unknown canvas', canvas_handle); return -1; } contexts[handle] = c.getContext('2d', { desynchronized: !!(flags & 1), alpha: !(flags & 2) }); return handle;
             }
 
         },

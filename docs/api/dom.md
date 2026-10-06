@@ -139,18 +139,24 @@ struct ClickEvent {
 Reports mouse, pen and touch input on an element as `PointerEvent`s.
 
 ```cpp
-void add_pointer_listener(webcc::DOMElement handle, uint8_t flags);
+void add_pointer_listener(webcc::DOMElement handle, uint8_t flags = 0);
 ```
 
 `flags` is a combination of:
 
 | Flag | Effect |
 | --- | --- |
-| `1` | Capture the pointer on down, so moves and the final up keep arriving when it leaves the element. |
-| `2` | Report every coalesced sample of a move instead of one per event. Pens and fast mice produce several samples per frame; without this, fast strokes look jagged. |
-| `4` | Set `touch-action: none` and cancel the default action on down, so touch and pen don't scroll the page or select text. |
+| `dom::POINTER_CAPTURE` | Capture the pointer on down, so moves and the final up keep arriving when it leaves the element. |
+| `dom::POINTER_COALESCED` | Report every coalesced sample of a move instead of one per event. Pens and fast mice produce several samples per frame; without this, fast strokes look jagged. |
+| `dom::POINTER_NO_SCROLL` | Set `touch-action: none` and cancel the default action on down, so touch and pen don't scroll the page or select text. |
 
-For a drawing surface use `7`. Calling it again on the same element does nothing.
+For a drawing surface use all three:
+
+```cpp
+dom::add_pointer_listener(canvas, dom::POINTER_CAPTURE | dom::POINTER_COALESCED | dom::POINTER_NO_SCROLL);
+```
+
+Calling it again on the same element does nothing.
 
 Down, up and cancel run the main loop function right away; moves arrive with the next frame.
 
@@ -201,11 +207,11 @@ if (auto r = e.as<dom::ResizeEvent>()) {
 Reports mouse wheel and trackpad scrolling on an element as `WheelEvent`s.
 
 ```cpp
-void add_wheel_listener(webcc::DOMElement handle, uint8_t prevent_default);
+void add_wheel_listener(webcc::DOMElement handle, uint8_t prevent_default = 0);
 void remove_wheel_listener(webcc::DOMElement handle);
 ```
 
-With `prevent_default` set to `1` the page doesn't scroll or zoom while the pointer is over the element, which is what a pannable, zoomable canvas wants. Calling `add_wheel_listener` again on the same element does nothing.
+With `prevent_default` set to `true` the page doesn't scroll or zoom while the pointer is over the element, which is what a pannable, zoomable canvas wants. Calling `add_wheel_listener` again on the same element does nothing.
 
 #### `WheelEvent`
 
@@ -214,11 +220,11 @@ struct WheelEvent {
     webcc::DOMElement handle;
     float delta_x, delta_y;  // CSS pixels; positive = scroll right / down
     float x, y;              // CSS pixels from the element's top-left corner
-    uint8_t mods;            // 1 shift, 2 ctrl, 4 alt, 8 meta
+    uint8_t mods;            // bits: dom::MOD_SHIFT, MOD_CTRL, MOD_ALT, MOD_META
 };
 ```
 
-- **Pinch to zoom:** a trackpad pinch arrives as a wheel event with ctrl (`mods & 2`) set; `delta_y < 0` means zoom in. Safari reports pinches as gesture events instead; these are converted to the same form.
+- **Pinch to zoom:** a trackpad pinch arrives as a wheel event with `dom::MOD_CTRL` set; `delta_y < 0` means zoom in. Safari reports pinches as gesture events instead; these are converted to the same form.
 - **Line and page scrolling** (Firefox with a mouse wheel) is converted to pixels: 40 per line, the element's height per page.
 - Wheel events arrive with the next frame, like pointer moves.
 
@@ -226,7 +232,7 @@ A typical pan and zoom handler:
 
 ```cpp
 if (auto w = e.as<dom::WheelEvent>()) {
-    if (w->mods & 2) zoom_at(w->x, w->y, exp(-w->delta_y / 100));
+    if (w->mods & dom::MOD_CTRL) zoom_at(w->x, w->y, exp(-w->delta_y / 100));
     else             pan(w->delta_x, w->delta_y);
 }
 ```
@@ -236,10 +242,10 @@ if (auto w = e.as<dom::WheelEvent>()) {
 ```cpp
 struct PointerEvent {
     webcc::DOMElement handle;
-    uint8_t phase;        // 0 down, 1 move, 2 up, 3 cancel
+    uint8_t phase;        // POINTER_DOWN, POINTER_MOVE, POINTER_UP, POINTER_CANCEL
     int32_t pointer_id;   // tells apart fingers and devices
-    uint8_t pointer_type; // 0 mouse, 1 pen, 2 touch
-    uint32_t buttons;     // 1 primary (pen tip), 2 secondary (barrel), 32 pen eraser
+    uint8_t pointer_type; // POINTER_MOUSE, POINTER_PEN, POINTER_TOUCH
+    uint32_t buttons;     // bits: BUTTON_PRIMARY (pen tip), BUTTON_SECONDARY (barrel), BUTTON_ERASER
     float x, y;           // CSS pixels from the element's top-left corner
     float pressure;       // 0..1; a mouse reports 0.5 while a button is down
     float tilt_x, tilt_y; // pen tilt in degrees, -90..90

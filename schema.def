@@ -11,6 +11,9 @@
 #
 # Binary data: Use bytes:name for raw bytes (webcc::bytes_view in C++, Uint8Array in JS).
 #   RET:bytes returns webcc::vector<uint8_t>; the action sets `ret` to a Uint8Array.
+#
+# Defaults: type:name=value gives a command parameter a C++ default (trailing parameters only).
+# Constants: NAMESPACE|const|NAME|VALUE becomes `inline constexpr int32_t NAME` in webcc::NAMESPACE.
 #   Data too big for an event (files, responses) goes through a Blob handle, see BLOB.
 #
 # Events: an action that pushes an input event the app must react to right away
@@ -48,17 +51,34 @@ dom|command|ADD_CLASS|add_class|handle(DOMElement):handle string:cls|{ const el 
 dom|command|REMOVE_CLASS|remove_class|handle(DOMElement):handle string:cls|{ const el = elements[handle]; if(el) el.classList.remove(cls); }
 dom|event|CLICK|handle(DOMElement):handle
 dom|command|ADD_CLICK_LISTENER|add_click_listener|handle(DOMElement):handle|{ const el = elements[handle]; if(el) el.dataset.c = handle; }
-# Pointer (mouse, pen, touch). phase: 0 down, 1 move, 2 up, 3 cancel. pointer_type: 0 mouse, 1 pen, 2 touch
-# x/y in CSS pixels from the element's top-left corner
-# flags: 1 capture the pointer on down, 2 coalesced move samples, 4 block touch scrolling and default actions
+# Pointer (mouse, pen, touch). x/y in CSS pixels from the element's top-left corner.
+# flags: POINTER_CAPTURE keeps the pointer after it leaves the element, POINTER_COALESCED reports every
+# move sample, POINTER_NO_SCROLL stops touch scrolling and default actions
+dom|const|POINTER_CAPTURE|1
+dom|const|POINTER_COALESCED|2
+dom|const|POINTER_NO_SCROLL|4
+dom|const|POINTER_DOWN|0
+dom|const|POINTER_MOVE|1
+dom|const|POINTER_UP|2
+dom|const|POINTER_CANCEL|3
+dom|const|POINTER_MOUSE|0
+dom|const|POINTER_PEN|1
+dom|const|POINTER_TOUCH|2
+dom|const|BUTTON_PRIMARY|1
+dom|const|BUTTON_SECONDARY|2
+dom|const|BUTTON_ERASER|32
 dom|event|POINTER|handle(DOMElement):handle uint8:phase int32:pointer_id uint8:pointer_type uint32:buttons float32:x float32:y float32:pressure float32:tilt_x float32:tilt_y float64:time
-dom|command|ADD_POINTER_LISTENER|add_pointer_listener|handle(DOMElement):handle uint8:flags|{ const el = elements[handle]; if(!el || el.__wcc_ptr) continue; const capture = flags & 1, coalesce = flags & 2, block = flags & 4; if (block) el.style.touchAction = 'none'; const types = { mouse: 0, pen: 1, touch: 2 }; const send = (phase, e, r, s) => push_event_dom_POINTER(handle, phase, e.pointerId, types[e.pointerType] ?? 0, s.buttons, s.clientX - r.left, s.clientY - r.top, s.pressure, s.tiltX, s.tiltY, s.timeStamp); const on = (phase) => (e) => { const r = el.getBoundingClientRect(); if (phase === 0) { if (capture) el.setPointerCapture(e.pointerId); if (block) e.preventDefault(); } if (phase === 1 && coalesce && e.getCoalescedEvents) { const list = e.getCoalescedEvents(); if (list.length) { for (const c of list) send(1, e, r, c); return; } } send(phase, e, r, e); if (phase !== 1) _triggerDiscreteUpdate(); }; const h = [['pointerdown', on(0)], ['pointermove', on(1)], ['pointerup', on(2)], ['pointercancel', on(3)]]; for (const [n, f] of h) el.addEventListener(n, f); el.__wcc_ptr = h; }
+dom|command|ADD_POINTER_LISTENER|add_pointer_listener|handle(DOMElement):handle uint8:flags=0|{ const el = elements[handle]; if(!el || el.__wcc_ptr) continue; const capture = flags & 1, coalesce = flags & 2, block = flags & 4; if (block) el.style.touchAction = 'none'; const types = { mouse: 0, pen: 1, touch: 2 }; const send = (phase, e, r, s) => push_event_dom_POINTER(handle, phase, e.pointerId, types[e.pointerType] ?? 0, s.buttons, s.clientX - r.left, s.clientY - r.top, s.pressure, s.tiltX, s.tiltY, s.timeStamp); const on = (phase) => (e) => { const r = el.getBoundingClientRect(); if (phase === 0) { if (capture) el.setPointerCapture(e.pointerId); if (block) e.preventDefault(); } if (phase === 1 && coalesce && e.getCoalescedEvents) { const list = e.getCoalescedEvents(); if (list.length) { for (const c of list) send(1, e, r, c); return; } } send(phase, e, r, e); if (phase !== 1) _triggerDiscreteUpdate(); }; const h = [['pointerdown', on(0)], ['pointermove', on(1)], ['pointerup', on(2)], ['pointercancel', on(3)]]; for (const [n, f] of h) el.addEventListener(n, f); el.__wcc_ptr = h; }
 dom|command|REMOVE_POINTER_LISTENER|remove_pointer_listener|handle(DOMElement):handle|{ const el = elements[handle]; if(!el || !el.__wcc_ptr) continue; for (const [n, f] of el.__wcc_ptr) el.removeEventListener(n, f); el.__wcc_ptr = undefined; }
 # Wheel and trackpad. delta_x/delta_y in CSS pixels (line and page scrolling converted), x/y from the element's
-# top-left corner, mods: 1 shift, 2 ctrl, 4 alt, 8 meta. A trackpad pinch arrives with ctrl set, also in Safari
-# (from its gesture events). prevent_default 1 stops the page from scrolling or zooming.
+# top-left corner, mods: MOD_* bits. A trackpad pinch arrives with MOD_CTRL set, also in Safari (from its
+# gesture events). prevent_default stops the page from scrolling or zooming.
+dom|const|MOD_SHIFT|1
+dom|const|MOD_CTRL|2
+dom|const|MOD_ALT|4
+dom|const|MOD_META|8
 dom|event|WHEEL|handle(DOMElement):handle float32:delta_x float32:delta_y float32:x float32:y uint8:mods
-dom|command|ADD_WHEEL_LISTENER|add_wheel_listener|handle(DOMElement):handle uint8:prevent_default|{ const el = elements[handle]; if(!el || el.__wcc_wh) continue; const mods = (e) => (e.shiftKey ? 1 : 0) | (e.ctrlKey ? 2 : 0) | (e.altKey ? 4 : 0) | (e.metaKey ? 8 : 0); const pos = (e) => { const r = el.getBoundingClientRect(); return [e.clientX - r.left, e.clientY - r.top]; }; const wheel = (e) => { if (prevent_default) e.preventDefault(); const k = e.deltaMode === 1 ? 40 : e.deltaMode === 2 ? el.clientHeight || 800 : 1; const [x, y] = pos(e); push_event_dom_WHEEL(handle, e.deltaX * k, e.deltaY * k, x, y, mods(e)); }; let scale = 1; const gstart = (e) => { if (prevent_default) e.preventDefault(); scale = 1; }; const gchange = (e) => { if (prevent_default) e.preventDefault(); const [x, y] = pos(e); push_event_dom_WHEEL(handle, 0, Math.log(scale / e.scale) * 100, x, y, mods(e) | 2); scale = e.scale; }; const h = [['wheel', wheel], ['gesturestart', gstart], ['gesturechange', gchange]]; for (const [n, f] of h) el.addEventListener(n, f, { passive: false }); el.__wcc_wh = h; }
+dom|command|ADD_WHEEL_LISTENER|add_wheel_listener|handle(DOMElement):handle uint8:prevent_default=0|{ const el = elements[handle]; if(!el || el.__wcc_wh) continue; const mods = (e) => (e.shiftKey ? 1 : 0) | (e.ctrlKey ? 2 : 0) | (e.altKey ? 4 : 0) | (e.metaKey ? 8 : 0); const pos = (e) => { const r = el.getBoundingClientRect(); return [e.clientX - r.left, e.clientY - r.top]; }; const wheel = (e) => { if (prevent_default) e.preventDefault(); const k = e.deltaMode === 1 ? 40 : e.deltaMode === 2 ? el.clientHeight || 800 : 1; const [x, y] = pos(e); push_event_dom_WHEEL(handle, e.deltaX * k, e.deltaY * k, x, y, mods(e)); }; let scale = 1; const gstart = (e) => { if (prevent_default) e.preventDefault(); scale = 1; }; const gchange = (e) => { if (prevent_default) e.preventDefault(); const [x, y] = pos(e); push_event_dom_WHEEL(handle, 0, Math.log(scale / e.scale) * 100, x, y, mods(e) | 2); scale = e.scale; }; const h = [['wheel', wheel], ['gesturestart', gstart], ['gesturechange', gchange]]; for (const [n, f] of h) el.addEventListener(n, f, { passive: false }); el.__wcc_wh = h; }
 dom|command|REMOVE_WHEEL_LISTENER|remove_wheel_listener|handle(DOMElement):handle|{ const el = elements[handle]; if(!el || !el.__wcc_wh) continue; for (const [n, f] of el.__wcc_wh) el.removeEventListener(n, f, { passive: false }); el.__wcc_wh = undefined; }
 # Element size: width/height in CSS pixels (content box), pixel_width/pixel_height in device pixels
 # (use these for canvas.set_size to stay sharp), dpr = devicePixelRatio. Sent once on observe, then on
@@ -80,7 +100,11 @@ dom|command|SCROLL_TO_TOP|scroll_to_top||{ window.scrollTo({ top: 0, left: 0, be
 # CANVAS 2D
 # ------------------------------------------------------------------------------
 canvas|command|CREATE_CANVAS|create_canvas|string:dom_id float64:width float64:height RET:handle(Canvas)|{ const handle = (window.webcc_next_id = (window.webcc_next_id || 0) + 1); const c = document.createElement('canvas'); c.id = dom_id; c.width = width; c.height = height; elements[dom_id] = c; elements[handle] = c; return handle; }
-canvas|command|GET_CONTEXT_2D|get_context_2d|handle(Canvas):canvas_handle RET:handle(CanvasContext2D)|{ const handle = (window.webcc_next_id = (window.webcc_next_id || 0) + 1); const c = elements[canvas_handle]; if(!c) { console.warn('get_context_2d: unknown canvas', canvas_handle); return -1; } contexts[handle] = c.getContext('2d'); return handle; }
+# flags: CONTEXT_LOW_LATENCY (the canvas may reach the screen without waiting for the page, less pen lag),
+# CONTEXT_OPAQUE (no transparency, a bit faster). Only the first call for a canvas decides.
+canvas|const|CONTEXT_LOW_LATENCY|1
+canvas|const|CONTEXT_OPAQUE|2
+canvas|command|GET_CONTEXT_2D|get_context_2d|handle(Canvas):canvas_handle uint8:flags=0 RET:handle(CanvasContext2D)|{ const handle = (window.webcc_next_id = (window.webcc_next_id || 0) + 1); const c = elements[canvas_handle]; if(!c) { console.warn('get_context_2d: unknown canvas', canvas_handle); return -1; } contexts[handle] = c.getContext('2d', { desynchronized: !!(flags & 1), alpha: !(flags & 2) }); return handle; }
 canvas|command|GET_CONTEXT_WEBGL|get_context_webgl|handle(Canvas):canvas_handle RET:handle(WebGLContext)|{ const handle = (window.webcc_next_id = (window.webcc_next_id || 0) + 1); const c = elements[canvas_handle]; if(!c) { console.warn('get_context_webgl: unknown canvas', canvas_handle); return -1; } contexts[handle] = c.getContext('webgl'); return handle; }
 canvas|command|GET_CONTEXT_WEBGPU|get_context_webgpu|handle(Canvas):canvas_handle RET:handle(WGPUContext)|{ const handle = (window.webcc_next_id = (window.webcc_next_id || 0) + 1); const c = elements[canvas_handle]; if(!c) { console.warn('get_context_webgpu: unknown canvas', canvas_handle); return -1; } contexts[handle] = c.getContext('webgpu'); return handle; }
 canvas|command|SET_SIZE|set_size|handle(Canvas):handle float64:width float64:height|{ const c = elements[handle]; if(c) { c.width = width; c.height = height; } }
@@ -136,7 +160,11 @@ canvas|command|MEASURE_TEXT_WIDTH|measure_text_width|handle(CanvasContext2D):han
 # ------------------------------------------------------------------------------
 # INPUT
 # ------------------------------------------------------------------------------
-# key_code = KeyboardEvent.keyCode, key = KeyboardEvent.key ("z", "+", "Enter"), mods: 1 shift, 2 ctrl, 4 alt, 8 meta
+# key_code = KeyboardEvent.keyCode, key = KeyboardEvent.key ("z", "+", "Enter"), mods: MOD_* bits
+input|const|MOD_SHIFT|1
+input|const|MOD_CTRL|2
+input|const|MOD_ALT|4
+input|const|MOD_META|8
 input|event|KEY_DOWN|int32:key_code uint8:mods uint8:repeat string:key
 input|event|KEY_UP|int32:key_code uint8:mods string:key
 input|event|MOUSE_DOWN|int32:button int32:x int32:y
@@ -145,8 +173,8 @@ input|event|MOUSE_MOVE|int32:x int32:y
 input|command|INIT_KEYBOARD|init_keyboard||{ const mods = (e) => (e.shiftKey ? 1 : 0) | (e.ctrlKey ? 2 : 0) | (e.altKey ? 4 : 0) | (e.metaKey ? 8 : 0); window.addEventListener('keydown', e => { push_event_input_KEY_DOWN(e.keyCode, mods(e), e.repeat ? 1 : 0, e.key || ''); _triggerDiscreteUpdate(); }); window.addEventListener('keyup', e => { push_event_input_KEY_UP(e.keyCode, mods(e), e.key || ''); _triggerDiscreteUpdate(); }); }
 input|command|INIT_MOUSE|init_mouse|handle(DOMElement):handle|{ const el = elements[handle] || document; el.addEventListener('mousedown', e => { push_event_input_MOUSE_DOWN(e.button, e.offsetX, e.offsetY); _triggerDiscreteUpdate(); }); el.addEventListener('mouseup', e => { push_event_input_MOUSE_UP(e.button, e.offsetX, e.offsetY); _triggerDiscreteUpdate(); }); el.addEventListener('mousemove', e => push_event_input_MOUSE_MOVE(e.offsetX, e.offsetY)); }
 # Stop the browser's default action for a key combination (e.g. ctrl+S saving the page). mods must match exactly.
-input|command|PREVENT_KEY|prevent_key|int32:key_code uint8:mods|{ let pk = window.__wcc_pk; if (!pk) { pk = window.__wcc_pk = new Set(); window.addEventListener('keydown', (e) => { const m = (e.shiftKey ? 1 : 0) | (e.ctrlKey ? 2 : 0) | (e.altKey ? 4 : 0) | (e.metaKey ? 8 : 0); if (pk.has(e.keyCode * 16 + m)) e.preventDefault(); }, true); } pk.add(key_code * 16 + mods); }
-input|command|ALLOW_KEY|allow_key|int32:key_code uint8:mods|{ const pk = window.__wcc_pk; if (pk) pk.delete(key_code * 16 + mods); }
+input|command|PREVENT_KEY|prevent_key|int32:key_code uint8:mods=0|{ let pk = window.__wcc_pk; if (!pk) { pk = window.__wcc_pk = new Set(); window.addEventListener('keydown', (e) => { const m = (e.shiftKey ? 1 : 0) | (e.ctrlKey ? 2 : 0) | (e.altKey ? 4 : 0) | (e.metaKey ? 8 : 0); if (pk.has(e.keyCode * 16 + m)) e.preventDefault(); }, true); } pk.add(key_code * 16 + mods); }
+input|command|ALLOW_KEY|allow_key|int32:key_code uint8:mods=0|{ const pk = window.__wcc_pk; if (pk) pk.delete(key_code * 16 + mods); }
 input|command|EXIT_POINTER_LOCK|exit_pointer_lock||{ document.exitPointerLock(); }
 
 # ------------------------------------------------------------------------------
@@ -212,15 +240,19 @@ websocket|event|OPEN|handle(WebSocket):handle
 websocket|event|CLOSE|handle(WebSocket):handle int32:code string:reason uint8:was_clean
 websocket|event|ERROR|handle(WebSocket):handle
 websocket|event|BINARY_MESSAGE|handle(WebSocket):handle bytes:data
-# protocols: comma-separated, e.g. "chat, superchat" ("" for none)
-websocket|command|CONNECT|connect|string:url string:protocols RET:handle(WebSocket)|{ let ws; try { ws = new WebSocket(url, protocols.split(',').map(s => s.trim()).filter(s => s)); } catch (e) { console.error('WebSocket connect failed:', e); return -1; } const handle = (window.webcc_next_id = (window.webcc_next_id || 0) + 1); ws.binaryType = 'arraybuffer'; websockets[handle] = ws; ws.onmessage = (e) => { if (typeof e.data === 'string') push_event_websocket_MESSAGE(handle, e.data); else push_event_websocket_BINARY_MESSAGE(handle, new Uint8Array(e.data)); }; ws.onopen = () => push_event_websocket_OPEN(handle); ws.onclose = (e) => { push_event_websocket_CLOSE(handle, e.code, e.reason, e.wasClean ? 1 : 0); websockets[handle] = undefined; }; ws.onerror = () => push_event_websocket_ERROR(handle); return handle; }
+# protocols: comma-separated, e.g. "chat, superchat"
+websocket|command|CONNECT|connect|string:url string:protocols="" RET:handle(WebSocket)|{ let ws; try { ws = new WebSocket(url, protocols.split(',').map(s => s.trim()).filter(s => s)); } catch (e) { console.error('WebSocket connect failed:', e); return -1; } const handle = (window.webcc_next_id = (window.webcc_next_id || 0) + 1); ws.binaryType = 'arraybuffer'; websockets[handle] = ws; ws.onmessage = (e) => { if (typeof e.data === 'string') push_event_websocket_MESSAGE(handle, e.data); else push_event_websocket_BINARY_MESSAGE(handle, new Uint8Array(e.data)); }; ws.onopen = () => push_event_websocket_OPEN(handle); ws.onclose = (e) => { push_event_websocket_CLOSE(handle, e.code, e.reason, e.wasClean ? 1 : 0); websockets[handle] = undefined; }; ws.onerror = () => push_event_websocket_ERROR(handle); return handle; }
 websocket|command|SEND|send|handle(WebSocket):handle string:msg|{ const ws = websockets[handle]; if(ws && ws.readyState === 1) ws.send(msg); }
 # Returns 1 if sent, 0 if the socket is not open
 websocket|command|SEND_BINARY|send_binary|handle(WebSocket):handle bytes:data RET:uint8|{ const ws = websockets[handle]; if (!ws || ws.readyState !== 1) return 0; ws.send(data); return 1; }
 websocket|command|CLOSE|close|handle(WebSocket):handle|{ const ws = websockets[handle]; if(ws) ws.close(); }
 # code: 1000 or 3000-4999, reason: max 123 bytes
 websocket|command|CLOSE_WITH_CODE|close_with_code|handle(WebSocket):handle int32:code string:reason|{ const ws = websockets[handle]; if(ws) { try { ws.close(code, reason); } catch (e) { console.error('WebSocket close failed:', e); } } }
-# 0 = CONNECTING, 1 = OPEN, 2 = CLOSING, 3 = CLOSED
+# Returns one of the STATE_* constants
+websocket|const|STATE_CONNECTING|0
+websocket|const|STATE_OPEN|1
+websocket|const|STATE_CLOSING|2
+websocket|const|STATE_CLOSED|3
 websocket|command|GET_READY_STATE|get_ready_state|handle(WebSocket):handle RET:int32|{ const ws = websockets[handle]; return ws ? ws.readyState : 3; }
 websocket|command|GET_BUFFERED_AMOUNT|get_buffered_amount|handle(WebSocket):handle RET:uint32|{ const ws = websockets[handle]; return ws ? ws.bufferedAmount : 0; }
 websocket|command|GET_PROTOCOL|get_protocol|handle(WebSocket):handle RET:string|{ const ws = websockets[handle]; const ret = ws ? ws.protocol : ""; }
