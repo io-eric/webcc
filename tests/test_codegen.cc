@@ -433,6 +433,19 @@ TEST(codegen_js_pointer_listener)
     CHECK(js.find("push_event_dom_POINTER") == std::string::npos);
 }
 
+// add_wheel_listener pulls in the WHEEL event helper.
+TEST(codegen_js_wheel_listener)
+{
+    SchemaDefs defs = real_defs();
+    auto markers = void_markers(defs, {"dom::add_wheel_listener"});
+    generate_js_runtime(defs, {"webcc_js_flush"}, markers, {}, "/tmp");
+    std::string js = read_file("/tmp/app.js");
+
+    CHECK(js.find("function push_event_dom_WHEEL(handle, delta_x, delta_y, x, y, mods)") != std::string::npos);
+    CHECK(js.find("{ passive: false }") != std::string::npos);
+    CHECK(js.find("gesturechange") != std::string::npos);
+}
+
 // observe_resize pulls in the RESIZE event helper.
 TEST(codegen_js_resize_observer)
 {

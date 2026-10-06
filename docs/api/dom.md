@@ -196,6 +196,41 @@ if (auto r = e.as<dom::ResizeEvent>()) {
 
 `pixel_width`/`pixel_height` are the exact device pixels the browser uses (`devicePixelContentBoxSize`). In browsers without it (Safari) they are `round(width * dpr)`, which can be one pixel off at fractional scales.
 
+#### `add_wheel_listener`
+
+Reports mouse wheel and trackpad scrolling on an element as `WheelEvent`s.
+
+```cpp
+void add_wheel_listener(webcc::DOMElement handle, uint8_t prevent_default);
+void remove_wheel_listener(webcc::DOMElement handle);
+```
+
+With `prevent_default` set to `1` the page doesn't scroll or zoom while the pointer is over the element, which is what a pannable, zoomable canvas wants. Calling `add_wheel_listener` again on the same element does nothing.
+
+#### `WheelEvent`
+
+```cpp
+struct WheelEvent {
+    webcc::DOMElement handle;
+    float delta_x, delta_y;  // CSS pixels; positive = scroll right / down
+    float x, y;              // CSS pixels from the element's top-left corner
+    uint8_t mods;            // 1 shift, 2 ctrl, 4 alt, 8 meta
+};
+```
+
+- **Pinch to zoom:** a trackpad pinch arrives as a wheel event with ctrl (`mods & 2`) set; `delta_y < 0` means zoom in. Safari reports pinches as gesture events instead; these are converted to the same form.
+- **Line and page scrolling** (Firefox with a mouse wheel) is converted to pixels: 40 per line, the element's height per page.
+- Wheel events arrive with the next frame, like pointer moves.
+
+A typical pan and zoom handler:
+
+```cpp
+if (auto w = e.as<dom::WheelEvent>()) {
+    if (w->mods & 2) zoom_at(w->x, w->y, exp(-w->delta_y / 100));
+    else             pan(w->delta_x, w->delta_y);
+}
+```
+
 #### `PointerEvent`
 
 ```cpp

@@ -101,7 +101,7 @@ const run = async () => {
             pos += 4;
 
             switch (opcode) {
-                case 41: {
+                case 43: {
                     if (pos + 4 > end) { console.error('WebCC: OOB handle'); break; }
                     const handle = i32[pos >> 2]; pos += 4;
                     if (pos % 8 !== 0) pos += (8 - (pos % 8));

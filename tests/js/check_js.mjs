@@ -62,6 +62,11 @@ int main(){ auto el=webcc::dom::create_element("canvas");
   webcc::dom::add_pointer_listener(el,7);
   webcc::dom::remove_pointer_listener(el); }`,
 
+  // Wheel listener with Safari gesture fallback
+  wheel: `#include "webcc/dom.h"
+int main(){ auto el=webcc::dom::create_element("canvas");
+  webcc::dom::add_wheel_listener(el,1); webcc::dom::remove_wheel_listener(el); }`,
+
   // Resize observer and devicePixelRatio
   resize: `#include "webcc/dom.h"
 #include "webcc/system.h"
