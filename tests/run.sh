@@ -32,6 +32,7 @@ echo "[tests] Compiling C++ test suite..."
     -DWEBCC_SNAPSHOT_DIR="\"$ROOT/tests/snapshots\"" \
     "$ROOT/tests/test_main.cc" \
     "$ROOT/tests/test_command_buffer.cc" \
+    "$ROOT/tests/test_event_buffer.cc" \
     "$ROOT/tests/test_schema.cc" \
     "$ROOT/tests/test_codegen.cc" \
     "$ROOT/tests/test_allocator.cc" \
@@ -40,6 +41,7 @@ echo "[tests] Compiling C++ test suite..."
     "$ROOT/src/cli/utils.cc" \
     "$ROOT/src/cli/generators.cc" \
     "$ROOT/src/core/command_buffer.cc" \
+    "$ROOT/src/core/event_buffer.cc" \
     -o "$BUILD/tests"
 
 echo "[tests] Running C++ test suite..."

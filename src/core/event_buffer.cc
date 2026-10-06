@@ -4,6 +4,8 @@ namespace webcc
 {
 
     constexpr size_t EVENT_BUFFER_SIZE = 1024 * 1024; // 1MB
+    // Event length is 24 bits, see next_event()
+    static_assert(EVENT_BUFFER_SIZE <= (1u << 24), "event length field is 24 bits");
     // Align to 8 bytes so that JS Float64Array can access it directly
     alignas(8) static uint8_t g_event_buffer[EVENT_BUFFER_SIZE];
     static uint32_t g_event_offset = 0;
@@ -47,7 +49,8 @@ namespace webcc
             return false;
         }
         
-        // Format: [Opcode:1][Pad:1][Size:2][Data...]
+        // Format: [Opcode:1][SizeHi:1][SizeLo:2][Data...]
+        // Size is 24 bits and includes the header
         if (g_read_offset + 4 > size) {
              // Malformed or incomplete? Reset.
             reset_event_buffer();
@@ -55,10 +58,12 @@ namespace webcc
         }
 
         opcode = g_event_buffer[g_read_offset];
-        uint16_t event_len = (uint16_t)g_event_buffer[g_read_offset + 2] | ((uint16_t)g_event_buffer[g_read_offset + 3] << 8);
-        
-        if (g_read_offset + event_len > size) {
-             // Incomplete event?
+        uint32_t event_len = (uint32_t)g_event_buffer[g_read_offset + 2] |
+                             ((uint32_t)g_event_buffer[g_read_offset + 3] << 8) |
+                             ((uint32_t)g_event_buffer[g_read_offset + 1] << 16);
+
+        if (event_len < 4 || g_read_offset + event_len > size) {
+             // Malformed or incomplete event?
             reset_event_buffer();
             return false;
         }

@@ -10,6 +10,7 @@ When `webcc::flush()` is called, the buffer is passed to the JavaScript runtime,
 WebCC uses a secondary shared memory buffer for sending events (like mouse clicks, key presses, or WebSocket messages) from JavaScript to C++.
 - **Zero-Copy**: Events are written directly into WASM memory by the JS runtime.
 - **Polling**: The C++ application polls this buffer (e.g., once per frame) to process pending events.
+- **Bounded**: The buffer is 1MB. An event is only written if all of it fits; otherwise it is dropped and a warning is logged to the console. Views into an event (`string_view`, `bytes_view`) are valid until the next poll.
 
 ## Schema Generation
 The toolchain generates `src/cli/webcc_schema.h` which embeds command definitions directly into the binary. This avoids the need to parse `schema.def` at runtime.
@@ -81,3 +82,18 @@ The entire API surface is defined in a single configuration file: `schema.def`.
   2.  **JavaScript Runtime**: The switch-case logic to execute commands in `app.js`.
 
 To add a new Web API feature, simply add a line to `schema.def` and run `./build.sh` to regenerate the toolchain and headers.
+
+### Argument Types
+
+| Schema type | C++ type | In the JS action |
+| --- | --- | --- |
+| `int32`, `uint32`, `uint8` | `int32_t`, `uint32_t`, `uint8_t` | number |
+| `float32`, `float64` | `float`, `double` | number |
+| `string` | `webcc::string_view` | string (UTF-8 decoded) |
+| `bytes` | `webcc::bytes_view` | `Uint8Array` |
+| `handle(Type)` | `webcc::Type` | number (index into a resource map) |
+| `func_ptr` | function pointer | index into the WASM function table |
+
+Commands can use every type as a parameter; events can use all but `func_ptr`. `RET:` supports the numeric types, `string`, and `handle(Type)`.
+
+A `bytes` parameter is a `Uint8Array` view directly into WASM memory, valid only while the action runs: pass it straight to a browser API that copies (e.g. `WebSocket.send`) or `.slice()` it to keep it. For an event, pass a `Uint8Array` to the `push_event_*` helper.

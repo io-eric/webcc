@@ -9,6 +9,8 @@
 #
 # This generates type-safe handle wrappers in C++ that are distinct at compile time.
 #
+# Binary data: Use bytes:name for raw bytes (webcc::bytes_view in C++, Uint8Array in JS).
+#
 # Inheritance: Use meta|inherit|Derived|Base to allow implicit conversion:
 meta|inherit|Canvas|DOMElement
 meta|inherit|Image|DOMElement
@@ -168,11 +170,23 @@ audio|command|GET_DURATION|get_duration|handle(Audio):handle RET:float64|{ const
 # ------------------------------------------------------------------------------
 websocket|event|MESSAGE|handle(WebSocket):handle string:data
 websocket|event|OPEN|handle(WebSocket):handle
-websocket|event|CLOSE|handle(WebSocket):handle
+websocket|event|CLOSE|handle(WebSocket):handle int32:code string:reason uint8:was_clean
 websocket|event|ERROR|handle(WebSocket):handle
-websocket|command|CONNECT|connect|string:url RET:handle(WebSocket)|{ const handle = (window.webcc_next_id = (window.webcc_next_id || 0) + 1); const ws = new WebSocket(url); websockets[handle] = ws; ws.onmessage = (e) => push_event_websocket_MESSAGE(handle, e.data); ws.onopen = () => push_event_websocket_OPEN(handle); ws.onclose = () => { push_event_websocket_CLOSE(handle); websockets[handle] = undefined; }; ws.onerror = () => { push_event_websocket_ERROR(handle); websockets[handle] = undefined; }; return handle; }
+websocket|event|BINARY_MESSAGE|handle(WebSocket):handle bytes:data
+# protocols: comma-separated, e.g. "chat, superchat" ("" for none)
+websocket|command|CONNECT|connect|string:url string:protocols RET:handle(WebSocket)|{ let ws; try { ws = new WebSocket(url, protocols.split(',').map(s => s.trim()).filter(s => s)); } catch (e) { console.error('WebSocket connect failed:', e); return -1; } const handle = (window.webcc_next_id = (window.webcc_next_id || 0) + 1); ws.binaryType = 'arraybuffer'; websockets[handle] = ws; ws.onmessage = (e) => { if (typeof e.data === 'string') push_event_websocket_MESSAGE(handle, e.data); else push_event_websocket_BINARY_MESSAGE(handle, new Uint8Array(e.data)); }; ws.onopen = () => push_event_websocket_OPEN(handle); ws.onclose = (e) => { push_event_websocket_CLOSE(handle, e.code, e.reason, e.wasClean ? 1 : 0); websockets[handle] = undefined; }; ws.onerror = () => push_event_websocket_ERROR(handle); return handle; }
 websocket|command|SEND|send|handle(WebSocket):handle string:msg|{ const ws = websockets[handle]; if(ws && ws.readyState === 1) ws.send(msg); }
-websocket|command|CLOSE|close|handle(WebSocket):handle|{ const ws = websockets[handle]; if(ws) { ws.close(); websockets[handle] = undefined; } }
+# Returns 1 if sent, 0 if the socket is not open
+websocket|command|SEND_BINARY|send_binary|handle(WebSocket):handle bytes:data RET:uint8|{ const ws = websockets[handle]; if (!ws || ws.readyState !== 1) return 0; ws.send(data); return 1; }
+websocket|command|CLOSE|close|handle(WebSocket):handle|{ const ws = websockets[handle]; if(ws) ws.close(); }
+# code: 1000 or 3000-4999, reason: max 123 bytes
+websocket|command|CLOSE_WITH_CODE|close_with_code|handle(WebSocket):handle int32:code string:reason|{ const ws = websockets[handle]; if(ws) { try { ws.close(code, reason); } catch (e) { console.error('WebSocket close failed:', e); } } }
+# 0 = CONNECTING, 1 = OPEN, 2 = CLOSING, 3 = CLOSED
+websocket|command|GET_READY_STATE|get_ready_state|handle(WebSocket):handle RET:int32|{ const ws = websockets[handle]; return ws ? ws.readyState : 3; }
+websocket|command|GET_BUFFERED_AMOUNT|get_buffered_amount|handle(WebSocket):handle RET:uint32|{ const ws = websockets[handle]; return ws ? ws.bufferedAmount : 0; }
+websocket|command|GET_PROTOCOL|get_protocol|handle(WebSocket):handle RET:string|{ const ws = websockets[handle]; const ret = ws ? ws.protocol : ""; }
+websocket|command|GET_EXTENSIONS|get_extensions|handle(WebSocket):handle RET:string|{ const ws = websockets[handle]; const ret = ws ? ws.extensions : ""; }
+websocket|command|GET_URL|get_url|handle(WebSocket):handle RET:string|{ const ws = websockets[handle]; const ret = ws ? ws.url : ""; }
 
 # ------------------------------------------------------------------------------
 # FETCH

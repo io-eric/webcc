@@ -5,6 +5,7 @@
 #include "webcc/core/handles.h"
 #include "webcc/core/string_view.h"
 #include "webcc/core/string.h"
+#include "webcc/core/bytes_view.h"
 namespace webcc::canvas {
     enum OpCode {
         OP_CREATE_CANVAS = 0x1e,

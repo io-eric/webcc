@@ -19,6 +19,8 @@ namespace webcc
     {
         if (type == "string")
             return "webcc::string_view";
+        if (type == "bytes")
+            return "webcc::bytes_view";
         if (type == "handle")
         {
             if (!handle_type.empty())
@@ -188,6 +190,7 @@ namespace webcc
             }
             w.write("#include \"webcc/core/string_view.h\"");
             w.write("#include \"webcc/core/string.h\"");
+            w.write("#include \"webcc/core/bytes_view.h\"");
             w.write("namespace webcc::" + ns + " {");
 
             // Commands
@@ -320,6 +323,12 @@ namespace webcc
                             w.write("res." + p.name + " = webcc::string_view((const char*)(data + offset), " + p.name + "_len);");
                             w.write("offset += (" + p.name + "_len + 3) & ~3;");
                         }
+                        else if (p.type == "bytes")
+                        {
+                            w.write("uint32_t " + p.name + "_len = *(uint32_t*)(data + offset); offset += 4;");
+                            w.write("res." + p.name + " = webcc::bytes_view(data + offset, " + p.name + "_len);");
+                            w.write("offset += (" + p.name + "_len + 3) & ~3;");
+                        }
                     }
                     w.write("return res;");
                     w.write("}");
@@ -367,6 +376,8 @@ namespace webcc
                         std::string name = p.name.empty() ? ("arg" + std::to_string(i)) : p.name;
                         if (p.type == "string")
                             sig << "const char* " << name << ", uint32_t " << name << "_len";
+                        else if (p.type == "bytes")
+                            sig << "const uint8_t* " << name << ", uint32_t " << name << "_len";
                         else if (p.type == "float32")
                             sig << "float " << name;
                         else if (p.type == "float64")
@@ -433,11 +444,11 @@ namespace webcc
                         std::string name = p.name.empty() ? ("arg" + std::to_string(i)) : p.name;
                         std::string cpp_type = map_cpp_type(p.type, p.name, p.handle_type);
 
-                        if (cpp_type == "webcc::string_view")
+                        if (cpp_type == "webcc::string_view" || cpp_type == "webcc::bytes_view")
                         {
                             call << name << ".data(), " << name << ".length()";
                         }
-                        else if (cpp_type.find("webcc::") != std::string::npos && cpp_type != "webcc::string_view")
+                        else if (cpp_type.find("webcc::") != std::string::npos)
                         {
                             // Any handle type (typed or untyped)
                             call << "(int32_t)" << name;
@@ -532,7 +543,9 @@ namespace webcc
 
                     if (cpp_type == "webcc::string_view")
                         w.write("webcc::CommandBuffer::push_string(" + name + ".data(), " + name + ".length());");
-                    else if (cpp_type.find("webcc::") != std::string::npos && cpp_type != "webcc::string_view")
+                    else if (cpp_type == "webcc::bytes_view")
+                        w.write("webcc::CommandBuffer::push_string((const char*)" + name + ".data(), " + name + ".length());");
+                    else if (cpp_type.find("webcc::") != std::string::npos)
                         // Any handle type (typed or untyped)
                         w.write("push_data<int32_t>((int32_t)" + name + ");");
                     else if (p.type == "uint8")
@@ -609,6 +622,15 @@ namespace webcc
                 w.write("const " + varName + "_padded = (" + varName + "_len + 3) & ~3;");
                 w.write("if (pos + " + varName + "_padded > end) { console.error('WebCC: OOB " + varName + "_data'); break; }");
                 w.write("const " + varName + " = decoder.decode(u8.subarray(pos, pos + " + varName + "_len)); pos += " + varName + "_padded;");
+            }
+            else if (p.type == "bytes")
+            {
+                // View into wasm memory, only valid during the action
+                w.write("if (pos + 4 > end) { console.error('WebCC: OOB " + varName + "_len'); break; }");
+                w.write("const " + varName + "_len = i32[pos >> 2]; pos += 4;");
+                w.write("const " + varName + "_padded = (" + varName + "_len + 3) & ~3;");
+                w.write("if (pos + " + varName + "_padded > end) { console.error('WebCC: OOB " + varName + "_data'); break; }");
+                w.write("const " + varName + " = u8.subarray(pos, pos + " + varName + "_len); pos += " + varName + "_padded;");
             }
             else
             {
@@ -929,7 +951,7 @@ namespace webcc
                         const auto &p = d.params[i];
                         std::string name = p.name.empty() ? ("arg" + std::to_string(i)) : p.name;
                         ss << name;
-                        if (p.type == "string")
+                        if (p.type == "string" || p.type == "bytes")
                             ss << "_ptr, " << name << "_len";
                     }
                     ss << ") => {\n";
@@ -942,6 +964,11 @@ namespace webcc
                         if (p.type == "string")
                         {
                             ss << "const " << name << " = decoder.decode(new Uint8Array(memory.buffer, " << name << "_ptr, " << name << "_len));\n";
+                        }
+                        else if (p.type == "bytes")
+                        {
+                            // View into wasm memory, only valid during the call
+                            ss << "const " << name << " = new Uint8Array(memory.buffer, " << name << "_ptr, " << name << "_len);\n";
                         }
                     }
 
@@ -1102,11 +1129,36 @@ namespace webcc
             w.write("event_offset_view = new Uint32Array(memory.buffer, event_offset_ptr_val, 1);");
             w.write("}");
 
-            w.write("if (event_offset_view[0] + 4096 > EVENT_BUFFER_SIZE) { console.warn('WebCC: Event buffer full, dropping event " + d.name + "'); return; }");
+            // Worst-case size of the event, so it is only written if it fits
+            uint32_t fixed_size = 4; // header
+            std::string dynamic_size;
+            for (size_t i = 0; i < d.params.size(); ++i)
+            {
+                const auto &p = d.params[i];
+                std::string name = p.name.empty() ? ("arg" + std::to_string(i)) : p.name;
+                std::string idx = std::to_string(i);
+                if (p.type == "string")
+                {
+                    w.write("const data_" + idx + " = text_encoder.encode(" + name + ");");
+                    fixed_size += 8; // length + padding
+                    dynamic_size += " + data_" + idx + ".length";
+                }
+                else if (p.type == "bytes")
+                {
+                    w.write("const data_" + idx + " = " + name + ";");
+                    fixed_size += 8;
+                    dynamic_size += " + data_" + idx + ".length";
+                }
+                else if (p.type == "float64")
+                    fixed_size += 12; // value + alignment
+                else
+                    fixed_size += 4;
+            }
+
             w.write("let pos = event_offset_view[0];");
+            w.write("if (pos + " + std::to_string(fixed_size) + dynamic_size + " > EVENT_BUFFER_SIZE) { console.warn('WebCC: Event buffer full, dropping event " + d.name + "'); return; }");
             w.write("const start_pos = pos;");
-            w.write("event_u8[pos] = " + std::to_string((int)d.opcode) + ";");
-            w.write("pos += 4; // Skip header (opcode + pad + size)");
+            w.write("pos += 4; // Skip header (opcode + size)");
 
             for (size_t i = 0; i < d.params.size(); ++i)
             {
@@ -1126,18 +1178,17 @@ namespace webcc
                     w.write("pos = (pos + 7) & ~7;"); // Align to 8 bytes
                     w.write("event_f64[pos >> 3] = " + name + "; pos += 8;");
                 }
-                else if (p.type == "string")
+                else if (p.type == "string" || p.type == "bytes")
                 {
-                    w.write("const encoded_" + std::to_string(i) + " = text_encoder.encode(" + name + ");");
-                    w.write("const len_" + std::to_string(i) + " = encoded_" + std::to_string(i) + ".length;");
-                    w.write("event_i32[pos >> 2] = len_" + std::to_string(i) + "; pos += 4;");
-                    w.write("new Uint8Array(memory.buffer, event_buffer_ptr_val + pos).set(encoded_" + std::to_string(i) + ");");
-                    w.write("pos += (len_" + std::to_string(i) + " + 3) & ~3;");
+                    std::string data = "data_" + std::to_string(i);
+                    w.write("event_i32[pos >> 2] = " + data + ".length; pos += 4;");
+                    w.write("event_u8.set(" + data + ", pos);");
+                    w.write("pos += (" + data + ".length + 3) & ~3;");
                 }
             }
+            // Header: [Opcode:1][SizeHi:1][SizeLo:2]
             w.write("const len = pos - start_pos;");
-            w.write("event_u8[start_pos + 2] = len & 0xFF;");
-            w.write("event_u8[start_pos + 3] = (len >> 8) & 0xFF;");
+            w.write("event_i32[start_pos >> 2] = " + std::to_string((int)d.opcode) + " | (len >> 16 << 8) | (len << 16);");
             w.write("event_offset_view[0] = pos;");
             w.write("}");
         }

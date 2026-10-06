@@ -10,6 +10,7 @@
 #include "generators.h"
 #include "utils.h"
 
+#include <cstdio>
 #include <cstdlib>
 #include <fstream>
 #include <string>
@@ -226,6 +227,95 @@ TEST(codegen_js_no_inline_js_when_none_used)
     std::string js = read_file("/tmp/app.js");
     CHECK(js.find("wjs_fn") == std::string::npos);
     CHECK(js.find("__webcc_utf8") == std::string::npos);
+}
+
+// Text and binary frames are separate events, close carries code/reason.
+TEST(codegen_js_websocket_events)
+{
+    SchemaDefs defs = real_defs();
+    std::set<std::string> imports = {
+        "webcc_js_flush",
+        "webcc_websocket_connect",
+        "webcc_websocket_send_binary",
+    };
+    generate_js_runtime(defs, imports, {}, {}, "/tmp");
+    std::string js = read_file("/tmp/app.js");
+
+    CHECK(js.find("function push_event_websocket_MESSAGE(") != std::string::npos);
+    CHECK(js.find("function push_event_websocket_BINARY_MESSAGE(") != std::string::npos);
+    CHECK(js.find("function push_event_websocket_CLOSE(handle, code, reason, was_clean)") != std::string::npos);
+    CHECK(js.find("binaryType = 'arraybuffer'") != std::string::npos);
+    // bytes param of a return-value command
+    CHECK(js.find("webcc_websocket_send_binary: (handle, data_ptr, data_len)") != std::string::npos);
+    CHECK(js.find("const data = new Uint8Array(memory.buffer, data_ptr, data_len);") != std::string::npos);
+    CHECK(js.find("webcc_websocket_connect: (url_ptr, url_len, protocols_ptr, protocols_len)") != std::string::npos);
+}
+
+// The buffer-full check uses the real payload length.
+TEST(codegen_js_event_size_check_uses_payload_length)
+{
+    SchemaDefs defs = real_defs();
+    std::set<std::string> imports = {"webcc_js_flush", "webcc_websocket_connect"};
+    generate_js_runtime(defs, imports, {}, {}, "/tmp");
+    std::string js = read_file("/tmp/app.js");
+
+    CHECK(js.find("+ data_1.length > EVENT_BUFFER_SIZE") != std::string::npos);
+    CHECK(js.find("4096 > EVENT_BUFFER_SIZE") == std::string::npos);
+    // 24-bit length in the header
+    CHECK(js.find("| (len >> 16 << 8) | (len << 16);") != std::string::npos);
+}
+
+// `bytes` as a void command param, a return command param, and an event field.
+TEST(codegen_bytes_type)
+{
+    const char *def_path = "/tmp/webcc_test_bytes.def";
+    {
+        std::ofstream out(def_path);
+        out << "net|event|PACKET|int32:id bytes:data\n"
+               "net|command|WRITE|write|bytes:data|{ sink(data); }\n"
+               "net|command|WRITE_NOW|write_now|bytes:data RET:int32|{ return data.length; }\n";
+    }
+    SchemaDefs defs = load_defs(def_path);
+    std::remove(def_path);
+
+    char cwd[4096];
+    if (!getcwd(cwd, sizeof(cwd)))
+    {
+        ::webcc_test::record_failure("getcwd failed");
+        return;
+    }
+    const char *tmp = "/tmp/webcc_bytes_test";
+    std::string mk = std::string("mkdir -p ") + tmp;
+    (void)system(mk.c_str());
+    if (chdir(tmp) != 0)
+    {
+        ::webcc_test::record_failure("chdir to temp failed");
+        return;
+    }
+    emit_headers(defs);
+    std::string header = read_file("include/webcc/net.h");
+    if (chdir(cwd) != 0)
+    {
+        ::webcc_test::record_failure("chdir back failed - subsequent tests unsafe");
+        return;
+    }
+
+    // Event field + parse
+    CHECK(header.find("webcc::bytes_view data;") != std::string::npos);
+    CHECK(header.find("res.data = webcc::bytes_view(data + offset, data_len);") != std::string::npos);
+    // Void command: pushed like a string
+    CHECK(header.find("inline void write(webcc::bytes_view data){") != std::string::npos);
+    CHECK(header.find("webcc::CommandBuffer::push_string((const char*)data.data(), data.length());") != std::string::npos);
+    // Return command: pointer + length
+    CHECK(header.find("extern \"C\" int32_t webcc_net_write_now(const uint8_t* data, uint32_t data_len);") != std::string::npos);
+    CHECK(header.find("return webcc_net_write_now(data.data(), data.length());") != std::string::npos);
+
+    std::set<std::string> imports = {"webcc_js_flush", "webcc_net_write_now"};
+    auto markers = void_markers(defs, {"net::write"});
+    generate_js_runtime(defs, imports, markers, {}, "/tmp");
+    std::string js = read_file("/tmp/app.js");
+    CHECK(js.find("const data = u8.subarray(pos, pos + data_len); pos += data_padded;") != std::string::npos);
+    CHECK(js.find("webcc_net_write_now: (data_ptr, data_len)") != std::string::npos);
 }
 
 // emit_headers() writes to hard-coded relative paths (include/webcc/...). Run it
