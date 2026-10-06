@@ -62,6 +62,13 @@ int main(){ auto el=webcc::dom::create_element("canvas");
   webcc::dom::add_pointer_listener(el,7);
   webcc::dom::remove_pointer_listener(el); }`,
 
+  // Resize observer and devicePixelRatio
+  resize: `#include "webcc/dom.h"
+#include "webcc/system.h"
+int main(){ auto el=webcc::dom::create_element("canvas");
+  webcc::dom::observe_resize(el); webcc::dom::unobserve_resize(el);
+  return (int)webcc::system::get_device_pixel_ratio(); }`,
+
   // RET:bytes and the blobs map
   blob: `#include "webcc/blob.h"
 int main(){ namespace b=webcc::blob;

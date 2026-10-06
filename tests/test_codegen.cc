@@ -433,6 +433,19 @@ TEST(codegen_js_pointer_listener)
     CHECK(js.find("push_event_dom_POINTER") == std::string::npos);
 }
 
+// observe_resize pulls in the RESIZE event helper.
+TEST(codegen_js_resize_observer)
+{
+    SchemaDefs defs = real_defs();
+    auto markers = void_markers(defs, {"dom::observe_resize"});
+    generate_js_runtime(defs, {"webcc_js_flush"}, markers, {}, "/tmp");
+    std::string js = read_file("/tmp/app.js");
+
+    CHECK(js.find("function push_event_dom_RESIZE(handle, width, height, pixel_width, pixel_height, dpr)") != std::string::npos);
+    CHECK(js.find("device-pixel-content-box") != std::string::npos);
+    CHECK(js.find("new ResizeObserver") != std::string::npos);
+}
+
 // The blobs map is only emitted when a blob command is used.
 TEST(codegen_js_blob_map)
 {

@@ -160,6 +160,42 @@ Down, up and cancel run the main loop function right away; moves arrive with the
 void remove_pointer_listener(webcc::DOMElement handle);
 ```
 
+#### `observe_resize`
+
+Reports the size of an element as `ResizeEvent`s: once right away, then whenever its size or the device pixel ratio changes (window resize, layout change, browser zoom, moving the window to another monitor).
+
+```cpp
+void observe_resize(webcc::DOMElement handle);
+void unobserve_resize(webcc::DOMElement handle);
+```
+
+Calling `observe_resize` again on the same element does nothing. Resize events run the main loop function right away, so the app can resize and redraw before the browser paints the new size.
+
+#### `ResizeEvent`
+
+```cpp
+struct ResizeEvent {
+    webcc::DOMElement handle;
+    float width, height;                // content box in CSS pixels
+    int32_t pixel_width, pixel_height;  // the same box in device pixels
+    float dpr;                          // device pixels per CSS pixel
+};
+```
+
+For a sharp canvas, size the element with CSS and its drawing buffer with the device-pixel size:
+
+```cpp
+dom::set_attribute(canvas, "style", "width:100%;height:100%");
+dom::observe_resize(canvas);
+
+if (auto r = e.as<dom::ResizeEvent>()) {
+    canvas::set_size(canvas, r->pixel_width, r->pixel_height);
+    // draw at scale r->dpr, or in device pixels directly
+}
+```
+
+`pixel_width`/`pixel_height` are the exact device pixels the browser uses (`devicePixelContentBoxSize`). In browsers without it (Safari) they are `round(width * dpr)`, which can be one pixel off at fractional scales.
+
 #### `PointerEvent`
 
 ```cpp

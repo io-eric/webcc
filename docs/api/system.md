@@ -78,6 +78,15 @@ double get_date_now();
 double get_timezone_offset_ms();
 ```
 
+## Display
+
+```cpp
+// Device pixels per CSS pixel (window.devicePixelRatio): 2 on most HiDPI screens,
+// fractional with OS scaling (e.g. 1.25). It can change while the app runs, e.g. when
+// the window moves to another monitor; dom::observe_resize reports those changes.
+double get_device_pixel_ratio();
+```
+
 ## Visibility API
 
 Page visibility lets your app detect whether it is currently visible to the user.
