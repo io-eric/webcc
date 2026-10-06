@@ -6,6 +6,10 @@ When `webcc::flush()` is called, the buffer is passed to the JavaScript runtime,
 
 > **Note**: Functions that return a value (e.g., `create_element`) are implemented as **direct WASM imports** (synchronous calls). To ensure correct execution order, they automatically trigger a `flush()` before running, ensuring all pending buffered commands are executed first.
 
+The command buffer is 1MB. When it fills up, the commands written so far are flushed early, so any number of commands can be issued between two `flush()` calls. A single command larger than the buffer (e.g. a multi-megabyte string argument) temporarily grows it on the heap.
+
+String return values up to 4KB are passed through a fixed scratch buffer without allocating. Longer strings are held on the JS side and copied straight into the returned `webcc::string`.
+
 ## Event System
 WebCC uses a secondary shared memory buffer for sending events (like mouse clicks, key presses, or WebSocket messages) from JavaScript to C++.
 - **Zero-Copy**: Events are written directly into WASM memory by the JS runtime.

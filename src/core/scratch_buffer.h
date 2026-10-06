@@ -15,9 +15,13 @@ namespace webcc
     // 3. C++ immediately reads the data from the scratch buffer and copies it.
     //
     // This avoids dynamic memory allocation (malloc/free) for temporary return values.
+    // Strings that don't fit stay in JS and are copied out with webcc_js_read_result.
     //
     // WARNING: This buffer is ephemeral. Data is only valid until the next JS call
     // that uses the scratch buffer.
+
+    // 4KB should be enough for most return values (URLs, attributes, JSON chunks)
+    constexpr size_t SCRATCH_BUFFER_SIZE = 4096;
 
     // Accessors for JS
     extern "C" uint8_t *webcc_scratch_buffer_ptr();

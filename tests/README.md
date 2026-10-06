@@ -18,7 +18,7 @@ Exit code is non-zero on any failure, so CI fails loudly. The suite runs in CI
 
 | File | What it covers |
 | --- | --- |
-| [test_command_buffer.cc](test_command_buffer.cc) | The C++/JS wire format: little-endian ints, IEEE-754 floats/doubles, 8-byte double alignment, 4-byte string padding. This is the contract the generated JS decoder walks. |
+| [test_command_buffer.cc](test_command_buffer.cc) | The C++/JS wire format: little-endian ints, IEEE-754 floats/doubles, 8-byte double alignment, 4-byte string padding. This is the contract the generated JS decoder walks. Also early flushing when the buffer is full and growth for a single oversized command. |
 | [test_event_buffer.cc](test_event_buffer.cc) | The JS/C++ event format read by `next_event`: header layout, 24-bit event length (events over 64KB), and reset on a malformed length. |
 | [test_schema.cc](test_schema.cc) | `load_defs` parsing: opcode assignment, `handle(T)` extraction, `RET:` handling, inheritance, pipes inside JS actions, plus the `schema.wcc.bin` binary-cache round-trip. |
 | [test_codegen.cc](test_codegen.cc) | Golden snapshots of `emit_headers` and `generate_js_runtime` output, plus tree-shaking assertions (a canvas-only build embeds canvas code and not DOM/WebSocket/WebGPU). |

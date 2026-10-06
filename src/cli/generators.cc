@@ -1,6 +1,7 @@
 #include "generators.h"
 #include "utils.h"
 #include "js_templates.h"
+#include "scratch_buffer.h"
 #include <iostream>
 #include <sstream>
 #include <vector>
@@ -465,10 +466,7 @@ namespace webcc
                     w.write(call.str());
 
                     if (ret_type == "string")
-                    {
-                        w.write("const char* data = (const char*)::webcc::scratch_buffer_data();");
-                        w.write("return webcc::string(data, len);");
-                    }
+                        w.write("return ::webcc::take_string_result(len);");
 
                     w.write("}");
                     w.write("");
@@ -909,6 +907,7 @@ namespace webcc
         std::set<std::string> used_event_helpers;   // Track which push_event helpers must exist
         std::vector<std::string> generated_js_imports;
         bool any_void_command_used = false; // whether any void command (and thus marker import) is used
+        bool any_string_return = false;     // whether any string-returning command is used
         CodeWriter cases_w;
         cases_w.set_indent(4);
 
@@ -983,10 +982,13 @@ namespace webcc
                     ss << action_body << "\n";
                     if (d.return_type == "string")
                     {
+                        // Small results go through the scratch buffer, larger ones
+                        // wait in JS until C++ fetches them (webcc_js_read_result)
                         ss << "const encoded = text_encoder.encode(ret);\n";
-                        ss << "const len = encoded.length;\n";
-                        ss << "new Uint8Array(memory.buffer, scratch_buffer_ptr_val).set(encoded);\n";
-                        ss << "return len;\n";
+                        ss << "if (encoded.length > " << SCRATCH_BUFFER_SIZE << ") _big_result = encoded;\n";
+                        ss << "else new Uint8Array(memory.buffer, scratch_buffer_ptr_val).set(encoded);\n";
+                        ss << "return encoded.length;\n";
+                        any_string_return = true;
                     }
                     ss << "}";
                     generated_js_imports.push_back(ss.str());
@@ -1029,6 +1031,9 @@ namespace webcc
                 }
             }
         }
+
+        if (any_string_return)
+            generated_js_imports.push_back("webcc_js_read_result: (ptr) => { new Uint8Array(memory.buffer, ptr, _big_result.length).set(_big_result); _big_result = null; }");
 
         w.raw(JS_INIT_HEAD);
         w.set_indent(3);
@@ -1074,6 +1079,8 @@ namespace webcc
         w.write("let event_f32 = new Float32Array(memory.buffer, event_buffer_ptr_val);");
         w.write("let event_f64 = new Float64Array(memory.buffer, event_buffer_ptr_val);");
         w.write("const text_encoder = new TextEncoder();");
+        if (any_string_return)
+            w.write("let _big_result = null;");
 
         // Decoder for `const char*` parameters of named WEBCC_JS functions:
         // read the NUL-terminated UTF-8 string at `ptr` from linear memory.

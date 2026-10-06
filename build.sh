@@ -72,8 +72,8 @@ else
     ninja
 fi
 
-# Generate schema cache if it doesn't exist or schema.def changed
-if [ ! -f "schema.wcc.bin" ] || [ "schema.def" -nt "schema.wcc.bin" ]; then
+# Generate schema cache if it doesn't exist, schema.def changed, or the generator was rebuilt
+if [ ! -f "schema.wcc.bin" ] || [ "schema.def" -nt "schema.wcc.bin" ] || [ "webcc" -nt "schema.wcc.bin" ]; then
     echo "[WebCC] Generating schema cache..."
     ./webcc --headers
     NEEDS_COMPILE=true  # Mark as rebuilt since headers changed

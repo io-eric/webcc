@@ -5,7 +5,13 @@
 
 namespace webcc {
 
+// Commands are batched here until flush(). When the buffer is full the
+// complete commands are flushed early; a single command larger than the
+// buffer grows it on the heap until the next flush.
 struct CommandBuffer {
+    // Start a new command
+    static void push_command(uint32_t opcode);
+
     // Append a 32-bit integer (aligned)
     static void push_u32(uint32_t v);
     static void push_i32(int32_t v);

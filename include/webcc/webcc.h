@@ -6,7 +6,11 @@
 #include "../../src/core/event_buffer.h"
 #include "../../src/core/scratch_buffer.h"
 #include "core/optional.h"
+#include "core/string.h"
 #include "core/js.h"
+
+// Copies a string result too large for the scratch buffer into dst
+extern "C" void webcc_js_read_result(char* dst);
 
 namespace webcc
 {
@@ -37,8 +41,19 @@ namespace webcc
         CommandBuffer::push_double(value);
     }
 
+    // Result of a string-returning command, `len` as returned by the import
+    inline string take_string_result(uint32_t len){
+        if (len <= SCRATCH_BUFFER_SIZE)
+            return string((const char*)scratch_buffer_data(), len);
+        char* buf = (char*)webcc::malloc(len + 1);
+        if (!buf) return string();
+        webcc_js_read_result(buf);
+        buf[len] = '\0';
+        return string::adopt(buf, len);
+    }
+
     inline void push_command(uint32_t opcode){
-        CommandBuffer::push_u32(opcode);
+        CommandBuffer::push_command(opcode);
     }
 
     struct Event {

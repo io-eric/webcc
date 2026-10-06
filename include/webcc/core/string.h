@@ -25,6 +25,9 @@ namespace webcc
         string(char* data, uint32_t len, take_ownership_t) : m_data(data), m_len(len) {}
 
     public:
+        // Take ownership of a malloc'd, NUL-terminated buffer
+        static string adopt(char* data, uint32_t len) { return string(data, len, take_ownership_t{}); }
+
         using iterator = char*;
         using const_iterator = const char*;
 

@@ -9,8 +9,33 @@
 #include "command_buffer.h"
 
 #include <cstring>
+#include <string>
+#include <vector>
 
 using webcc::CommandBuffer;
+
+namespace webcc
+{
+    void flush();
+}
+
+namespace
+{
+    // One webcc_js_flush call: the bytes, and the address they were at (mod 8)
+    struct Chunk
+    {
+        size_t addr_mod8;
+        std::vector<uint8_t> bytes;
+    };
+    std::vector<Chunk> g_flushed;
+}
+
+// Overrides the weak no-op stub in command_buffer.cc
+extern "C" void webcc_js_flush(uintptr_t ptr, size_t size)
+{
+    const uint8_t *p = reinterpret_cast<const uint8_t *>(ptr);
+    g_flushed.push_back({ptr % 8, std::vector<uint8_t>(p, p + size)});
+}
 
 namespace
 {
@@ -161,4 +186,134 @@ TEST(command_buffer_fill_rect_like_sequence)
     uint64_t bits = read_u64(d + 8);
     std::memcpy(&x, &bits, 8);
     CHECK_EQ(x, 10.0);
+}
+
+// --- Overflow handling -------------------------------------------------------
+
+namespace
+{
+    // Walks a flushed chunk the way the JS decoder does (doubles aligned by address).
+    struct Reader
+    {
+        const Chunk &c;
+        size_t off = 0;
+
+        bool done() const { return off >= c.bytes.size(); }
+        uint32_t u32()
+        {
+            uint32_t v = read_u32(c.bytes.data() + off);
+            off += 4;
+            return v;
+        }
+        double f64()
+        {
+            if ((c.addr_mod8 + off) % 8 != 0)
+                off += 4;
+            uint64_t bits = read_u64(c.bytes.data() + off);
+            off += 8;
+            double d;
+            std::memcpy(&d, &bits, 8);
+            return d;
+        }
+        std::string str()
+        {
+            uint32_t len = u32();
+            std::string out((const char *)c.bytes.data() + off, len);
+            off += (len + 3) & ~3u;
+            return out;
+        }
+    };
+}
+
+TEST(command_buffer_flushes_early_when_full)
+{
+    CommandBuffer::reset();
+    g_flushed.clear();
+
+    // ~3MB of commands, 3x the buffer
+    const uint32_t count = 100000;
+    for (uint32_t i = 0; i < count; ++i)
+    {
+        CommandBuffer::push_command(42);
+        CommandBuffer::push_double((double)i);
+        CommandBuffer::push_string("payload-xyz", 11);
+    }
+    webcc::flush();
+
+    CHECK(g_flushed.size() >= 3);
+
+    // Every chunk holds whole commands, and none are lost or reordered
+    uint32_t next = 0;
+    bool intact = true;
+    for (const Chunk &c : g_flushed)
+    {
+        Reader r{c};
+        while (!r.done())
+        {
+            if (r.u32() != 42 || r.f64() != (double)next || r.str() != "payload-xyz")
+                intact = false;
+            ++next;
+        }
+        if (r.off != c.bytes.size())
+            intact = false;
+    }
+    CHECK(intact);
+    CHECK_EQ(next, count);
+    CHECK_EQ(CommandBuffer::size(), (size_t)0);
+}
+
+TEST(command_buffer_grows_for_oversized_command)
+{
+    CommandBuffer::reset();
+    g_flushed.clear();
+
+    std::string big(3 * 1024 * 1024, 'x'); // 3x the buffer
+    big.front() = '<';
+    big.back() = '>';
+
+    CommandBuffer::push_command(1);
+    CommandBuffer::push_u32(11);
+
+    CommandBuffer::push_command(2);
+    CommandBuffer::push_u32(22);
+    CommandBuffer::push_string(big.data(), big.size());
+    CommandBuffer::push_double(1.5);
+
+    CommandBuffer::push_command(3);
+    CommandBuffer::push_u32(33);
+    webcc::flush();
+
+    // Decode everything that reached JS, in order
+    std::vector<uint32_t> opcodes;
+    bool big_ok = false;
+    for (const Chunk &c : g_flushed)
+    {
+        Reader r{c};
+        while (!r.done())
+        {
+            uint32_t op = r.u32();
+            opcodes.push_back(op);
+            uint32_t arg = r.u32();
+            if (op == 2)
+            {
+                std::string s = r.str();
+                double d = r.f64();
+                big_ok = arg == 22 && s == big && d == 1.5;
+            }
+        }
+    }
+    CHECK_EQ(opcodes.size(), (size_t)3);
+    if (opcodes.size() == 3)
+    {
+        CHECK_EQ(opcodes[0], (uint32_t)1);
+        CHECK_EQ(opcodes[1], (uint32_t)2);
+        CHECK_EQ(opcodes[2], (uint32_t)3);
+    }
+    CHECK(big_ok);
+
+    // Back to normal afterwards
+    CHECK_EQ(CommandBuffer::size(), (size_t)0);
+    CommandBuffer::push_command(4);
+    CHECK_EQ(CommandBuffer::size(), (size_t)4);
+    CommandBuffer::reset();
 }

@@ -229,6 +229,26 @@ TEST(codegen_js_no_inline_js_when_none_used)
     CHECK(js.find("__webcc_utf8") == std::string::npos);
 }
 
+// String results over the scratch buffer size are fetched with webcc_js_read_result.
+TEST(codegen_js_large_string_result)
+{
+    SchemaDefs defs = real_defs();
+    std::set<std::string> imports = {"webcc_js_flush", "webcc_storage_get_item"};
+    generate_js_runtime(defs, imports, {}, {}, "/tmp");
+    std::string js = read_file("/tmp/app.js");
+
+    CHECK(js.find("if (encoded.length > 4096) _big_result = encoded;") != std::string::npos);
+    CHECK(js.find("webcc_js_read_result: (ptr) =>") != std::string::npos);
+    CHECK(js.find("let _big_result = null;") != std::string::npos);
+
+    // Not emitted when no string-returning command is used
+    imports = {"webcc_js_flush", "webcc_canvas_create_canvas"};
+    generate_js_runtime(defs, imports, {}, {}, "/tmp");
+    js = read_file("/tmp/app.js");
+    CHECK(js.find("_big_result") == std::string::npos);
+    CHECK(js.find("webcc_js_read_result") == std::string::npos);
+}
+
 // Text and binary frames are separate events, close carries code/reason.
 TEST(codegen_js_websocket_events)
 {
