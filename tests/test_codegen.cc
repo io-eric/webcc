@@ -603,6 +603,25 @@ TEST(codegen_js_image_events)
     CHECK(js.find("URL.revokeObjectURL(url)") != std::string::npos);
 }
 
+// Focus listener pulls in FOCUS/BLUR, which run an update right away.
+TEST(codegen_js_focus_listener)
+{
+    SchemaDefs defs = real_defs();
+    auto markers = void_markers(defs, {"dom::add_focus_listener", "dom::set_style"});
+    generate_js_runtime(defs, {"webcc_js_flush"}, markers, {}, "/tmp");
+    std::string js = read_file("/tmp/app.js");
+    CHECK(js.find("function push_event_dom_FOCUS(handle)") != std::string::npos);
+    CHECK(js.find("function push_event_dom_BLUR(handle)") != std::string::npos);
+    CHECK(js.find("push_event_dom_FOCUS(handle); _triggerDiscreteUpdate();") != std::string::npos);
+    CHECK(js.find("el.style.setProperty(name, value)") != std::string::npos);
+
+    markers = void_markers(defs, {"dom::focus"});
+    generate_js_runtime(defs, {"webcc_js_flush"}, markers, {}, "/tmp");
+    js = read_file("/tmp/app.js");
+    CHECK(js.find("preventScroll") != std::string::npos);
+    CHECK(js.find("push_event_dom_FOCUS") == std::string::npos);
+}
+
 // Constants become constexpr, defaults become C++ default arguments.
 TEST(codegen_consts_and_defaults)
 {

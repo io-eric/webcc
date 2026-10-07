@@ -97,7 +97,63 @@ void request_pointer_lock(webcc::DOMElement handle);
 
 ```cpp
 void set_attribute(webcc::DOMElement handle, webcc::string_view name, webcc::string_view value);
-void get_attribute(webcc::DOMElement handle, webcc::string_view name);
+webcc::string get_attribute(webcc::DOMElement handle, webcc::string_view name);
+```
+
+### Properties
+
+```cpp
+void set_property(webcc::DOMElement handle, webcc::string_view name, webcc::string_view value);
+webcc::string get_property(webcc::DOMElement handle, webcc::string_view name);
+```
+
+`get_property` reads a live JavaScript property as a string, e.g. `"innerText"` of a `contenteditable` box, `"value"` of an input, or `"scrollTop"`. It returns an empty string when the property is unset. Attributes only hold what was set initially, so use properties to read what the user edited.
+
+### Style
+
+```cpp
+void set_style(webcc::DOMElement handle, webcc::string_view name, webcc::string_view value);
+```
+
+Sets one CSS property without touching the rest of the `style` attribute. `name` is the CSS name: `"left"`, `"font-size"`, or a custom property like `"--ink"`. An empty `value` removes the property.
+
+```cpp
+webcc::dom::set_style(box, "left", "120px");
+webcc::dom::set_style(box, "top", "48px");
+```
+
+### Focus
+
+```cpp
+void focus(webcc::DOMElement handle, uint8_t prevent_scroll = 0);
+void blur(webcc::DOMElement handle);
+void add_focus_listener(webcc::DOMElement handle);
+void remove_focus_listener(webcc::DOMElement handle);
+
+struct FocusEvent { webcc::DOMElement handle; };
+struct BlurEvent  { webcc::DOMElement handle; };
+```
+
+- `focus` moves keyboard focus to the element. `prevent_scroll = 1` keeps the page from scrolling it into view.
+- On phones the on-screen keyboard only opens when `focus` runs inside a tap or key handler. Pointer down, click and key events run the update function right away, so calling it there works.
+- `add_focus_listener` sends `FocusEvent` and `BlurEvent` when the element itself gains or loses focus. Both run the update function right away.
+
+**Focusing from a canvas tap.** A press on a non-focusable element such as a canvas normally moves focus to the page body right after the pointer down. That undoes a `focus` call made while handling it. Register the canvas with `add_pointer_listener(canvas, 7)` (or at least flag `4`, block touch scrolling), which cancels the press's default action and keeps the focus where you put it.
+
+```cpp
+// Text box over the canvas: tap to place it, type, tap again to finish
+if (auto p = e.as<webcc::dom::PointerEvent>(); p && p->phase == 0) {
+    if (editing) {
+        save_text(webcc::dom::get_property(box, "innerText"));
+        webcc::dom::blur(box);
+        editing = false;
+    } else {
+        webcc::dom::set_style(box, "left", webcc::string("") + (int)p->x + "px");
+        webcc::dom::set_style(box, "top", webcc::string("") + (int)p->y + "px");
+        webcc::dom::focus(box, 1);
+        editing = true;
+    }
+}
 ```
 
 ### Content

@@ -43,6 +43,18 @@ dom|command|SET_NODE_VALUE|set_node_value|handle(DOMElement):handle string:text|
 dom|command|SET_ATTRIBUTE|set_attribute|handle(DOMElement):handle string:name string:value|{ const el = elements[handle]; if(!el){ console.warn('set_attribute: unknown element handle', handle); continue; } el.setAttribute(name, value); }
 dom|command|SET_PROPERTY|set_property|handle(DOMElement):handle string:name string:value|{ const el = elements[handle]; if(!el){ console.warn('set_property: unknown element handle', handle); continue; } el[name] = value; }
 dom|command|GET_ATTRIBUTE|get_attribute|handle(DOMElement):handle string:name RET:string|{ const el = elements[handle]; if(!el){ console.warn('get_attribute: unknown element handle', handle); return 0; } const ret = el.getAttribute(name) || ""; }
+# Property as a string (innerText, value, scrollTop...); empty when unset
+dom|command|GET_PROPERTY|get_property|handle(DOMElement):handle string:name RET:string|{ const el = elements[handle]; if(!el){ console.warn('get_property: unknown element handle', handle); return 0; } const v = el[name]; const ret = v == null ? '' : String(v); }
+# One CSS property by its CSS name ("left", "font-size", "--my-var"); an empty value removes it
+dom|command|SET_STYLE|set_style|handle(DOMElement):handle string:name string:value|{ const el = elements[handle]; if(!el || !el.style) continue; if (value) el.style.setProperty(name, value); else el.style.removeProperty(name); }
+# On phones the keyboard only opens when this runs inside a tap or key handler
+dom|command|FOCUS|focus|handle(DOMElement):handle uint8:prevent_scroll=0|{ const el = elements[handle]; if(el && el.focus) el.focus({ preventScroll: !!prevent_scroll }); }
+dom|command|BLUR|blur|handle(DOMElement):handle|{ const el = elements[handle]; if(el && el.blur) el.blur(); }
+dom|event|FOCUS|handle(DOMElement):handle
+dom|event|BLUR|handle(DOMElement):handle
+# FOCUS/BLUR when the element itself gains or loses focus; both run an update right away
+dom|command|ADD_FOCUS_LISTENER|add_focus_listener|handle(DOMElement):handle|{ const el = elements[handle]; if(!el || el.__wcc_focus) continue; const h = [['focus', () => { push_event_dom_FOCUS(handle); _triggerDiscreteUpdate(); }], ['blur', () => { push_event_dom_BLUR(handle); _triggerDiscreteUpdate(); }]]; for (const [n, f] of h) el.addEventListener(n, f); el.__wcc_focus = h; }
+dom|command|REMOVE_FOCUS_LISTENER|remove_focus_listener|handle(DOMElement):handle|{ const el = elements[handle]; if(!el || !el.__wcc_focus) continue; for (const [n, f] of el.__wcc_focus) el.removeEventListener(n, f); el.__wcc_focus = undefined; }
 dom|command|APPEND_CHILD|append_child|handle(DOMElement):parent_handle handle(DOMElement):child_handle|{ const parent = elements[parent_handle]; const child = elements[child_handle]; if(!parent || !child){ console.warn('append_child: unknown handles', parent_handle, child_handle); continue; } parent.appendChild(child); }
 dom|command|INSERT_BEFORE|insert_before|handle(DOMElement):parent_handle handle(DOMElement):child_handle handle(DOMElement):ref_handle|{ const parent = elements[parent_handle]; const child = elements[child_handle]; const ref = elements[ref_handle]; if(!parent || !child){ console.warn('insert_before: unknown handles', parent_handle, child_handle); continue; } parent.insertBefore(child, ref || null); }
 dom|command|REMOVE_ELEMENT|remove_element|handle(DOMElement):handle|{ const el = elements[handle]; if(!el){ console.warn('remove_element: unknown element handle', handle); continue; } el.remove(); elements[handle] = undefined; }

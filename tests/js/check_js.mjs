@@ -120,6 +120,12 @@ int main(){ uint8_t d[2]={1,2};
   auto i=webcc::image::from_blob(b,"image/png"); webcc::image::load("/a.png");
   webcc::image::free(i); }`,
 
+  focus_style: `#include "webcc/dom.h"
+int main(){ auto el=webcc::dom::create_element("div");
+  webcc::dom::set_style(el,"left","1px"); webcc::dom::focus(el,1); webcc::dom::blur(el);
+  webcc::dom::add_focus_listener(el); webcc::dom::remove_focus_listener(el);
+  return (int)webcc::dom::get_property(el,"innerText").length(); }`,
+
   fetch_storage: `#include "webcc/fetch.h"
 #include "webcc/storage.h"
 int main(){ webcc::fetch::get("/api","{}");

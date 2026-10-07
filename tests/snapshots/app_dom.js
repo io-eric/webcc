@@ -112,7 +112,7 @@ const run = async () => {
             pos += 4;
 
             switch (opcode) {
-                case 15: {
+                case 21: {
                     if (pos + 4 > end) { console.error('WebCC: OOB parent_handle'); break; }
                     const parent_handle = i32[pos >> 2]; pos += 4;
                     if (pos + 4 > end) { console.error('WebCC: OOB child_handle'); break; }
@@ -120,7 +120,7 @@ const run = async () => {
                     { const parent = elements[parent_handle]; const child = elements[child_handle]; if(!parent || !child){ console.warn('append_child: unknown handles', parent_handle, child_handle); continue; } parent.appendChild(child); }
                     break;
                 }
-                case 20: {
+                case 26: {
                     if (pos + 4 > end) { console.error('WebCC: OOB handle'); break; }
                     const handle = i32[pos >> 2]; pos += 4;
                     if (pos + 4 > end) { console.error('WebCC: OOB text_len'); break; }
