@@ -97,6 +97,12 @@ int main(){ namespace i=webcc::idb;
   i::put(db,"k",webcc::bytes_view(d,3)); i::get(db,"k");
   i::remove(db,"k"); i::keys(db); i::close(db); }`,
 
+  // binary fetch: bytes param with a default, fetches + blobs maps
+  fetch_binary: `#include "webcc/fetch.h"
+int main(){ uint8_t d[2]={1,2};
+  auto r=webcc::fetch::request("PUT","/x","{}",webcc::bytes_view(d,2));
+  webcc::fetch::request("GET","/y"); webcc::fetch::abort(r); }`,
+
   fetch_storage: `#include "webcc/fetch.h"
 #include "webcc/storage.h"
 int main(){ webcc::fetch::get("/api","{}");

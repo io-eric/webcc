@@ -528,6 +528,24 @@ TEST(codegen_js_idb)
     CHECK(js.find("push_event_idb_") == std::string::npos);
 }
 
+// fetch::request pulls in the AbortController map and the Blob-carrying DONE event;
+// the text API pulls in neither.
+TEST(codegen_js_fetch_request)
+{
+    SchemaDefs defs = real_defs();
+    generate_js_runtime(defs, {"webcc_js_flush", "webcc_fetch_request"}, {}, {}, "/tmp");
+    std::string js = read_file("/tmp/app.js");
+    CHECK(js.find("const fetches = [];") != std::string::npos);
+    CHECK(js.find("const blobs = [];") != std::string::npos);
+    CHECK(js.find("function push_event_fetch_DONE(id, status, body)") != std::string::npos);
+    CHECK(js.find("new AbortController()") != std::string::npos);
+
+    generate_js_runtime(defs, {"webcc_js_flush", "webcc_fetch_get"}, {}, {}, "/tmp");
+    js = read_file("/tmp/app.js");
+    CHECK(js.find("fetches") == std::string::npos);
+    CHECK(js.find("push_event_fetch_DONE") == std::string::npos);
+}
+
 // Constants become constexpr, defaults become C++ default arguments.
 TEST(codegen_consts_and_defaults)
 {

@@ -690,7 +690,7 @@ namespace webcc
     }
 
     static const std::vector<std::string> RESOURCE_MAPS = {
-        "elements", "contexts", "audios", "websockets", "images", "blobs", "databases",
+        "elements", "contexts", "audios", "websockets", "images", "blobs", "databases", "fetches",
         "webgl_contexts", "webgl_shaders", "webgl_programs", "webgl_buffers",
         "textures", "webgl_uniforms",
         "webgpu_adapters", "webgpu_devices", "webgpu_queues", "webgpu_shaders",
