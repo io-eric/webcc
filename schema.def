@@ -102,6 +102,8 @@ dom|command|ADD_KEYDOWN_LISTENER|add_keydown_listener|handle(DOMElement):handle|
 dom|command|REQUEST_FULLSCREEN|request_fullscreen|handle(DOMElement):handle|{ const el = elements[handle] || document.body; el.requestFullscreen().catch(console.error); }
 dom|command|REQUEST_POINTER_LOCK|request_pointer_lock|handle(DOMElement):handle|{ const el = elements[handle] || document.body; el.requestPointerLock(); }
 dom|command|SCROLL_TO_TOP|scroll_to_top||{ window.scrollTo({ top: 0, left: 0, behavior: 'instant' }); }
+# editing commands for a focused contenteditable: bold, italic, formatBlock, insertHTML...
+dom|command|EXEC_COMMAND|exec_command|string:name string:value|{ document.execCommand(name, false, value); }
 
 # ------------------------------------------------------------------------------
 # CANVAS 2D
