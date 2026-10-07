@@ -445,17 +445,35 @@ TEST(codegen_js_frames_on_demand)
     CHECK(js.find("function _requestFrame()") != std::string::npos);
     CHECK(js.find("_frameOnDemand = true;") != std::string::npos);
     CHECK(js.find("cancelAnimationFrame(_frameRaf)") != std::string::npos);
-    // The POINTER helper ends by requesting a frame
+    // the POINTER helper wakes the update
     size_t helper = js.find("function push_event_dom_POINTER(");
     CHECK(helper != std::string::npos);
     size_t helper_end = js.find("\n    }\n", helper);
     CHECK(helper_end != std::string::npos);
-    CHECK(helper != std::string::npos && js.find("_requestFrame();", helper) < helper_end);
+    CHECK(js.find("_wake();", helper) < helper_end);
     // set_main_loop turns on-demand mode back off
     markers = void_markers(defs, {"system::set_main_loop"});
     generate_js_runtime(defs, {"webcc_js_flush"}, markers, {}, "/tmp");
     js = read_file("/tmp/app.js");
     CHECK(js.find("_frameOnDemand = false;") != std::string::npos);
+}
+
+TEST(codegen_js_events_in_hidden_tab)
+{
+    SchemaDefs defs = real_defs();
+    auto markers = void_markers(defs, {"system::set_main_loop", "dom::add_pointer_listener"});
+    generate_js_runtime(defs, {"webcc_js_flush"}, markers, {}, "/tmp");
+    std::string js = read_file("/tmp/app.js");
+
+    CHECK(js.find("if (!document.hidden) return _requestFrame();") != std::string::npos);
+    CHECK(js.find("_wakeTimer = setTimeout(") != std::string::npos);
+    CHECK(js.find("const loop = (t) => { _update(t);") != std::string::npos);
+    size_t helper = js.find("function push_event_dom_POINTER(");
+    CHECK(helper != std::string::npos);
+    size_t helper_end = js.find("\n    }\n", helper);
+    CHECK(js.find("_wake();", helper) < helper_end);
+    // full buffer: run an update to drain it before dropping
+    CHECK(js.find("&& pos && _update(performance.now())) { _eventViews(); pos = event_offset_view[0]; }", helper) < helper_end);
 }
 
 // Key events carry mods, repeat and the key string.

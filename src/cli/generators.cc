@@ -1157,6 +1157,14 @@ namespace webcc
         w.write("let event_i32 = new Int32Array(memory.buffer, event_buffer_ptr_val);");
         w.write("let event_f32 = new Float32Array(memory.buffer, event_buffer_ptr_val);");
         w.write("let event_f64 = new Float64Array(memory.buffer, event_buffer_ptr_val);");
+        w.write("function _eventViews() {");
+        w.write("    if (event_u8.buffer === memory.buffer) return;");
+        w.write("    event_u8 = new Uint8Array(memory.buffer, event_buffer_ptr_val);");
+        w.write("    event_i32 = new Int32Array(memory.buffer, event_buffer_ptr_val);");
+        w.write("    event_f32 = new Float32Array(memory.buffer, event_buffer_ptr_val);");
+        w.write("    event_f64 = new Float64Array(memory.buffer, event_buffer_ptr_val);");
+        w.write("    event_offset_view = new Uint32Array(memory.buffer, event_offset_ptr_val, 1);");
+        w.write("}");
         w.write("const text_encoder = new TextEncoder();");
         if (any_buffered_return)
             w.write("let _big_result = null;");
@@ -1173,24 +1181,39 @@ namespace webcc
         }
         w.write("const EVENT_BUFFER_SIZE = webcc_event_buffer_capacity();");
         w.write("");
-        w.write("// Global update function reference for immediate discrete event processing");
         w.write("let _updateFn = null;");
         w.write("let _updatePending = false;");
+        w.write("let _inUpdate = false;");
         w.write("// on demand: no rAF loop");
         w.write("let _frameOnDemand = false;");
         w.write("let _frameRaf = 0;");
+        w.write("let _wakeTimer = 0;");
+        w.write("function _update(t) {");
+        w.write("    if (!_updateFn || _inUpdate) return false;");
+        w.write("    if (_frameRaf) { cancelAnimationFrame(_frameRaf); _frameRaf = 0; }");
+        w.write("    if (_wakeTimer) { clearTimeout(_wakeTimer); _wakeTimer = 0; }");
+        w.write("    _inUpdate = true;");
+        w.write("    try { _updateFn(t); } finally { _inUpdate = false; }");
+        w.write("    return true;");
+        w.write("}");
         w.write("function _requestFrame() {");
         w.write("    if (_frameRaf || (_updateFn && !_frameOnDemand)) return;");
-        w.write("    _frameRaf = requestAnimationFrame((t) => { _frameRaf = 0; if (_updateFn && _frameOnDemand) _updateFn(t); });");
+        w.write("    _frameRaf = requestAnimationFrame((t) => { _frameRaf = 0; if (_frameOnDemand) _update(t); });");
         w.write("}");
+        w.write("// rAF doesn't run in a hidden tab, events still have to");
+        w.write("function _wake() {");
+        w.write("    if (!document.hidden) return _requestFrame();");
+        w.write("    if (!_wakeTimer) _wakeTimer = setTimeout(() => { _wakeTimer = 0; _update(performance.now()); });");
+        w.write("}");
+        w.write("document.addEventListener('visibilitychange', () => {");
+        w.write("    if (!document.hidden) return;");
+        w.write("    _eventViews();");
+        w.write("    if (event_offset_view[0]) _wake();");
+        w.write("});");
         w.write("function _triggerDiscreteUpdate() {");
         w.write("    if (_updateFn && !_updatePending) {");
         w.write("        _updatePending = true;");
-        w.write("        queueMicrotask(() => {");
-        w.write("            _updatePending = false;");
-        w.write("            if (_frameRaf) { cancelAnimationFrame(_frameRaf); _frameRaf = 0; }");
-        w.write("            _updateFn(performance.now());");
-        w.write("        });");
+        w.write("        queueMicrotask(() => { _updatePending = false; _update(performance.now()); });");
         w.write("    }");
         w.write("}");
         w.write("");
@@ -1234,13 +1257,7 @@ namespace webcc
             sig << ") {";
             w.write(sig.str());
 
-            w.write("if (event_u8.buffer !== memory.buffer) {");
-            w.write("event_u8 = new Uint8Array(memory.buffer, event_buffer_ptr_val);");
-            w.write("event_i32 = new Int32Array(memory.buffer, event_buffer_ptr_val);");
-            w.write("event_f32 = new Float32Array(memory.buffer, event_buffer_ptr_val);");
-            w.write("event_f64 = new Float64Array(memory.buffer, event_buffer_ptr_val);");
-            w.write("event_offset_view = new Uint32Array(memory.buffer, event_offset_ptr_val, 1);");
-            w.write("}");
+            w.write("_eventViews();");
 
             // worst-case event size
             uint32_t fixed_size = 4; // header
@@ -1268,8 +1285,11 @@ namespace webcc
                     fixed_size += 4;
             }
 
+            std::string need = std::to_string(fixed_size) + dynamic_size;
             w.write("let pos = event_offset_view[0];");
-            w.write("if (pos + " + std::to_string(fixed_size) + dynamic_size + " > EVENT_BUFFER_SIZE) { console.warn('WebCC: Event buffer full, dropping event " + d.name + "'); return; }");
+            // full: let the app read what's there first
+            w.write("if (pos + " + need + " > EVENT_BUFFER_SIZE && pos && _update(performance.now())) { _eventViews(); pos = event_offset_view[0]; }");
+            w.write("if (pos + " + need + " > EVENT_BUFFER_SIZE) { console.warn('WebCC: Event buffer full, dropping event " + d.name + "'); return; }");
             w.write("const start_pos = pos;");
             w.write("pos += 4; // Skip header (opcode + size)");
 
@@ -1303,7 +1323,7 @@ namespace webcc
             w.write("const len = pos - start_pos;");
             w.write("event_i32[start_pos >> 2] = " + std::to_string((int)d.opcode) + " | (len >> 16 << 8) | (len << 16);");
             w.write("event_offset_view[0] = pos;");
-            w.write("_requestFrame();");
+            w.write("_wake();");
             w.write("}");
         }
 

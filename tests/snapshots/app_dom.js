@@ -55,27 +55,50 @@ const run = async () => {
     let event_i32 = new Int32Array(memory.buffer, event_buffer_ptr_val);
     let event_f32 = new Float32Array(memory.buffer, event_buffer_ptr_val);
     let event_f64 = new Float64Array(memory.buffer, event_buffer_ptr_val);
+    function _eventViews() {
+        if (event_u8.buffer === memory.buffer) return;
+        event_u8 = new Uint8Array(memory.buffer, event_buffer_ptr_val);
+        event_i32 = new Int32Array(memory.buffer, event_buffer_ptr_val);
+        event_f32 = new Float32Array(memory.buffer, event_buffer_ptr_val);
+        event_f64 = new Float64Array(memory.buffer, event_buffer_ptr_val);
+        event_offset_view = new Uint32Array(memory.buffer, event_offset_ptr_val, 1);
+    }
     const text_encoder = new TextEncoder();
     const EVENT_BUFFER_SIZE = webcc_event_buffer_capacity();
 
-    // Global update function reference for immediate discrete event processing
     let _updateFn = null;
     let _updatePending = false;
+    let _inUpdate = false;
     // on demand: no rAF loop
     let _frameOnDemand = false;
     let _frameRaf = 0;
+    let _wakeTimer = 0;
+    function _update(t) {
+        if (!_updateFn || _inUpdate) return false;
+        if (_frameRaf) { cancelAnimationFrame(_frameRaf); _frameRaf = 0; }
+        if (_wakeTimer) { clearTimeout(_wakeTimer); _wakeTimer = 0; }
+        _inUpdate = true;
+        try { _updateFn(t); } finally { _inUpdate = false; }
+        return true;
+    }
     function _requestFrame() {
         if (_frameRaf || (_updateFn && !_frameOnDemand)) return;
-        _frameRaf = requestAnimationFrame((t) => { _frameRaf = 0; if (_updateFn && _frameOnDemand) _updateFn(t); });
+        _frameRaf = requestAnimationFrame((t) => { _frameRaf = 0; if (_frameOnDemand) _update(t); });
     }
+    // rAF doesn't run in a hidden tab, events still have to
+    function _wake() {
+        if (!document.hidden) return _requestFrame();
+        if (!_wakeTimer) _wakeTimer = setTimeout(() => { _wakeTimer = 0; _update(performance.now()); });
+    }
+    document.addEventListener('visibilitychange', () => {
+        if (!document.hidden) return;
+        _eventViews();
+        if (event_offset_view[0]) _wake();
+    });
     function _triggerDiscreteUpdate() {
         if (_updateFn && !_updatePending) {
             _updatePending = true;
-            queueMicrotask(() => {
-                _updatePending = false;
-                if (_frameRaf) { cancelAnimationFrame(_frameRaf); _frameRaf = 0; }
-                _updateFn(performance.now());
-            });
+            queueMicrotask(() => { _updatePending = false; _update(performance.now()); });
         }
     }
 
