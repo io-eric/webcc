@@ -637,6 +637,20 @@ TEST(codegen_js_lifecycle)
     CHECK(js.find("document.visibilityState || 'visible'); _triggerDiscreteUpdate();") != std::string::npos);
 }
 
+// draw_image takes any drawable element and guards against undrawable sources; the
+// guard's locals must not shadow the w/h parameters of the scaled variant.
+TEST(codegen_js_draw_image_sources)
+{
+    SchemaDefs defs = real_defs();
+    auto markers = void_markers(defs, {"canvas::draw_image_scaled", "canvas::free"});
+    generate_js_runtime(defs, {"webcc_js_flush"}, markers, {}, "/tmp");
+    std::string js = read_file("/tmp/app.js");
+    CHECK(js.find("const src = elements[source];") != std::string::npos);
+    CHECK(js.find("ctx.drawImage(src, x, y, w, h)") != std::string::npos);
+    CHECK(js.find("const w = src") == std::string::npos);
+    CHECK(js.find("contexts[i].canvas === c") != std::string::npos);
+}
+
 // Constants become constexpr, defaults become C++ default arguments.
 TEST(codegen_consts_and_defaults)
 {

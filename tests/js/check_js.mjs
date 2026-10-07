@@ -130,6 +130,13 @@ int main(){ auto el=webcc::dom::create_element("div");
 int main(){ webcc::system::init_lifecycle(); webcc::system::init_visibility_change();
   return webcc::system::is_online(); }`,
 
+  canvas_cache: `#include "webcc/canvas.h"
+int main(){ namespace c=webcc::canvas;
+  auto v=c::create_canvas("v",100,100); auto ctx=c::get_context_2d(v);
+  auto t=c::create_canvas("",10,10); c::draw_image(ctx,t,0,0);
+  c::draw_image_scaled(ctx,t,0,0,20,20); c::draw_image_full(ctx,t,0,0,5,5,0,0,10,10);
+  c::free(t); }`,
+
   fetch_storage: `#include "webcc/fetch.h"
 #include "webcc/storage.h"
 int main(){ webcc::fetch::get("/api","{}");

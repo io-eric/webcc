@@ -64,6 +64,14 @@ Sets the width and height of the canvas.
 void set_size(webcc::Canvas handle, float width, float height);
 ```
 
+### `free`
+
+Releases a canvas and its contexts, and frees its pixel memory right away. Use it for cache canvases that are no longer needed. A canvas that was added to the page should be removed with `dom::remove_element` first. Drawing with a freed canvas or its context does nothing.
+
+```cpp
+void free(webcc::Canvas handle);
+```
+
 ### Drawing Rectangles
 
 ```cpp
@@ -135,11 +143,36 @@ void transform(webcc::handle handle, float a, float b, float c, float d, float e
 ### Images
 
 ```cpp
-void draw_image(webcc::handle handle, webcc::handle img_handle, float x, float y);
-void draw_image_scaled(webcc::handle handle, webcc::handle img_handle, float x, float y, float w, float h);
-void draw_image_full(webcc::handle handle, webcc::handle img_handle, float sx, float sy, float sw, float sh, float dx, float dy, float dw, float dh);
-void set_image_smoothing_enabled(webcc::handle handle, uint8_t enabled);
+void draw_image(webcc::CanvasContext2D ctx, webcc::DOMElement source, double x, double y);
+void draw_image_scaled(webcc::CanvasContext2D ctx, webcc::DOMElement source, double x, double y, double w, double h);
+void draw_image_full(webcc::CanvasContext2D ctx, webcc::DOMElement source, double sx, double sy, double sw, double sh, double dx, double dy, double dw, double dh);
+void set_image_smoothing_enabled(webcc::CanvasContext2D ctx, uint8_t enabled);
 ```
+
+`source` is an `Image` or a `Canvas` (both convert to `DOMElement`). An image that hasn't loaded yet, a broken image, a zero-size canvas or any other element draws nothing.
+
+### Caching with offscreen canvases
+
+A canvas created with `create_canvas` and never added to the page is an offscreen canvas: draw into it once, then draw it onto the visible canvas each frame with `draw_image`. Copying a finished picture is much cheaper than redrawing everything in it, so a page with thousands of strokes stays fast:
+
+```cpp
+// Finished strokes go into a cache tile once
+webcc::Canvas tile = webcc::canvas::create_canvas("", 512, 512);
+webcc::CanvasContext2D tile_ctx = webcc::canvas::get_context_2d(tile);
+draw_strokes(tile_ctx, finished_strokes);
+
+// Every frame: copy the tile, then draw only what is still changing
+void frame() {
+    webcc::canvas::clear_rect(ctx, 0, 0, width, height);
+    webcc::canvas::draw_image(ctx, tile, tile_x - scroll_x, tile_y - scroll_y);
+    draw_stroke(ctx, current_stroke);
+}
+
+// A tile far off screen can be dropped and redrawn later
+webcc::canvas::free(tile);
+```
+
+Size tiles in device pixels (CSS size × `system::get_device_pixel_ratio()`) and draw them back with `draw_image_scaled` at their CSS size, so cached content stays sharp on HiDPI screens.
 
 ### Debugging
 
