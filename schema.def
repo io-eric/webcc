@@ -338,7 +338,15 @@ fetch|command|PATCH|patch|string:url string:body string:headers RET:handle(Fetch
 # ------------------------------------------------------------------------------
 # IMAGES
 # ------------------------------------------------------------------------------
-image|command|LOAD|load|string:src RET:handle(Image)|{ const handle = (window.webcc_next_id = (window.webcc_next_id || 0) + 1); const img = new Image(); img.src = src; images[handle] = img; elements[handle] = img; return handle; }
+# Both load and from_blob end in LOADED (decoded, ready to draw) or ERROR
+image|event|LOADED|handle(Image):handle int32:width int32:height
+image|event|ERROR|handle(Image):handle
+image|command|LOAD|load|string:src RET:handle(Image)|{ const handle = (window.webcc_next_id = (window.webcc_next_id || 0) + 1); const img = new Image(); images[handle] = img; elements[handle] = img; const done = () => { if (images[handle] !== img) return; push_event_image_LOADED(handle, img.naturalWidth, img.naturalHeight); }; const fail = () => { if (images[handle] !== img) return; push_event_image_ERROR(handle); }; img.src = src; img.decode().then(done, fail); return handle; }
+# Image from encoded bytes (PNG, JPEG, WebP, GIF, SVG...) in a Blob. The bytes are copied,
+# so the blob can be freed right after the call
+image|command|FROM_BLOB|from_blob|handle(Blob):blob string:mime="" RET:handle(Image)|{ const handle = (window.webcc_next_id = (window.webcc_next_id || 0) + 1); const img = new Image(); images[handle] = img; elements[handle] = img; const u8 = blobs[blob]; if (!u8) { console.error('image.from_blob: invalid blob', blob); queueMicrotask(() => push_event_image_ERROR(handle)); return handle; } const url = URL.createObjectURL(new Blob([u8], mime ? { type: mime } : {})); const done = () => { if (images[handle] !== img) return; push_event_image_LOADED(handle, img.naturalWidth, img.naturalHeight); }; const fail = () => { if (images[handle] !== img) return; push_event_image_ERROR(handle); }; img.src = url; img.decode().then(done, fail).finally(() => URL.revokeObjectURL(url)); return handle; }
+# Releases the image; drawing it afterwards does nothing
+image|command|FREE|free|handle(Image):handle|{ const img = images[handle]; if (!img) continue; images[handle] = undefined; if (elements[handle] === img) elements[handle] = undefined; img.src = ''; }
 
 # ------------------------------------------------------------------------------
 # WEBGL

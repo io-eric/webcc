@@ -587,6 +587,22 @@ TEST(codegen_js_files)
     CHECK(js.find("blobs") == std::string::npos);
 }
 
+// Image loads report back: both load and from_blob pull in LOADED/ERROR.
+TEST(codegen_js_image_events)
+{
+    SchemaDefs defs = real_defs();
+    generate_js_runtime(defs, {"webcc_js_flush", "webcc_image_load"}, {}, {}, "/tmp");
+    std::string js = read_file("/tmp/app.js");
+    CHECK(js.find("function push_event_image_LOADED(handle, width, height)") != std::string::npos);
+    CHECK(js.find("function push_event_image_ERROR(handle)") != std::string::npos);
+    CHECK(js.find("img.decode()") != std::string::npos);
+
+    generate_js_runtime(defs, {"webcc_js_flush", "webcc_image_from_blob"}, {}, {}, "/tmp");
+    js = read_file("/tmp/app.js");
+    CHECK(js.find("const blobs = [];") != std::string::npos);
+    CHECK(js.find("URL.revokeObjectURL(url)") != std::string::npos);
+}
+
 // Constants become constexpr, defaults become C++ default arguments.
 TEST(codegen_consts_and_defaults)
 {

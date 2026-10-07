@@ -113,6 +113,13 @@ int main(){ uint8_t d[2]={1,2};
   auto el=webcc::dom::create_element("div");
   webcc::dom::add_drop_listener(el); webcc::dom::remove_drop_listener(el); }`,
 
+  image: `#include "webcc/image.h"
+#include "webcc/blob.h"
+int main(){ uint8_t d[2]={1,2};
+  auto b=webcc::blob::create(webcc::bytes_view(d,2));
+  auto i=webcc::image::from_blob(b,"image/png"); webcc::image::load("/a.png");
+  webcc::image::free(i); }`,
+
   fetch_storage: `#include "webcc/fetch.h"
 #include "webcc/storage.h"
 int main(){ webcc::fetch::get("/api","{}");
