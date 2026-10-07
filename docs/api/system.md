@@ -136,7 +136,7 @@ void init_visibility_change();
 Use `is_hidden()` when you only need a fast boolean-style check.
 Use `get_visibility_state()` when you want the exact browser-reported state string.
 
-After calling `init_visibility_change()`, visibility updates are emitted through the event system.
+After calling `init_visibility_change()`, visibility updates are emitted through the event system. Each one runs the update function right away, because a hidden tab gets no animation frames: without that, the "hidden" event would wait until the user came back.
 
 ```cpp
 struct VisibilityChangeEvent {
@@ -169,3 +169,41 @@ int main() {
 	return 0;
 }
 ```
+
+## Page Lifecycle
+
+```cpp
+void init_lifecycle();
+uint8_t is_online();   // 1 when the browser thinks it has a connection
+
+struct PageHideEvent { uint8_t persisted; };
+struct PageShowEvent { uint8_t persisted; };
+struct OnlineEvent   { uint8_t online; };
+```
+
+After `init_lifecycle()`:
+
+- `PageHideEvent` arrives when the user leaves the page, closes the tab, or reloads. `persisted = 1` means the page goes into the back/forward cache and may come back.
+- `PageShowEvent` arrives when the page comes back from the back/forward cache (`persisted` is always `1`). A normal page load sends nothing. Reconnect WebSockets here.
+- `OnlineEvent` arrives when the connection goes away (`online = 0`) or comes back (`1`).
+
+All three run the update function right away, before the browser moves on.
+
+### When to save
+
+`PageHideEvent` is the last moment the app runs, but only synchronous work is sure to finish then. A `storage::set_item` call lands; an `idb::put` started there is usually lost when the page is torn down. And on phones, a page in the background can be killed without any event at all.
+
+So save in layers:
+
+1. Save to IndexedDB as the user works (e.g. a moment after they stop typing or drawing).
+2. Save to IndexedDB when `VisibilityChangeEvent` reports `hidden = 1`: the user switched tabs or apps, and the page is still fully alive.
+3. On `PageHideEvent`, write anything still unsaved with `storage::set_item` as a fallback, and pick it up on the next start.
+
+```cpp
+if (auto v = e.as<webcc::system::VisibilityChangeEvent>()) {
+    if (v->hidden) save_to_idb();
+} else if (e.as<webcc::system::PageHideEvent>()) {
+    if (dirty) webcc::storage::set_item("unsaved", encode_pending());
+}
+```
+

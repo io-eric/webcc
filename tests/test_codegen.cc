@@ -622,6 +622,21 @@ TEST(codegen_js_focus_listener)
     CHECK(js.find("push_event_dom_FOCUS") == std::string::npos);
 }
 
+// Lifecycle events and visibility changes run an update right away (no frames
+// in a hidden tab).
+TEST(codegen_js_lifecycle)
+{
+    SchemaDefs defs = real_defs();
+    auto markers = void_markers(defs, {"system::init_lifecycle", "system::init_visibility_change"});
+    generate_js_runtime(defs, {"webcc_js_flush"}, markers, {}, "/tmp");
+    std::string js = read_file("/tmp/app.js");
+    CHECK(js.find("function push_event_system_PAGE_HIDE(persisted)") != std::string::npos);
+    CHECK(js.find("function push_event_system_PAGE_SHOW(persisted)") != std::string::npos);
+    CHECK(js.find("function push_event_system_ONLINE(online)") != std::string::npos);
+    CHECK(js.find("push_event_system_PAGE_HIDE(e.persisted ? 1 : 0); _triggerDiscreteUpdate();") != std::string::npos);
+    CHECK(js.find("document.visibilityState || 'visible'); _triggerDiscreteUpdate();") != std::string::npos);
+}
+
 // Constants become constexpr, defaults become C++ default arguments.
 TEST(codegen_consts_and_defaults)
 {

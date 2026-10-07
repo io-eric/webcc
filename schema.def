@@ -221,7 +221,16 @@ system|command|PUSH_STATE|push_state|string:path|{ history.pushState(null, '', p
 system|event|POPSTATE|string:path
 system|command|INIT_POPSTATE|init_popstate||{ window.addEventListener('popstate', () => push_event_system_POPSTATE(window.location.pathname || '/')); }
 system|event|VISIBILITY_CHANGE|uint8:hidden string:state
-system|command|INIT_VISIBILITY_CHANGE|init_visibility_change||{ document.addEventListener('visibilitychange', () => push_event_system_VISIBILITY_CHANGE(document.hidden ? 1 : 0, document.visibilityState || 'visible')); }
+# Runs an update right away: frames stop in a hidden tab, so the event would otherwise wait for the tab to come back
+system|command|INIT_VISIBILITY_CHANGE|init_visibility_change||{ document.addEventListener('visibilitychange', () => { push_event_system_VISIBILITY_CHANGE(document.hidden ? 1 : 0, document.visibilityState || 'visible'); _triggerDiscreteUpdate(); }); }
+# PAGE_HIDE: the page is being left, closed or put in the back/forward cache (persisted = 1).
+# Last chance to save; the update runs before the browser moves on. PAGE_SHOW only when
+# the page comes back from the back/forward cache. ONLINE when the connection comes or goes.
+system|event|PAGE_HIDE|uint8:persisted
+system|event|PAGE_SHOW|uint8:persisted
+system|event|ONLINE|uint8:online
+system|command|INIT_LIFECYCLE|init_lifecycle||{ if (window.__wcc_life) continue; window.__wcc_life = 1; window.addEventListener('pagehide', (e) => { push_event_system_PAGE_HIDE(e.persisted ? 1 : 0); _triggerDiscreteUpdate(); }); window.addEventListener('pageshow', (e) => { if (!e.persisted) return; push_event_system_PAGE_SHOW(1); _triggerDiscreteUpdate(); }); window.addEventListener('online', () => { push_event_system_ONLINE(1); _triggerDiscreteUpdate(); }); window.addEventListener('offline', () => { push_event_system_ONLINE(0); _triggerDiscreteUpdate(); }); }
+system|command|IS_ONLINE|is_online|RET:uint8|{ return navigator.onLine ? 1 : 0; }
 
 # ------------------------------------------------------------------------------
 # CLIPBOARD

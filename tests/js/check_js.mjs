@@ -126,6 +126,10 @@ int main(){ auto el=webcc::dom::create_element("div");
   webcc::dom::add_focus_listener(el); webcc::dom::remove_focus_listener(el);
   return (int)webcc::dom::get_property(el,"innerText").length(); }`,
 
+  lifecycle: `#include "webcc/system.h"
+int main(){ webcc::system::init_lifecycle(); webcc::system::init_visibility_change();
+  return webcc::system::is_online(); }`,
+
   fetch_storage: `#include "webcc/fetch.h"
 #include "webcc/storage.h"
 int main(){ webcc::fetch::get("/api","{}");
