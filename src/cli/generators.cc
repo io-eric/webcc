@@ -1521,8 +1521,18 @@ namespace webcc
         // the webcc binary's mtime as the toolchain version and recompile any
         // object older than it. (Only triggers right after a toolchain rebuild;
         // ordinary app edits leave the binary's mtime untouched.)
+        // A schema change regenerates the headers and schema.wcc.bin (next to the
+        // binary) without relinking webcc, and renumbers opcodes, so it counts too.
         struct stat exe_stat;
         bool have_exe_mtime = (stat(get_executable_path().c_str(), &exe_stat) == 0);
+        if (have_exe_mtime)
+        {
+            std::string exe_path = get_executable_path();
+            std::string schema_bin = exe_path.substr(0, exe_path.find_last_of('/') + 1) + "schema.wcc.bin";
+            struct stat schema_stat;
+            if (stat(schema_bin.c_str(), &schema_stat) == 0 && schema_stat.st_mtime > exe_stat.st_mtime)
+                exe_stat.st_mtime = schema_stat.st_mtime;
+        }
 
         for (const auto &src : all_sources)
         {
