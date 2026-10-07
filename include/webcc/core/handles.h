@@ -39,6 +39,18 @@ namespace webcc {
     struct Image_tag : DOMElement_tag {};
     using Image = typed_handle<Image_tag>;
 
+    // Tag struct for PdfDocument
+    struct PdfDocument_tag {};
+    using PdfDocument = typed_handle<PdfDocument_tag>;
+
+    // Tag struct for PdfRender
+    struct PdfRender_tag {};
+    using PdfRender = typed_handle<PdfRender_tag>;
+
+    // Tag struct for PdfWriter
+    struct PdfWriter_tag {};
+    using PdfWriter = typed_handle<PdfWriter_tag>;
+
     // Tag struct for WGPUAdapter
     struct WGPUAdapter_tag {};
     using WGPUAdapter = typed_handle<WGPUAdapter_tag>;

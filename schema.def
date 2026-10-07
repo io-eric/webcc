@@ -16,6 +16,10 @@
 # Constants: NAMESPACE|const|NAME|VALUE becomes `inline constexpr int32_t NAME` in webcc::NAMESPACE.
 #   Data too big for an event (files, responses) goes through a Blob handle, see BLOB.
 #
+# Helpers: NAMESPACE|helper|NAME|path.js names a JS file (relative to schema.def) that
+#   defines NAME, for code too big for one action. It is emitted once into app.js when a
+#   used action mentions NAME; maps and push_event_* calls inside it count as used.
+#
 # Events: an action that pushes an input event the app must react to right away
 #   (click, key, pointer down/up, paste, drop) calls _triggerDiscreteUpdate() after it.
 #   Every push_event_* helper also calls _requestFrame(), so an app running on demand
@@ -267,6 +271,60 @@ files|command|OPEN|open|string:accept="" uint8:multiple=0 RET:handle(FileRequest
 # Download: the browser saves data as name (usually to the Downloads folder). A direct
 # call, so the bytes go straight from wasm memory instead of through the command buffer
 files|command|SAVE|save|string:name string:mime bytes:data RET:uint8|{ const url = URL.createObjectURL(new Blob([data.slice()], { type: mime || 'application/octet-stream' })); const a = document.createElement('a'); a.href = url; a.download = name; a.style.display = 'none'; document.body.appendChild(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(url), 10000); return 1; }
+
+# ------------------------------------------------------------------------------
+# PDF
+# ------------------------------------------------------------------------------
+# Import renders pages with pdf.js, which the app ships and names with set_library
+# (loaded on first open). Export writes a PDF from canvas-like drawing commands.
+pdf|helper|__wcc_pdf|js/pdf.js
+# page_count is 0 and error set when the file couldn't be opened
+pdf|event|OPENED|handle(PdfDocument):doc int32:page_count string:error
+pdf|event|RENDERED|handle(PdfRender):render uint8:ok string:error
+# data is the PDF file, invalid with error set when writing failed
+pdf|event|WRITTEN|handle(PdfWriter):writer handle(Blob):data string:error
+# URLs of pdf.min.mjs and pdf.worker.min.mjs from pdfjs-dist, relative to the page
+pdf|command|SET_LIBRARY|set_library|string:lib_url string:worker_url|{ __wcc_pdf.lib = lib_url; __wcc_pdf.worker = worker_url; __wcc_pdf.mod = null; }
+# The bytes are copied, so the blob can be freed right after the call
+pdf|command|OPEN|open|handle(Blob):data RET:handle(PdfDocument)|{ const h = (window.webcc_next_id = (window.webcc_next_id || 0) + 1); const u8 = blobs[data]; if (!u8) { queueMicrotask(() => push_event_pdf_OPENED(h, 0, 'invalid blob')); return h; } __wcc_pdf.open(h, u8.slice()); return h; }
+# Page size in PDF points (1/72 inch), valid after OPENED; page is 0-based
+pdf|command|PAGE_WIDTH|page_width|handle(PdfDocument):doc int32:page RET:float64|{ return __wcc_pdf.size(doc, page, 0); }
+pdf|command|PAGE_HEIGHT|page_height|handle(PdfDocument):doc int32:page RET:float64|{ return __wcc_pdf.size(doc, page, 1); }
+# Renders a page into the canvas, resizing it to the page size times scale
+pdf|command|RENDER_PAGE|render_page|handle(PdfDocument):doc int32:page handle(Canvas):canvas float64:scale RET:handle(PdfRender)|{ const req = (window.webcc_next_id = (window.webcc_next_id || 0) + 1); __wcc_pdf.render(req, doc, page, elements[canvas], scale); return req; }
+# RENDERED with error 'cancelled' follows unless the render already finished
+pdf|command|CANCEL_RENDER|cancel_render|handle(PdfRender):render|{ __wcc_pdf.cancel(render); }
+pdf|command|CLOSE|close|handle(PdfDocument):doc|{ __wcc_pdf.close(doc); }
+# Writer: points, origin top-left, y down. Nothing is drawn before the first add_page
+pdf|command|CREATE_WRITER|create_writer|RET:handle(PdfWriter)|{ const h = (window.webcc_next_id = (window.webcc_next_id || 0) + 1); __wcc_pdf.create(h); return h; }
+pdf|command|ADD_PAGE|add_page|handle(PdfWriter):writer float32:width float32:height|{ __wcc_pdf.page(writer, width, height); }
+pdf|command|SET_STROKE_COLOR|set_stroke_color|handle(PdfWriter):writer uint8:r uint8:g uint8:b float32:alpha=1|{ __wcc_pdf.color(writer, r, g, b, alpha, false); }
+pdf|command|SET_FILL_COLOR|set_fill_color|handle(PdfWriter):writer uint8:r uint8:g uint8:b float32:alpha=1|{ __wcc_pdf.color(writer, r, g, b, alpha, true); }
+pdf|command|SET_LINE_WIDTH|set_line_width|handle(PdfWriter):writer float32:width|{ __wcc_pdf.op(writer, __wcc_pdf.num(width) + ' w'); }
+pdf|const|CAP_BUTT|0
+pdf|const|CAP_ROUND|1
+pdf|const|CAP_SQUARE|2
+pdf|command|SET_LINE_CAP|set_line_cap|handle(PdfWriter):writer uint8:cap|{ __wcc_pdf.op(writer, cap + ' J'); }
+pdf|const|JOIN_MITER|0
+pdf|const|JOIN_ROUND|1
+pdf|const|JOIN_BEVEL|2
+pdf|command|SET_LINE_JOIN|set_line_join|handle(PdfWriter):writer uint8:join|{ __wcc_pdf.op(writer, join + ' j'); }
+pdf|command|MOVE_TO|move_to|handle(PdfWriter):writer float32:x float32:y|{ __wcc_pdf.move(writer, x, y); }
+pdf|command|LINE_TO|line_to|handle(PdfWriter):writer float32:x float32:y|{ __wcc_pdf.line(writer, x, y); }
+pdf|command|QUAD_TO|quad_to|handle(PdfWriter):writer float32:cx float32:cy float32:x float32:y|{ __wcc_pdf.quad(writer, cx, cy, x, y); }
+pdf|command|CURVE_TO|curve_to|handle(PdfWriter):writer float32:c1x float32:c1y float32:c2x float32:c2y float32:x float32:y|{ __wcc_pdf.curve(writer, c1x, c1y, c2x, c2y, x, y); }
+pdf|command|RECT|rect|handle(PdfWriter):writer float32:x float32:y float32:w float32:h|{ __wcc_pdf.op(writer, [x, y, w, h].map(__wcc_pdf.num).join(' ') + ' re'); }
+pdf|command|CLOSE_PATH|close_path|handle(PdfWriter):writer|{ __wcc_pdf.op(writer, 'h'); }
+pdf|command|STROKE|stroke|handle(PdfWriter):writer|{ __wcc_pdf.op(writer, 'S'); }
+pdf|command|FILL|fill|handle(PdfWriter):writer|{ __wcc_pdf.op(writer, 'f'); }
+pdf|command|SAVE|save|handle(PdfWriter):writer|{ __wcc_pdf.op(writer, 'q'); }
+pdf|command|RESTORE|restore|handle(PdfWriter):writer|{ __wcc_pdf.op(writer, 'Q'); }
+# An Image or a Canvas (e.g. a rendered PDF page); its pixels are copied right away
+pdf|command|DRAW_IMAGE|draw_image|handle(PdfWriter):writer handle(DOMElement):source float32:x float32:y float32:w float32:h|{ __wcc_pdf.image(writer, elements[source], x, y, w, h); }
+# Helvetica in the fill color, y is the baseline. Latin-1 only, other characters become '?'
+pdf|command|DRAW_TEXT|draw_text|handle(PdfWriter):writer string:text float32:x float32:y float32:size|{ __wcc_pdf.text(writer, text, x, y, size); }
+# Builds the file in the background, then WRITTEN; the writer is gone after this
+pdf|command|FINISH|finish|handle(PdfWriter):writer|{ __wcc_pdf.finish(writer); }
 
 # ------------------------------------------------------------------------------
 # STORAGE (LocalStorage)

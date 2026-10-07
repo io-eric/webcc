@@ -113,6 +113,37 @@ TEST(schema_command_opcodes_past_255)
         CHECK_EQ((int)loaded.commands[299].opcode, 300);
 }
 
+// helper lines load a JS file next to the schema and survive the binary cache
+TEST(schema_parses_helpers)
+{
+    {
+        std::ofstream js("/tmp/webcc_test_helper.js");
+        js << "const __t_help = { go(h) { push_event_net_DONE(h); return blobs[h]; } };\n";
+    }
+    std::string path = write_temp(
+        "net|helper|__t_help|webcc_test_helper.js\n"
+        "net|event|DONE|handle:h\n"
+        "net|command|GO|go|int32:h|{ __t_help.go(h); }\n",
+        "helpers");
+    SchemaDefs d = load_defs(path);
+    std::remove(path.c_str());
+    std::remove("/tmp/webcc_test_helper.js");
+    CHECK_EQ(d.helpers.size(), (size_t)1);
+    if (d.helpers.empty())
+        return;
+    CHECK_EQ(d.helpers[0].name, std::string("__t_help"));
+    CHECK(d.helpers[0].code.find("push_event_net_DONE") != std::string::npos);
+
+    std::string cache = "/tmp/webcc_test_helpers.bin";
+    CHECK(save_defs_binary(d, cache));
+    SchemaDefs loaded;
+    CHECK(load_defs_binary(loaded, cache));
+    std::remove(cache.c_str());
+    CHECK_EQ(loaded.helpers.size(), (size_t)1);
+    if (!loaded.helpers.empty())
+        CHECK_EQ(loaded.helpers[0].code, d.helpers[0].code);
+}
+
 TEST(schema_parses_bytes_return)
 {
     std::string path = write_temp(

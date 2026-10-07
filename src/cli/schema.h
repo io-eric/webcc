@@ -47,12 +47,23 @@ namespace webcc
     };
 
     // Holds all command and event definitions.
+    // NAMESPACE|helper|NAME|path.js: a JS file (path relative to schema.def) that
+    // defines NAME, for code too big for one action. Emitted once into app.js when a
+    // used action mentions NAME.
+    struct SchemaHelper
+    {
+        std::string ns;
+        std::string name;
+        std::string code;
+    };
+
     struct SchemaDefs
     {
         std::vector<SchemaCommand> commands;
         std::vector<SchemaEvent> events;
         std::map<std::string, std::string> handle_inheritance;
         std::vector<SchemaConst> consts;
+        std::vector<SchemaHelper> helpers;
     };
 
     // Loads and parses the command and event definitions from a file (e.g., schema.def).

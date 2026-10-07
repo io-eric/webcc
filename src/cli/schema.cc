@@ -13,7 +13,7 @@ namespace webcc
 {
     // Binary cache magic and version for validation
     static constexpr uint32_t SCHEMA_MAGIC = 0x57434353; // "WCCS" (WebCC Schema)
-    static constexpr uint32_t SCHEMA_VERSION = 3;
+    static constexpr uint32_t SCHEMA_VERSION = 4;
 
     // Helper functions for binary serialization
     static void write_string(std::ostream &out, const std::string &s)
@@ -120,6 +120,16 @@ namespace webcc
             write_string(out, k.value);
         }
 
+        // JS helpers
+        uint32_t helper_count = static_cast<uint32_t>(defs.helpers.size());
+        out.write(reinterpret_cast<const char *>(&helper_count), sizeof(helper_count));
+        for (const auto &h : defs.helpers)
+        {
+            write_string(out, h.ns);
+            write_string(out, h.name);
+            write_string(out, h.code);
+        }
+
         std::cout << "[WebCC] Saved binary cache: " << path << std::endl;
         return true;
     }
@@ -214,6 +224,18 @@ namespace webcc
             k.name = read_string(in);
             k.value = read_string(in);
             defs.consts.push_back(std::move(k));
+        }
+
+        // JS helpers
+        uint32_t helper_count = 0;
+        in.read(reinterpret_cast<char *>(&helper_count), sizeof(helper_count));
+        for (uint32_t i = 0; in && i < helper_count; ++i)
+        {
+            SchemaHelper h;
+            h.ns = read_string(in);
+            h.name = read_string(in);
+            h.code = read_string(in);
+            defs.helpers.push_back(std::move(h));
         }
 
         if (!in)
@@ -313,6 +335,28 @@ namespace webcc
                     // meta|inherit|Derived|Base
                     out.handle_inheritance[parts[2]] = parts[3];
                 }
+                continue;
+            }
+
+            // NAMESPACE|helper|NAME|path.js
+            if (parts[1] == "helper")
+            {
+                std::string dir = path.substr(0, path.find_last_of('/') + 1);
+                std::string code = read_file(dir + parts[3]);
+                if (code.empty())
+                {
+                    std::cerr << "[WebCC] Error: Helper file '" << parts[3] << "' missing or empty at line " << line_num << std::endl;
+                    exit(1);
+                }
+                for (const auto &h : out.helpers)
+                {
+                    if (h.name == parts[2])
+                    {
+                        std::cerr << "[WebCC] Error: Duplicate helper '" << parts[2] << "' at line " << line_num << std::endl;
+                        exit(1);
+                    }
+                }
+                out.helpers.push_back({ns, parts[2], code});
                 continue;
             }
 

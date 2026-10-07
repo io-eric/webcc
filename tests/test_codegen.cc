@@ -652,6 +652,28 @@ TEST(codegen_js_draw_image_sources)
     CHECK(js.find("contexts[i].canvas === c") != std::string::npos);
 }
 
+// A schema helper is emitted once when a used action mentions it, and the maps and
+// events its own code uses come along; unused, nothing of it appears.
+TEST(codegen_js_helpers)
+{
+    SchemaDefs defs = real_defs();
+    auto markers = void_markers(defs, {"pdf::add_page", "pdf::finish"});
+    generate_js_runtime(defs, {"webcc_js_flush", "webcc_pdf_create_writer"}, markers, {}, "/tmp");
+    std::string js = read_file("/tmp/app.js");
+    size_t first = js.find("const __wcc_pdf = {");
+    CHECK(first != std::string::npos);
+    CHECK(js.find("const __wcc_pdf = {", first + 1) == std::string::npos);
+    // used only inside the helper
+    CHECK(js.find("const blobs = [];") != std::string::npos);
+    CHECK(js.find("function push_event_pdf_WRITTEN(") != std::string::npos);
+    CHECK(js.find("function push_event_pdf_OPENED(") != std::string::npos);
+
+    generate_js_runtime(defs, {"webcc_js_flush", "webcc_blob_take"}, {}, {}, "/tmp");
+    js = read_file("/tmp/app.js");
+    CHECK(js.find("__wcc_pdf") == std::string::npos);
+    CHECK(js.find("push_event_pdf_") == std::string::npos);
+}
+
 // Constants become constexpr, defaults become C++ default arguments.
 TEST(codegen_consts_and_defaults)
 {

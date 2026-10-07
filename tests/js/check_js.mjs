@@ -137,6 +137,19 @@ int main(){ namespace c=webcc::canvas;
   c::draw_image_scaled(ctx,t,0,0,20,20); c::draw_image_full(ctx,t,0,0,5,5,0,0,10,10);
   c::free(t); }`,
 
+  pdf: `#include "webcc/pdf.h"
+#include "webcc/blob.h"
+#include "webcc/canvas.h"
+int main(){ namespace p=webcc::pdf; uint8_t d[2]={1,2};
+  p::set_library("pdf.min.mjs","pdf.worker.min.mjs");
+  auto doc=p::open(webcc::blob::create(webcc::bytes_view(d,2)));
+  auto c=webcc::canvas::create_canvas("",1,1);
+  auto r=p::render_page(doc,0,c,1); p::cancel_render(r); p::close(doc);
+  auto w=p::create_writer(); p::add_page(w,100,100); p::set_fill_color(w,1,2,3,0.5f);
+  p::move_to(w,0,0); p::quad_to(w,1,1,2,2); p::stroke(w); p::draw_image(w,c,0,0,1,1);
+  p::draw_text(w,"hi",0,10,12); p::finish(w);
+  return (int)p::page_width(doc,0); }`,
+
   fetch_storage: `#include "webcc/fetch.h"
 #include "webcc/storage.h"
 int main(){ webcc::fetch::get("/api","{}");

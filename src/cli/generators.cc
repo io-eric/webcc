@@ -2,6 +2,7 @@
 #include "utils.h"
 #include "js_templates.h"
 #include "scratch_buffer.h"
+#include <algorithm>
 #include <iostream>
 #include <sstream>
 #include <vector>
@@ -917,6 +918,7 @@ namespace webcc
 
         std::set<std::string> used_namespaces;
         std::set<std::string> used_maps;
+        std::vector<const std::string *> used_actions; // for helper detection
         std::set<std::string> used_event_listeners; // Track which event types need delegation
         std::set<std::string> used_event_helpers;   // Track which push_event helpers must exist
         std::vector<std::string> generated_js_imports;
@@ -1025,6 +1027,7 @@ namespace webcc
                 }
 
                 used_namespaces.insert(d.ns);
+                used_actions.push_back(&d.action);
                 auto maps = get_maps_from_action(d.action);
                 for (const auto &m : maps)
                     used_maps.insert(m);
@@ -1139,6 +1142,23 @@ namespace webcc
         w.write("}");
         w.write("");
 
+        // JS helpers a used action (or another used helper) mentions; their own map and
+        // event usage counts like an action's
+        std::vector<const SchemaHelper *> used_helpers;
+        {
+            std::vector<const std::string *> scan = used_actions;
+            for (size_t i = 0; i < scan.size(); i++)
+                for (const auto &h : defs.helpers)
+                {
+                    if (std::find(used_helpers.begin(), used_helpers.end(), &h) != used_helpers.end()) continue;
+                    if (!contains_whole_word(*scan[i], h.name)) continue;
+                    used_helpers.push_back(&h);
+                    scan.push_back(&h.code);
+                    for (const auto &m : get_maps_from_action(h.code)) used_maps.insert(m);
+                    for (const auto &e : get_pushed_events_from_action(h.code)) used_event_helpers.insert(e);
+                }
+        }
+
         // Generate push_event helpers in JS only for event types that are actually used.
         for (const auto &d : defs.events)
         {
@@ -1245,6 +1265,15 @@ namespace webcc
                     line += " elements[0] = document.body;";
                 w.write(line);
             }
+        }
+
+        for (const auto *h : used_helpers)
+        {
+            w.write("");
+            std::istringstream code(h->code);
+            std::string line;
+            while (std::getline(code, line))
+                w.write(line);
         }
 
         // Emit global event delegation listeners (more efficient than per-element listeners)
