@@ -104,6 +104,8 @@ dom|command|REQUEST_POINTER_LOCK|request_pointer_lock|handle(DOMElement):handle|
 dom|command|SCROLL_TO_TOP|scroll_to_top||{ window.scrollTo({ top: 0, left: 0, behavior: 'instant' }); }
 # editing commands for a focused contenteditable: bold, italic, formatBlock, insertHTML...
 dom|command|EXEC_COMMAND|exec_command|string:name string:value|{ document.execCommand(name, false, value); }
+# focus with the caret at the end of the content
+dom|command|FOCUS_END|focus_end|handle(DOMElement):handle|{ const el = elements[handle]; if (!el) continue; el.focus({ preventScroll: true }); const r = document.createRange(); r.selectNodeContents(el); r.collapse(false); const s = window.getSelection(); s.removeAllRanges(); s.addRange(r); }
 
 # ------------------------------------------------------------------------------
 # CANVAS 2D
