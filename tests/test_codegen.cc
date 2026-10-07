@@ -727,6 +727,21 @@ TEST(codegen_groups)
     CHECK(header.find("return webcc::gfx::Phase(webcc_gfx_state(") != std::string::npos);
 }
 
+// Page-wide init commands can be called twice without adding their listeners twice
+TEST(codegen_js_init_idempotent)
+{
+    SchemaDefs defs = real_defs();
+    auto markers = void_markers(defs, {"input::init_keyboard", "system::init_visibility_change", "system::init_popstate",
+                                       "system::init_lifecycle", "clipboard::init_paste"});
+    generate_js_runtime(defs, {"webcc_js_flush"}, markers, {}, "/tmp");
+    std::string js = read_file("/tmp/app.js");
+    CHECK(js.find("if (window.__wcc_kb) break;") != std::string::npos || js.find("if (window.__wcc_kb) continue;") != std::string::npos);
+    CHECK(js.find("window.__wcc_vis") != std::string::npos);
+    CHECK(js.find("window.__wcc_pop") != std::string::npos);
+    CHECK(js.find("window.__wcc_life") != std::string::npos);
+    CHECK(js.find("window.__wcc_paste") != std::string::npos);
+}
+
 // Constants become constexpr, defaults become C++ default arguments.
 TEST(codegen_consts_and_defaults)
 {
