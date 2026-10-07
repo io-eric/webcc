@@ -4,7 +4,7 @@ namespace webcc
 {
 
     constexpr size_t EVENT_BUFFER_SIZE = 1024 * 1024; // 1MB
-    // Event length is 24 bits, see next_event()
+    // 24-bit event length
     static_assert(EVENT_BUFFER_SIZE <= (1u << 24), "event length field is 24 bits");
     // Align to 8 bytes so that JS Float64Array can access it directly
     alignas(8) static uint8_t g_event_buffer[EVENT_BUFFER_SIZE];

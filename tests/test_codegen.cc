@@ -285,7 +285,7 @@ TEST(codegen_js_event_size_check_uses_payload_length)
     CHECK(js.find("| (len >> 16 << 8) | (len << 16);") != std::string::npos);
 }
 
-// Opcodes past 255 reach the header, the JS switch and the marker import intact.
+// opcodes over 255
 TEST(codegen_command_opcodes_past_255)
 {
     const char *def_path = "/tmp/webcc_test_many_ops.def";
@@ -373,7 +373,7 @@ TEST(codegen_bytes_return)
     CHECK(js.find("webcc_js_read_result: (ptr) =>") != std::string::npos);
 }
 
-// A param is only a handle when the schema says so, whatever its name.
+// handle-ness comes from the schema, not the name
 TEST(codegen_handle_types_are_explicit)
 {
     const char *def_path = "/tmp/webcc_test_names.def";
@@ -434,8 +434,7 @@ TEST(codegen_js_pointer_listener)
     CHECK(js.find("push_event_dom_POINTER") == std::string::npos);
 }
 
-// set_update registers without a loop; every event helper requests a frame so an
-// on-demand app processes it, and a discrete update cancels the pending frame.
+// set_update: no loop, events request frames
 TEST(codegen_js_frames_on_demand)
 {
     SchemaDefs defs = real_defs();
@@ -511,7 +510,7 @@ TEST(codegen_js_blob_map)
     CHECK(js.find("blobs") == std::string::npos);
 }
 
-// idb pulls in its event helpers, the databases map and blobs (VALUE carries a Blob).
+// idb pulls in its helpers, databases and blobs
 TEST(codegen_js_idb)
 {
     SchemaDefs defs = real_defs();
@@ -529,8 +528,7 @@ TEST(codegen_js_idb)
     CHECK(js.find("push_event_idb_") == std::string::npos);
 }
 
-// fetch::request pulls in the AbortController map and the Blob-carrying DONE event;
-// the text API pulls in neither.
+// fetch::request pulls in its map and DONE, the text API doesn't
 TEST(codegen_js_fetch_request)
 {
     SchemaDefs defs = real_defs();
@@ -547,8 +545,7 @@ TEST(codegen_js_fetch_request)
     CHECK(js.find("push_event_fetch_DONE") == std::string::npos);
 }
 
-// init_paste pulls in both paste events and the blobs map, and pastes run an update
-// right away; write_text alone needs neither.
+// init_paste pulls in paste events and blobs, write_text doesn't
 TEST(codegen_js_clipboard)
 {
     SchemaDefs defs = real_defs();
@@ -568,8 +565,7 @@ TEST(codegen_js_clipboard)
     CHECK(js.find("blobs") == std::string::npos);
 }
 
-// files::open and the drop listener pull in their events and the blobs map;
-// save alone needs neither.
+// files::open and drop pull in events and blobs, save doesn't
 TEST(codegen_js_files)
 {
     SchemaDefs defs = real_defs();
@@ -588,7 +584,7 @@ TEST(codegen_js_files)
     CHECK(js.find("blobs") == std::string::npos);
 }
 
-// Image loads report back: both load and from_blob pull in LOADED/ERROR.
+// load and from_blob both pull in LOADED/ERROR
 TEST(codegen_js_image_events)
 {
     SchemaDefs defs = real_defs();
@@ -623,8 +619,7 @@ TEST(codegen_js_focus_listener)
     CHECK(js.find("push_event_dom_FOCUS") == std::string::npos);
 }
 
-// Lifecycle events and visibility changes run an update right away (no frames
-// in a hidden tab).
+// lifecycle and visibility events update right away
 TEST(codegen_js_lifecycle)
 {
     SchemaDefs defs = real_defs();
@@ -638,8 +633,7 @@ TEST(codegen_js_lifecycle)
     CHECK(js.find("document.visibilityState || 'visible'); _triggerDiscreteUpdate();") != std::string::npos);
 }
 
-// draw_image takes any drawable element and guards against undrawable sources; the
-// guard's locals must not shadow the w/h parameters of the scaled variant.
+// draw_image guard locals must not shadow w/h
 TEST(codegen_js_draw_image_sources)
 {
     SchemaDefs defs = real_defs();
@@ -652,8 +646,7 @@ TEST(codegen_js_draw_image_sources)
     CHECK(js.find("contexts[i].canvas === c") != std::string::npos);
 }
 
-// A schema helper is emitted once when a used action mentions it, and the maps and
-// events its own code uses come along; unused, nothing of it appears.
+// helpers emitted once when used, nothing when unused
 TEST(codegen_js_helpers)
 {
     SchemaDefs defs = real_defs();
@@ -674,8 +667,7 @@ TEST(codegen_js_helpers)
     CHECK(js.find("push_event_pdf_") == std::string::npos);
 }
 
-// Groups become enum classes (flags with operators); params, event fields and returns
-// typed with them use the enum class, with casts at the wire
+// groups become enum classes, cast at the wire
 TEST(codegen_groups)
 {
     const char *def_path = "/tmp/webcc_test_groups.def";
@@ -727,7 +719,7 @@ TEST(codegen_groups)
     CHECK(header.find("return webcc::gfx::Phase(webcc_gfx_state(") != std::string::npos);
 }
 
-// Page-wide init commands can be called twice without adding their listeners twice
+// init commands are idempotent
 TEST(codegen_js_init_idempotent)
 {
     SchemaDefs defs = real_defs();

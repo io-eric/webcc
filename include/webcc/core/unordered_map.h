@@ -146,6 +146,21 @@ namespace webcc
             return m_data[insertion_idx].value;
         }
 
+        // missing key reads as T(), no insert
+        const T& operator[](const Key& key) const
+        {
+            static const T missing{};
+            if (m_capacity == 0) return missing;
+            size_t idx = m_hasher(key) & (m_capacity - 1);
+            size_t start_idx = idx;
+            while (m_data[idx].state != EMPTY) {
+                if (m_data[idx].state == OCCUPIED && m_data[idx].key == key) return m_data[idx].value;
+                idx = (idx + 1) & (m_capacity - 1);
+                if (idx == start_idx) break;
+            }
+            return missing;
+        }
+
         // Basic iterator support - iterates over keys for clean "for key in map" syntax
         struct iterator {
             Entry* ptr;
@@ -176,6 +191,9 @@ namespace webcc
             if (!m_data) return {nullptr, nullptr};
             return {m_data + m_capacity, m_data + m_capacity};
         }
+
+        iterator begin() const { return const_cast<unordered_map*>(this)->begin(); }
+        iterator end() const { return const_cast<unordered_map*>(this)->end(); }
         
         size_t size() const { return m_size; }
         bool empty() const { return m_size == 0; }

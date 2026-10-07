@@ -1,5 +1,3 @@
-// webcc pdf: import renders pages with pdf.js (loaded on first use from the URL the app
-// passes to set_library), export writes a PDF from canvas-like drawing commands.
 const __wcc_pdf = {
     lib: '', worker: '', mod: null,
     docs: [], renders: [], writers: [],
@@ -24,8 +22,7 @@ const __wcc_pdf = {
     open(handle, bytes) {
         const entry = { doc: null, task: null, sizes: [] };
         this.docs[handle] = entry;
-        // cmaps/ and standard_fonts/ from pdfjs-dist, next to the library, are only fetched
-        // for PDFs that need them (Asian text, fonts not embedded in the file)
+        // cmaps and fonts only load for PDFs that need them
         const dir = new URL('.', new URL(this.lib, document.baseURI)).href;
         this.load().then((m) => {
             entry.task = m.getDocument({ data: bytes, cMapUrl: dir + 'cmaps/', cMapPacked: true, standardFontDataUrl: dir + 'standard_fonts/' });
@@ -82,12 +79,12 @@ const __wcc_pdf = {
         const e = this.docs[handle];
         if (!e) return;
         this.docs[handle] = undefined;
-        // the loading task owns the document and its worker side (doc.destroy is gone in pdf.js 6)
+        // destroying the task frees the doc and its worker
         if (e.task) e.task.destroy();
     },
 
     // ---- export ----
-    // Coordinates are PDF points (1/72 inch), origin top-left, y down like a canvas.
+    // points, origin top-left, y down
 
     num(x) { return String(+(+x).toFixed(3)); },
 
@@ -137,8 +134,8 @@ const __wcc_pdf = {
         if (!w || !w.cur || !src) return;
         const sw = src.naturalWidth ?? src.width, sh = src.naturalHeight ?? src.height;
         if (!(sw > 0 && sh > 0)) return;
-        // Pixels are copied now: the source may change or be freed before finish.
-        // An <img> can't change, so drawing it again reuses the copy.
+        // copy pixels now, the source may change before finish
+        // an <img> can't change, reuse its copy
         let id = src instanceof HTMLImageElement ? w.imageIds.get(src) : undefined;
         if (id === undefined) {
             const c = document.createElement('canvas');
@@ -156,7 +153,7 @@ const __wcc_pdf = {
         const w = this.writers[handle];
         if (!w || !w.cur) return;
         w.font = true;
-        // Built-in Helvetica covers Latin-1 (WinAnsi); other characters become '?'
+        // Helvetica/WinAnsi: Latin-1 only, the rest becomes '?'
         let s = '';
         for (const ch of str) {
             const c = ch.codePointAt(0);
@@ -178,7 +175,7 @@ const __wcc_pdf = {
         return u8;
     },
 
-    // Opaque images as JPEG, images with transparency as deflated RGB + alpha mask
+    // opaque as JPEG, alpha as deflated RGB + mask
     async encodeImage(c) {
         const px = c.getContext('2d').getImageData(0, 0, c.width, c.height).data;
         let opaque = true;
@@ -202,7 +199,7 @@ const __wcc_pdf = {
     },
 
     async build(w) {
-        const objs = []; // [dict string, stream bytes or null], object number = index + 1
+        const objs = []; // [dict, stream or null], object number = index + 1
         const add = (dict, data) => { objs.push([dict, data || null]); return objs.length; };
         const ref = (n) => n + ' 0 R';
         add('<< /Type /Catalog /Pages 2 0 R >>');

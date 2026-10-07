@@ -21,7 +21,7 @@ namespace webcc
 
 namespace
 {
-    // One webcc_js_flush call: the bytes, and the address they were at (mod 8)
+    // one flush: the bytes and their address mod 8
     struct Chunk
     {
         size_t addr_mod8;
@@ -192,7 +192,7 @@ TEST(command_buffer_fill_rect_like_sequence)
 
 namespace
 {
-    // Walks a flushed chunk the way the JS decoder does (doubles aligned by address).
+    // walk a chunk like the JS decoder
     struct Reader
     {
         const Chunk &c;

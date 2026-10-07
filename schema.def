@@ -3,40 +3,28 @@
 # NAMESPACE|TYPE|NAME|FUNC_NAME|TYPES(space-separated)|JS_ACTION
 # Lines starting with '#' are comments.
 #
-# Handle types: Use handle(TypeName) for typed handles, or handle:name for an untyped one, e.g.:
+# Handle types: handle(TypeName) for typed handles, handle:name for untyped:
 #   RET:handle(DOMElement) - returns a DOMElement handle
 #   handle(CanvasContext2D):ctx - takes a CanvasContext2D handle named ctx
 #
 # This generates type-safe handle wrappers in C++ that are distinct at compile time.
 #
-# Binary data: Use bytes:name for raw bytes (webcc::bytes_view in C++, Uint8Array in JS).
-#   RET:bytes returns webcc::vector<uint8_t>; the action sets `ret` to a Uint8Array.
+# Binary: bytes:name, a bytes_view in C++ and a Uint8Array in JS
+#   RET:bytes returns vector<uint8_t>
 #
-# Defaults: type:name=value gives a command parameter a C++ default (trailing parameters only).
-# Groups: NAMESPACE|enum|Name:wire|A B C declares choices, numbered 0, 1, 2 in order;
-#   NAMESPACE|flags|Name:wire|A=1 B=2 declares bit flags. wire is uint8, uint32 or int32.
-#   A param, event field or RET typed Name carries one; C++ gets `enum class Name` in
-#   webcc::NAMESPACE (flags also get |, &, ^, ~ and any()). Names are unique across
-#   namespaces, so one group can be used anywhere (input::Mods in a dom event).
-# Constants: NAMESPACE|const|NAME|VALUE becomes `inline constexpr int32_t NAME` in webcc::NAMESPACE.
-#   Prefer a group for anything a param or field carries.
-#   Data too big for an event (files, responses) goes through a Blob handle, see BLOB.
+# Defaults: type:name=value, trailing params only
+# Groups: NAMESPACE|enum|Name:wire|A B C, numbered from 0
+#   NAMESPACE|flags|Name:wire|A=1 B=2, wire is uint8, uint32 or int32
+#   params, fields and RET typed Name use the enum class
+# Constants: NAMESPACE|const|NAME|VALUE
 #
-# Helpers: NAMESPACE|helper|NAME|path.js names a JS file (relative to schema.def) that
-#   defines NAME, for code too big for one action. It is emitted once into app.js when a
-#   used action mentions NAME; maps and push_event_* calls inside it count as used.
+# Helpers: NAMESPACE|helper|NAME|path.js, emitted when a used action mentions NAME
 #
-# Events: NAMESPACE|event|NAME|FIELDS[|last]. "last" means no more events follow for the
-#   handle in the first field (a finished request, a closed socket), so a binding layer can
-#   drop the callbacks registered on it.
+# Events: NAMESPACE|event|NAME|FIELDS[|last], last = no more events for that handle
 #
-# init_* commands that add page-wide listeners are safe to call more than once (a guard
-#   on window), so independent parts of an app can each make sure their events are on.
+# init_* commands are safe to call more than once
 #
-# Events: an action that pushes an input event the app must react to right away
-#   (click, key, pointer down/up, paste, drop) calls _triggerDiscreteUpdate() after it.
-#   Every push_event_* helper also calls _requestFrame(), so an app running on demand
-#   (set_update) gets a frame to process the event; nothing to do in the action for that.
+# input events that need an update right away call _triggerDiscreteUpdate()
 #
 # Inheritance: Use meta|inherit|Derived|Base to allow implicit conversion:
 meta|inherit|Canvas|DOMElement
@@ -60,16 +48,16 @@ dom|command|SET_NODE_VALUE|set_node_value|handle(DOMElement):handle string:text|
 dom|command|SET_ATTRIBUTE|set_attribute|handle(DOMElement):handle string:name string:value|{ const el = elements[handle]; if(!el){ console.warn('set_attribute: unknown element handle', handle); continue; } el.setAttribute(name, value); }
 dom|command|SET_PROPERTY|set_property|handle(DOMElement):handle string:name string:value|{ const el = elements[handle]; if(!el){ console.warn('set_property: unknown element handle', handle); continue; } el[name] = value; }
 dom|command|GET_ATTRIBUTE|get_attribute|handle(DOMElement):handle string:name RET:string|{ const el = elements[handle]; if(!el){ console.warn('get_attribute: unknown element handle', handle); return 0; } const ret = el.getAttribute(name) || ""; }
-# Property as a string (innerText, value, scrollTop...); empty when unset
+# empty when unset
 dom|command|GET_PROPERTY|get_property|handle(DOMElement):handle string:name RET:string|{ const el = elements[handle]; if(!el){ console.warn('get_property: unknown element handle', handle); return 0; } const v = el[name]; const ret = v == null ? '' : String(v); }
-# One CSS property by its CSS name ("left", "font-size", "--my-var"); an empty value removes it
+# CSS property name, empty value removes it
 dom|command|SET_STYLE|set_style|handle(DOMElement):handle string:name string:value|{ const el = elements[handle]; if(!el || !el.style) continue; if (value) el.style.setProperty(name, value); else el.style.removeProperty(name); }
-# On phones the keyboard only opens when this runs inside a tap or key handler
+# phones only open the keyboard inside a tap or key handler
 dom|command|FOCUS|focus|handle(DOMElement):handle uint8:prevent_scroll=0|{ const el = elements[handle]; if(el && el.focus) el.focus({ preventScroll: !!prevent_scroll }); }
 dom|command|BLUR|blur|handle(DOMElement):handle|{ const el = elements[handle]; if(el && el.blur) el.blur(); }
 dom|event|FOCUS|handle(DOMElement):handle
 dom|event|BLUR|handle(DOMElement):handle
-# FOCUS/BLUR when the element itself gains or loses focus; both run an update right away
+# runs an update right away
 dom|command|ADD_FOCUS_LISTENER|add_focus_listener|handle(DOMElement):handle|{ const el = elements[handle]; if(!el || el.__wcc_focus) continue; const h = [['focus', () => { push_event_dom_FOCUS(handle); _triggerDiscreteUpdate(); }], ['blur', () => { push_event_dom_BLUR(handle); _triggerDiscreteUpdate(); }]]; for (const [n, f] of h) el.addEventListener(n, f); el.__wcc_focus = h; }
 dom|command|REMOVE_FOCUS_LISTENER|remove_focus_listener|handle(DOMElement):handle|{ const el = elements[handle]; if(!el || !el.__wcc_focus) continue; for (const [n, f] of el.__wcc_focus) el.removeEventListener(n, f); el.__wcc_focus = undefined; }
 dom|command|APPEND_CHILD|append_child|handle(DOMElement):parent_handle handle(DOMElement):child_handle|{ const parent = elements[parent_handle]; const child = elements[child_handle]; if(!parent || !child){ console.warn('append_child: unknown handles', parent_handle, child_handle); continue; } parent.appendChild(child); }
@@ -82,33 +70,26 @@ dom|command|ADD_CLASS|add_class|handle(DOMElement):handle string:cls|{ const el 
 dom|command|REMOVE_CLASS|remove_class|handle(DOMElement):handle string:cls|{ const el = elements[handle]; if(el) el.classList.remove(cls); }
 dom|event|CLICK|handle(DOMElement):handle
 dom|command|ADD_CLICK_LISTENER|add_click_listener|handle(DOMElement):handle|{ const el = elements[handle]; if(el) el.dataset.c = handle; }
-# Pointer (mouse, pen, touch). x/y in CSS pixels from the element's top-left corner.
-# PointerFlags: CAPTURE keeps the pointer after it leaves the element, COALESCED reports every
-# move sample, NO_SCROLL stops touch scrolling and default actions, PREDICT also reports the
-# browser's guess of where the pen goes next (phase PREDICTED)
+# x/y in CSS px from the element's top-left
+# CAPTURE keeps the pointer outside, COALESCED sends every sample, PREDICT sends guesses
 dom|flags|PointerFlags:uint8|CAPTURE=1 COALESCED=2 NO_SCROLL=4 PREDICT=8
-# PREDICTED is not real input: a guess sent after each move; draw it as a temporary tail, never store it
+# PREDICTED is a guess, don't store it
 dom|enum|PointerPhase:uint8|DOWN MOVE UP CANCEL PREDICTED
 dom|enum|PointerType:uint8|MOUSE PEN TOUCH
-# PointerEvent.buttons: PRIMARY is the pen tip or left button, SECONDARY the barrel or right button
+# PRIMARY: pen tip or left button, SECONDARY: barrel or right button
 dom|flags|Buttons:uint32|PRIMARY=1 SECONDARY=2 AUXILIARY=4 BACK=8 FORWARD=16 ERASER=32
 dom|event|POINTER|handle(DOMElement):handle PointerPhase:phase int32:pointer_id PointerType:pointer_type Buttons:buttons float32:x float32:y float32:pressure float32:tilt_x float32:tilt_y float64:time
 dom|command|ADD_POINTER_LISTENER|add_pointer_listener|handle(DOMElement):handle PointerFlags:flags=0|{ const el = elements[handle]; if(!el || el.__wcc_ptr) continue; const capture = flags & 1, coalesce = flags & 2, block = flags & 4, predict = flags & 8; if (block) el.style.touchAction = 'none'; const types = { mouse: 0, pen: 1, touch: 2 }; const send = (phase, e, r, s) => push_event_dom_POINTER(handle, phase, e.pointerId, types[e.pointerType] ?? 0, s.buttons, s.clientX - r.left, s.clientY - r.top, s.pressure, s.tiltX, s.tiltY, s.timeStamp); const on = (phase) => (e) => { const r = el.getBoundingClientRect(); if (phase === 0) { if (capture) el.setPointerCapture(e.pointerId); if (block) e.preventDefault(); } const list = phase === 1 && coalesce && e.getCoalescedEvents ? e.getCoalescedEvents() : []; if (list.length) { for (const c of list) send(1, e, r, c); } else send(phase, e, r, e); if (phase === 1 && predict && e.buttons && e.getPredictedEvents) { for (const p of e.getPredictedEvents()) send(4, e, r, p); } if (phase !== 1) _triggerDiscreteUpdate(); }; const h = [['pointerdown', on(0)], ['pointermove', on(1)], ['pointerup', on(2)], ['pointercancel', on(3)]]; for (const [n, f] of h) el.addEventListener(n, f); el.__wcc_ptr = h; }
 dom|command|REMOVE_POINTER_LISTENER|remove_pointer_listener|handle(DOMElement):handle|{ const el = elements[handle]; if(!el || !el.__wcc_ptr) continue; for (const [n, f] of el.__wcc_ptr) el.removeEventListener(n, f); el.__wcc_ptr = undefined; }
-# Wheel and trackpad. delta_x/delta_y in CSS pixels (line and page scrolling converted), x/y from the element's
-# top-left corner, mods: input::Mods. A trackpad pinch arrives with CTRL set, also in Safari (from its
-# gesture events). prevent_default stops the page from scrolling or zooming.
+# deltas in CSS px, trackpad pinch arrives with CTRL set
 dom|event|WHEEL|handle(DOMElement):handle float32:delta_x float32:delta_y float32:x float32:y Mods:mods
 dom|command|ADD_WHEEL_LISTENER|add_wheel_listener|handle(DOMElement):handle uint8:prevent_default=0|{ const el = elements[handle]; if(!el || el.__wcc_wh) continue; const mods = (e) => (e.shiftKey ? 1 : 0) | (e.ctrlKey ? 2 : 0) | (e.altKey ? 4 : 0) | (e.metaKey ? 8 : 0); const pos = (e) => { const r = el.getBoundingClientRect(); return [e.clientX - r.left, e.clientY - r.top]; }; const wheel = (e) => { if (prevent_default) e.preventDefault(); const k = e.deltaMode === 1 ? 40 : e.deltaMode === 2 ? el.clientHeight || 800 : 1; const [x, y] = pos(e); push_event_dom_WHEEL(handle, e.deltaX * k, e.deltaY * k, x, y, mods(e)); }; let scale = 1; const gstart = (e) => { if (prevent_default) e.preventDefault(); scale = 1; }; const gchange = (e) => { if (prevent_default) e.preventDefault(); const [x, y] = pos(e); push_event_dom_WHEEL(handle, 0, Math.log(scale / e.scale) * 100, x, y, mods(e) | 2); scale = e.scale; }; const h = [['wheel', wheel], ['gesturestart', gstart], ['gesturechange', gchange]]; for (const [n, f] of h) el.addEventListener(n, f, { passive: false }); el.__wcc_wh = h; }
 dom|command|REMOVE_WHEEL_LISTENER|remove_wheel_listener|handle(DOMElement):handle|{ const el = elements[handle]; if(!el || !el.__wcc_wh) continue; for (const [n, f] of el.__wcc_wh) el.removeEventListener(n, f, { passive: false }); el.__wcc_wh = undefined; }
-# Files dropped on the element, one DROP per file; x, y in CSS px relative to the element.
-# Also allows dropping there (the browser would otherwise open the file).
+# one DROP per file, x/y relative to the element
 dom|event|DROP|handle(DOMElement):handle handle(Blob):data string:name string:mime float32:x float32:y uint32:index uint32:count
 dom|command|ADD_DROP_LISTENER|add_drop_listener|handle(DOMElement):handle|{ const el = elements[handle]; if(!el || el.__wcc_drop) continue; const over = (e) => { if (e.dataTransfer && Array.from(e.dataTransfer.types).includes('Files')) { e.preventDefault(); e.dataTransfer.dropEffect = 'copy'; } }; const drop = (e) => { const dt = e.dataTransfer; if (!dt || !dt.files.length) return; e.preventDefault(); const r = el.getBoundingClientRect(); const x = e.clientX - r.left, y = e.clientY - r.top; const list = Array.from(dt.files); list.forEach((f, i) => f.arrayBuffer().then(b => { const h = (window.webcc_next_id = (window.webcc_next_id || 0) + 1); blobs[h] = new Uint8Array(b); push_event_dom_DROP(handle, h, f.name, f.type, x, y, i, list.length); _triggerDiscreteUpdate(); }, (err) => console.error('drop: could not read', f.name, err))); }; const h = [['dragenter', over], ['dragover', over], ['drop', drop]]; for (const [n, f] of h) el.addEventListener(n, f); el.__wcc_drop = h; }
 dom|command|REMOVE_DROP_LISTENER|remove_drop_listener|handle(DOMElement):handle|{ const el = elements[handle]; if(!el || !el.__wcc_drop) continue; for (const [n, f] of el.__wcc_drop) el.removeEventListener(n, f); el.__wcc_drop = undefined; }
-# Element size: width/height in CSS pixels (content box), pixel_width/pixel_height in device pixels
-# (use these for canvas.set_size to stay sharp), dpr = devicePixelRatio. Sent once on observe, then on
-# every size or DPR change (window resize, zoom, moving to another monitor).
+# sizes in CSS px and device px, sent on observe and on every change
 dom|event|RESIZE|handle(DOMElement):handle float32:width float32:height int32:pixel_width int32:pixel_height float32:dpr
 dom|command|OBSERVE_RESIZE|observe_resize|handle(DOMElement):handle|{ const el = elements[handle]; if(!el || el.__wcc_rs) continue; let rs = window.__wcc_rs; if (!rs) { const report = (el, box, dpx) => { const dpr = window.devicePixelRatio || 1; const pw = dpx ? dpx.inlineSize : Math.round(box.inlineSize * dpr); const ph = dpx ? dpx.blockSize : Math.round(box.blockSize * dpr); push_event_dom_RESIZE(el.__wcc_rs, box.inlineSize, box.blockSize, pw, ph, dpr); }; const ro = new ResizeObserver((entries) => { for (const e of entries) report(e.target, e.contentBoxSize[0], e.devicePixelContentBoxSize && e.devicePixelContentBoxSize[0]); _triggerDiscreteUpdate(); }); const observe = (el) => { try { ro.observe(el, { box: 'device-pixel-content-box' }); } catch (e) { ro.observe(el); } }; rs = window.__wcc_rs = { ro, els: new Set(), observe }; const watch = () => { matchMedia(`(resolution: ${window.devicePixelRatio || 1}dppx)`).addEventListener('change', () => { for (const el of rs.els) { rs.ro.unobserve(el); observe(el); } watch(); }, { once: true }); }; watch(); } el.__wcc_rs = handle; rs.els.add(el); rs.observe(el); }
 dom|command|UNOBSERVE_RESIZE|unobserve_resize|handle(DOMElement):handle|{ const el = elements[handle]; const rs = window.__wcc_rs; if(!el || !el.__wcc_rs || !rs) continue; rs.ro.unobserve(el); rs.els.delete(el); el.__wcc_rs = undefined; }
@@ -126,15 +107,13 @@ dom|command|SCROLL_TO_TOP|scroll_to_top||{ window.scrollTo({ top: 0, left: 0, be
 # CANVAS 2D
 # ------------------------------------------------------------------------------
 canvas|command|CREATE_CANVAS|create_canvas|string:dom_id float64:width float64:height RET:handle(Canvas)|{ const handle = (window.webcc_next_id = (window.webcc_next_id || 0) + 1); const c = document.createElement('canvas'); c.id = dom_id; c.width = width; c.height = height; elements[dom_id] = c; elements[handle] = c; return handle; }
-# flags: CONTEXT_LOW_LATENCY (the canvas may reach the screen without waiting for the page, less pen lag),
-# CONTEXT_OPAQUE (no transparency, a bit faster). Only the first call for a canvas decides.
+# flags only apply on the first call for a canvas
 canvas|flags|ContextFlags:uint8|LOW_LATENCY=1 OPAQUE=2
 canvas|command|GET_CONTEXT_2D|get_context_2d|handle(Canvas):canvas_handle ContextFlags:flags=0 RET:handle(CanvasContext2D)|{ const handle = (window.webcc_next_id = (window.webcc_next_id || 0) + 1); const c = elements[canvas_handle]; if(!c) { console.warn('get_context_2d: unknown canvas', canvas_handle); return -1; } contexts[handle] = c.getContext('2d', { desynchronized: !!(flags & 1), alpha: !(flags & 2) }); return handle; }
 canvas|command|GET_CONTEXT_WEBGL|get_context_webgl|handle(Canvas):canvas_handle RET:handle(WebGLContext)|{ const handle = (window.webcc_next_id = (window.webcc_next_id || 0) + 1); const c = elements[canvas_handle]; if(!c) { console.warn('get_context_webgl: unknown canvas', canvas_handle); return -1; } contexts[handle] = c.getContext('webgl'); return handle; }
 canvas|command|GET_CONTEXT_WEBGPU|get_context_webgpu|handle(Canvas):canvas_handle RET:handle(WGPUContext)|{ const handle = (window.webcc_next_id = (window.webcc_next_id || 0) + 1); const c = elements[canvas_handle]; if(!c) { console.warn('get_context_webgpu: unknown canvas', canvas_handle); return -1; } contexts[handle] = c.getContext('webgpu'); return handle; }
 canvas|command|SET_SIZE|set_size|handle(Canvas):handle float64:width float64:height|{ const c = elements[handle]; if(c) { c.width = width; c.height = height; } }
-# Releases a canvas and its contexts and frees its pixel memory now. For cache canvases
-# that were never added to the page; remove a visible one with dom::remove_element first
+# frees the canvas and its pixel memory now
 canvas|command|FREE|free|handle(Canvas):handle|{ const c = elements[handle]; if(!c || !c.getContext) continue; for (let i = 0; i < contexts.length; i++) { if (contexts[i] && contexts[i].canvas === c) contexts[i] = undefined; } if (elements[c.id] === c) elements[c.id] = undefined; elements[handle] = undefined; c.width = 0; c.height = 0; }
 canvas|command|SET_FILL_STYLE|set_fill_style|handle(CanvasContext2D):handle uint8:r uint8:g uint8:b|{ const ctx = contexts[handle]; if(!ctx){ console.warn('set_fill_style: unknown context', handle); continue; } ctx.fillStyle = `rgb(${r},${g},${b})`; }
 canvas|command|SET_FILL_STYLE_STR|set_fill_style_str|handle(CanvasContext2D):handle string:color|{ const ctx = contexts[handle]; if(ctx) ctx.fillStyle = color; }
@@ -156,8 +135,7 @@ canvas|command|FILL_TEXT_F|fill_text_f|handle(CanvasContext2D):handle string:fmt
 canvas|command|FILL_TEXT_I|fill_text_i|handle(CanvasContext2D):handle string:fmt int32:val float64:x float64:y|{ const ctx = contexts[handle]; if(ctx) ctx.fillText(fmt.replace('%d', val), x, y); }
 canvas|command|SET_FONT|set_font|handle(CanvasContext2D):handle string:font|{ const ctx = contexts[handle]; if(ctx) ctx.font = font; }
 canvas|command|SET_TEXT_ALIGN|set_text_align|handle(CanvasContext2D):handle string:align|{ const ctx = contexts[handle]; if(ctx) ctx.textAlign = align; }
-# Source: an Image or a Canvas (e.g. an offscreen cache tile). Images not loaded yet,
-# broken images and zero-size canvases draw nothing
+# Image or Canvas, unloaded or empty sources draw nothing
 canvas|command|DRAW_IMAGE|draw_image|handle(CanvasContext2D):handle handle(DOMElement):source float64:x float64:y|{ const ctx = contexts[handle]; const src = elements[source]; const src_w = src && (src.naturalWidth ?? src.width); if(ctx && src_w > 0 && src.height > 0) ctx.drawImage(src, x, y); }
 canvas|command|TRANSLATE|translate|handle(CanvasContext2D):handle float64:x float64:y|{ const ctx = contexts[handle]; if(ctx) ctx.translate(x, y); }
 canvas|command|ROTATE|rotate|handle(CanvasContext2D):handle float64:angle|{ const ctx = contexts[handle]; if(ctx) ctx.rotate(angle); }
@@ -190,7 +168,7 @@ canvas|command|MEASURE_TEXT_WIDTH|measure_text_width|handle(CanvasContext2D):han
 # ------------------------------------------------------------------------------
 # INPUT
 # ------------------------------------------------------------------------------
-# key_code = KeyboardEvent.keyCode, key = KeyboardEvent.key ("z", "+", "Enter"), mods: Mods bits
+# key_code and key from KeyboardEvent
 input|flags|Mods:uint8|SHIFT=1 CTRL=2 ALT=4 META=8
 input|event|KEY_DOWN|int32:key_code Mods:mods uint8:repeat string:key
 input|event|KEY_UP|int32:key_code Mods:mods string:key
@@ -199,7 +177,7 @@ input|event|MOUSE_UP|int32:button int32:x int32:y
 input|event|MOUSE_MOVE|int32:x int32:y
 input|command|INIT_KEYBOARD|init_keyboard||{ if (window.__wcc_kb) continue; window.__wcc_kb = 1; const mods = (e) => (e.shiftKey ? 1 : 0) | (e.ctrlKey ? 2 : 0) | (e.altKey ? 4 : 0) | (e.metaKey ? 8 : 0); window.addEventListener('keydown', e => { push_event_input_KEY_DOWN(e.keyCode, mods(e), e.repeat ? 1 : 0, e.key || ''); _triggerDiscreteUpdate(); }); window.addEventListener('keyup', e => { push_event_input_KEY_UP(e.keyCode, mods(e), e.key || ''); _triggerDiscreteUpdate(); }); }
 input|command|INIT_MOUSE|init_mouse|handle(DOMElement):handle|{ const el = elements[handle] || document; if (el.__wcc_mouse) continue; el.__wcc_mouse = 1; el.addEventListener('mousedown', e => { push_event_input_MOUSE_DOWN(e.button, e.offsetX, e.offsetY); _triggerDiscreteUpdate(); }); el.addEventListener('mouseup', e => { push_event_input_MOUSE_UP(e.button, e.offsetX, e.offsetY); _triggerDiscreteUpdate(); }); el.addEventListener('mousemove', e => push_event_input_MOUSE_MOVE(e.offsetX, e.offsetY)); }
-# Stop the browser's default action for a key combination (e.g. ctrl+S saving the page). mods must match exactly.
+# block the browser default for a key combo, mods must match exactly
 input|command|PREVENT_KEY|prevent_key|int32:key_code Mods:mods=0|{ let pk = window.__wcc_pk; if (!pk) { pk = window.__wcc_pk = new Set(); window.addEventListener('keydown', (e) => { const m = (e.shiftKey ? 1 : 0) | (e.ctrlKey ? 2 : 0) | (e.altKey ? 4 : 0) | (e.metaKey ? 8 : 0); if (pk.has(e.keyCode * 16 + m)) e.preventDefault(); }, true); } pk.add(key_code * 16 + mods); }
 input|command|ALLOW_KEY|allow_key|int32:key_code Mods:mods=0|{ const pk = window.__wcc_pk; if (pk) pk.delete(key_code * 16 + mods); }
 input|command|EXIT_POINTER_LOCK|exit_pointer_lock||{ document.exitPointerLock(); }
@@ -229,11 +207,9 @@ system|command|PUSH_STATE|push_state|string:path|{ history.pushState(null, '', p
 system|event|POPSTATE|string:path
 system|command|INIT_POPSTATE|init_popstate||{ if (window.__wcc_pop) continue; window.__wcc_pop = 1; window.addEventListener('popstate', () => push_event_system_POPSTATE(window.location.pathname || '/')); }
 system|event|VISIBILITY_CHANGE|uint8:hidden string:state
-# Runs an update right away: frames stop in a hidden tab, so the event would otherwise wait for the tab to come back
+# runs an update right away, frames stop in hidden tabs
 system|command|INIT_VISIBILITY_CHANGE|init_visibility_change||{ if (window.__wcc_vis) continue; window.__wcc_vis = 1; document.addEventListener('visibilitychange', () => { push_event_system_VISIBILITY_CHANGE(document.hidden ? 1 : 0, document.visibilityState || 'visible'); _triggerDiscreteUpdate(); }); }
-# PAGE_HIDE: the page is being left, closed or put in the back/forward cache (persisted = 1).
-# Last chance to save; the update runs before the browser moves on. PAGE_SHOW only when
-# the page comes back from the back/forward cache. ONLINE when the connection comes or goes.
+# PAGE_HIDE: last chance to save. PAGE_SHOW: back from bfcache
 system|event|PAGE_HIDE|uint8:persisted
 system|event|PAGE_SHOW|uint8:persisted
 system|event|ONLINE|uint8:online
@@ -243,54 +219,48 @@ system|command|IS_ONLINE|is_online|RET:uint8|{ return navigator.onLine ? 1 : 0; 
 # ------------------------------------------------------------------------------
 # CLIPBOARD
 # ------------------------------------------------------------------------------
-# Pastes outside text fields; inputs, textareas and contenteditable keep the native paste.
-# Text arrives as PASTE_TEXT, each pasted image as PASTE_IMAGE (its bytes in a Blob).
+# pastes outside text fields, images arrive as Blobs
 clipboard|event|PASTE_TEXT|string:text
 clipboard|event|PASTE_IMAGE|handle(Blob):image string:mime
-# Gesture-gated: call it while handling a click or key press. Falls back to execCommand
-# where the async clipboard API is missing (plain http)
+# needs a user gesture
 clipboard|command|WRITE_TEXT|write_text|string:text|{ const legacy = () => { const ta = document.createElement('textarea'); ta.value = text; ta.style.cssText = 'position:fixed;opacity:0'; document.body.appendChild(ta); ta.select(); try { if (!document.execCommand('copy')) console.warn('clipboard: copy failed'); } catch (e) { console.warn('clipboard: copy failed', e); } ta.remove(); }; if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(text).catch(e => console.warn('clipboard: write failed (not in a click or key handler?)', e)); else legacy(); }
-# prevent_default=1 also blocks the browser's own paste handling outside text fields
+# prevent_default=1 also blocks the browser paste
 clipboard|command|INIT_PASTE|init_paste|uint8:prevent_default=0|{ if (window.__wcc_paste) continue; window.__wcc_paste = 1; document.addEventListener('paste', (e) => { const t = e.target; if (t && (t.isContentEditable || t.tagName === 'INPUT' || t.tagName === 'TEXTAREA')) return; const dt = e.clipboardData; if (!dt) return; if (prevent_default) e.preventDefault(); for (const it of dt.items) { if (it.kind !== 'file' || !it.type.startsWith('image/')) continue; const f = it.getAsFile(); if (!f) continue; const mime = f.type; f.arrayBuffer().then(b => { const h = (window.webcc_next_id = (window.webcc_next_id || 0) + 1); blobs[h] = new Uint8Array(b); push_event_clipboard_PASTE_IMAGE(h, mime); _triggerDiscreteUpdate(); }); } const text = dt.getData('text/plain'); if (text) { push_event_clipboard_PASTE_TEXT(text); _triggerDiscreteUpdate(); } }); }
 
 # ------------------------------------------------------------------------------
 # FILES
 # ------------------------------------------------------------------------------
-# One OPENED per picked file; index/count tell when all of them are in (they can arrive
-# in any order). CANCELLED when the dialog is closed without a choice.
+# one OPENED per file, in any order
 files|event|OPENED|handle(FileRequest):request handle(Blob):data string:name string:mime uint32:index uint32:count
 files|event|CANCELLED|handle(FileRequest):request|last
-# Gesture-gated: call it while handling a click or key press. accept is the <input accept>
-# list, e.g. ".json,image/*"
+# needs a user gesture
 files|command|OPEN|open|string:accept="" uint8:multiple=0 RET:handle(FileRequest)|{ const req = (window.webcc_next_id = (window.webcc_next_id || 0) + 1); const inp = document.createElement('input'); inp.type = 'file'; if (accept) inp.accept = accept; inp.multiple = !!multiple; inp.style.display = 'none'; let done = false; const finish = () => { if (done) return false; done = true; inp.remove(); return true; }; inp.addEventListener('change', () => { if (!finish()) return; const list = Array.from(inp.files || []); if (!list.length) { push_event_files_CANCELLED(req); _triggerDiscreteUpdate(); return; } list.forEach((f, i) => f.arrayBuffer().then(b => { const h = (window.webcc_next_id = (window.webcc_next_id || 0) + 1); blobs[h] = new Uint8Array(b); push_event_files_OPENED(req, h, f.name, f.type, i, list.length); _triggerDiscreteUpdate(); }, (e) => console.error('files: could not read', f.name, e))); }); inp.addEventListener('cancel', () => { if (finish()) { push_event_files_CANCELLED(req); _triggerDiscreteUpdate(); } }); document.body.appendChild(inp); inp.click(); return req; }
-# Download: the browser saves data as name (usually to the Downloads folder). A direct
-# call, so the bytes go straight from wasm memory instead of through the command buffer
+# download data as name
 files|command|SAVE|save|string:name string:mime bytes:data RET:uint8|{ const url = URL.createObjectURL(new Blob([data.slice()], { type: mime || 'application/octet-stream' })); const a = document.createElement('a'); a.href = url; a.download = name; a.style.display = 'none'; document.body.appendChild(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(url), 10000); return 1; }
 
 # ------------------------------------------------------------------------------
 # PDF
 # ------------------------------------------------------------------------------
-# Import renders pages with pdf.js, which the app ships and names with set_library
-# (loaded on first open). Export writes a PDF from canvas-like drawing commands.
+# import via pdf.js, export from canvas-like drawing
 pdf|helper|__wcc_pdf|js/pdf.js
-# page_count is 0 and error set when the file couldn't be opened
+# page_count 0 and error set on failure
 pdf|event|OPENED|handle(PdfDocument):doc int32:page_count string:error|last
 pdf|event|RENDERED|handle(PdfRender):render uint8:ok string:error|last
-# data is the PDF file, invalid with error set when writing failed
+# data invalid and error set on failure
 pdf|event|WRITTEN|handle(PdfWriter):writer handle(Blob):data string:error|last
-# URLs of pdf.min.mjs and pdf.worker.min.mjs from pdfjs-dist, relative to the page
+# pdf.min.mjs and pdf.worker.min.mjs URLs, relative to the page
 pdf|command|SET_LIBRARY|set_library|string:lib_url string:worker_url|{ __wcc_pdf.lib = lib_url; __wcc_pdf.worker = worker_url; __wcc_pdf.mod = null; }
-# The bytes are copied, so the blob can be freed right after the call
+# bytes are copied, blob can be freed after
 pdf|command|OPEN|open|handle(Blob):data RET:handle(PdfDocument)|{ const h = (window.webcc_next_id = (window.webcc_next_id || 0) + 1); const u8 = blobs[data]; if (!u8) { queueMicrotask(() => push_event_pdf_OPENED(h, 0, 'invalid blob')); return h; } __wcc_pdf.open(h, u8.slice()); return h; }
-# Page size in PDF points (1/72 inch), valid after OPENED; page is 0-based
+# PDF points, valid after OPENED, page is 0-based
 pdf|command|PAGE_WIDTH|page_width|handle(PdfDocument):doc int32:page RET:float64|{ return __wcc_pdf.size(doc, page, 0); }
 pdf|command|PAGE_HEIGHT|page_height|handle(PdfDocument):doc int32:page RET:float64|{ return __wcc_pdf.size(doc, page, 1); }
-# Renders a page into the canvas, resizing it to the page size times scale
+# resizes the canvas to page size * scale
 pdf|command|RENDER_PAGE|render_page|handle(PdfDocument):doc int32:page handle(Canvas):canvas float64:scale RET:handle(PdfRender)|{ const req = (window.webcc_next_id = (window.webcc_next_id || 0) + 1); __wcc_pdf.render(req, doc, page, elements[canvas], scale); return req; }
-# RENDERED with error 'cancelled' follows unless the render already finished
+# RENDERED with error 'cancelled' unless already done
 pdf|command|CANCEL_RENDER|cancel_render|handle(PdfRender):render|{ __wcc_pdf.cancel(render); }
 pdf|command|CLOSE|close|handle(PdfDocument):doc|{ __wcc_pdf.close(doc); }
-# Writer: points, origin top-left, y down. Nothing is drawn before the first add_page
+# points, origin top-left, y down; add_page first
 pdf|command|CREATE_WRITER|create_writer|RET:handle(PdfWriter)|{ const h = (window.webcc_next_id = (window.webcc_next_id || 0) + 1); __wcc_pdf.create(h); return h; }
 pdf|command|ADD_PAGE|add_page|handle(PdfWriter):writer float32:width float32:height|{ __wcc_pdf.page(writer, width, height); }
 pdf|command|SET_STROKE_COLOR|set_stroke_color|handle(PdfWriter):writer uint8:r uint8:g uint8:b float32:alpha=1|{ __wcc_pdf.color(writer, r, g, b, alpha, false); }
@@ -310,11 +280,11 @@ pdf|command|STROKE|stroke|handle(PdfWriter):writer|{ __wcc_pdf.op(writer, 'S'); 
 pdf|command|FILL|fill|handle(PdfWriter):writer|{ __wcc_pdf.op(writer, 'f'); }
 pdf|command|SAVE|save|handle(PdfWriter):writer|{ __wcc_pdf.op(writer, 'q'); }
 pdf|command|RESTORE|restore|handle(PdfWriter):writer|{ __wcc_pdf.op(writer, 'Q'); }
-# An Image or a Canvas (e.g. a rendered PDF page); its pixels are copied right away
+# Image or Canvas, pixels copied right away
 pdf|command|DRAW_IMAGE|draw_image|handle(PdfWriter):writer handle(DOMElement):source float32:x float32:y float32:w float32:h|{ __wcc_pdf.image(writer, elements[source], x, y, w, h); }
-# Helvetica in the fill color, y is the baseline. Latin-1 only, other characters become '?'
+# Helvetica, y is the baseline, Latin-1 only
 pdf|command|DRAW_TEXT|draw_text|handle(PdfWriter):writer string:text float32:x float32:y float32:size|{ __wcc_pdf.text(writer, text, x, y, size); }
-# Builds the file in the background, then WRITTEN; the writer is gone after this
+# WRITTEN when done, the writer is gone after this
 pdf|command|FINISH|finish|handle(PdfWriter):writer|{ __wcc_pdf.finish(writer); }
 
 # ------------------------------------------------------------------------------
@@ -339,7 +309,7 @@ audio|command|GET_DURATION|get_duration|handle(Audio):handle RET:float64|{ const
 # ------------------------------------------------------------------------------
 # BLOB
 # ------------------------------------------------------------------------------
-# Binary data held on the JS side until C++ asks for it
+# binary data held in JS
 blob|command|CREATE|create|bytes:data RET:handle(Blob)|{ const handle = (window.webcc_next_id = (window.webcc_next_id || 0) + 1); blobs[handle] = data.slice(); return handle; }
 blob|command|SIZE|size|handle(Blob):handle RET:uint32|{ const b = blobs[handle]; return b ? b.length : 0; }
 blob|command|READ|read|handle(Blob):handle RET:bytes|{ const ret = blobs[handle] || new Uint8Array(0); }
@@ -350,18 +320,17 @@ blob|command|FREE|free|handle(Blob):handle|{ blobs[handle] = undefined; }
 # ------------------------------------------------------------------------------
 # INDEXEDDB
 # ------------------------------------------------------------------------------
-# Key-value store on IndexedDB: string keys, binary values, one 'kv' store per database.
-# Every call returns at once; the result arrives as an event carrying the returned handle.
-# Calls made before OPENED wait for the database, and calls on one database run in order.
+# key-value store, string keys and binary values
+# results arrive as events, calls on one database run in order
 idb|event|OPENED|handle(Database):db uint8:ok|last
 idb|event|DONE|handle(IdbRequest):request|last
-# blob is invalid and found is 0 when the key doesn't exist
+# blob invalid and found 0 when missing
 idb|event|VALUE|handle(IdbRequest):request handle(Blob):blob uint8:found|last
-# Matching keys sorted, joined with '\n'
+# sorted keys joined with '\n'
 idb|event|KEYS|handle(IdbRequest):request string:keys|last
 idb|event|ERROR|handle(IdbRequest):request string:message|last
 idb|command|OPEN|open|string:name RET:handle(Database)|{ const handle = (window.webcc_next_id = (window.webcc_next_id || 0) + 1); const p = new Promise((res, rej) => { let r; try { r = indexedDB.open(name, 1); } catch (e) { rej(e); return; } r.onupgradeneeded = () => { if (!r.result.objectStoreNames.contains('kv')) r.result.createObjectStore('kv'); }; r.onsuccess = () => res(r.result); r.onerror = () => rej(r.error); }); databases[handle] = p; p.then(() => push_event_idb_OPENED(handle, 1), (e) => { console.error('idb open failed:', name, e); push_event_idb_OPENED(handle, 0); }); return handle; }
-# value is copied, the caller's buffer can be reused right away. DONE once the write is committed
+# value is copied, DONE once committed
 idb|command|PUT|put|handle(Database):handle string:key bytes:value RET:handle(IdbRequest)|{ const req = (window.webcc_next_id = (window.webcc_next_id || 0) + 1); const d = databases[handle]; if (!d) { push_event_idb_ERROR(req, 'invalid database'); return req; } const v = value.slice(); const fail = (e) => push_event_idb_ERROR(req, String((e && (e.message || e.name)) || e || 'aborted')); d.then(db => { const tx = db.transaction('kv', 'readwrite'); tx.onabort = () => fail(tx.error); const st = tx.objectStore('kv'); st.put(v, key); tx.oncomplete = () => push_event_idb_DONE(req); }).catch(fail); return req; }
 idb|command|GET|get|handle(Database):handle string:key RET:handle(IdbRequest)|{ const req = (window.webcc_next_id = (window.webcc_next_id || 0) + 1); const d = databases[handle]; if (!d) { push_event_idb_ERROR(req, 'invalid database'); return req; } const fail = (e) => push_event_idb_ERROR(req, String((e && (e.message || e.name)) || e || 'aborted')); d.then(db => { const tx = db.transaction('kv', 'readonly'); tx.onabort = () => fail(tx.error); const st = tx.objectStore('kv'); const r = st.get(key); tx.oncomplete = () => { const v = r.result; if (v === undefined) { push_event_idb_VALUE(req, -1, 0); return; } const u8 = v instanceof Uint8Array ? v : v instanceof ArrayBuffer ? new Uint8Array(v) : ArrayBuffer.isView(v) ? new Uint8Array(v.buffer, v.byteOffset, v.byteLength) : null; if (!u8) { push_event_idb_ERROR(req, 'value is not binary'); return; } const b = (window.webcc_next_id = (window.webcc_next_id || 0) + 1); blobs[b] = u8; push_event_idb_VALUE(req, b, 1); }; }).catch(fail); return req; }
 # DONE also when the key didn't exist
@@ -379,7 +348,7 @@ websocket|event|OPEN|handle(WebSocket):handle
 websocket|event|CLOSE|handle(WebSocket):handle int32:code string:reason uint8:was_clean|last
 websocket|event|ERROR|handle(WebSocket):handle
 websocket|event|BINARY_MESSAGE|handle(WebSocket):handle bytes:data
-# protocols: comma-separated, e.g. "chat, superchat"
+# protocols: comma-separated
 websocket|command|CONNECT|connect|string:url string:protocols="" RET:handle(WebSocket)|{ let ws; try { ws = new WebSocket(url, protocols.split(',').map(s => s.trim()).filter(s => s)); } catch (e) { console.error('WebSocket connect failed:', e); return -1; } const handle = (window.webcc_next_id = (window.webcc_next_id || 0) + 1); ws.binaryType = 'arraybuffer'; websockets[handle] = ws; ws.onmessage = (e) => { if (typeof e.data === 'string') push_event_websocket_MESSAGE(handle, e.data); else push_event_websocket_BINARY_MESSAGE(handle, new Uint8Array(e.data)); }; ws.onopen = () => push_event_websocket_OPEN(handle); ws.onclose = (e) => { push_event_websocket_CLOSE(handle, e.code, e.reason, e.wasClean ? 1 : 0); websockets[handle] = undefined; }; ws.onerror = () => push_event_websocket_ERROR(handle); return handle; }
 websocket|command|SEND|send|handle(WebSocket):handle string:msg|{ const ws = websockets[handle]; if(ws && ws.readyState === 1) ws.send(msg); }
 # Returns 1 if sent, 0 if the socket is not open
@@ -399,14 +368,12 @@ websocket|command|GET_URL|get_url|handle(WebSocket):handle RET:string|{ const ws
 # ------------------------------------------------------------------------------
 fetch|event|SUCCESS|handle(FetchRequest):id string:data|last
 fetch|event|ERROR|handle(FetchRequest):id string:error|last
-# Any HTTP response (2xx or not) from request(); body is a Blob, take or free it
+# any HTTP status, body is a Blob, take or free it
 fetch|event|DONE|handle(FetchRequest):id int32:status handle(Blob):body|last
-# Binary request: any method, headers as a JSON object, empty body sends none. Network
-# failure and abort() end in ERROR; every response, 404 and 500 included, ends in DONE.
-# The body goes in as a Blob: Chrome's fetch() handles an array body on the main thread
-# (~5 ms per MB), a Blob it hands off right away
+# headers as a JSON object, empty body sends none
+# network failure and abort() end in ERROR, any response in DONE
 fetch|command|REQUEST|request|string:method string:url string:headers="" bytes:body={} RET:handle(FetchRequest)|{ const id = (window.webcc_next_id = (window.webcc_next_id || 0) + 1); let h = {}; if (headers) { try { h = JSON.parse(headers); } catch (e) { console.warn('fetch: headers are not valid JSON', headers); } } const ac = new AbortController(); fetches[id] = ac; const init = { method: method || 'GET', headers: h, signal: ac.signal }; if (body.length) init.body = new Blob([body]); fetch(url, init).then(r => r.arrayBuffer().then(b => { if (fetches[id] !== ac) return; fetches[id] = undefined; const bh = (window.webcc_next_id = (window.webcc_next_id || 0) + 1); blobs[bh] = new Uint8Array(b); push_event_fetch_DONE(id, r.status, bh); })).catch(e => { if (fetches[id] !== ac) return; fetches[id] = undefined; push_event_fetch_ERROR(id, e && e.name === 'AbortError' ? 'aborted' : String(e)); }); return id; }
-# Only for request(); ERROR 'aborted' follows unless the request already finished
+# ERROR 'aborted' unless already finished
 fetch|command|ABORT|abort|handle(FetchRequest):id|{ const ac = fetches[id]; if (ac) ac.abort(); }
 fetch|command|GET|get|string:url string:headers="" RET:handle(FetchRequest)|{ const id = (window.webcc_next_id = (window.webcc_next_id || 0) + 1); let h = {}; try { h = JSON.parse(headers); } catch(e) {} fetch(url, { headers: h }).then(r => r.text().then(d => ({ ok: r.ok, status: r.status, statusText: r.statusText, data: d }))).then(res => { if(res.ok) push_event_fetch_SUCCESS(id, res.data); else push_event_fetch_ERROR(id, res.data && res.data.length ? res.data : (res.status + ' ' + res.statusText)); }).catch(e => push_event_fetch_ERROR(id, e.toString())); return id; }
 fetch|command|POST|post|string:url string:body string:headers="" RET:handle(FetchRequest)|{ const id = (window.webcc_next_id = (window.webcc_next_id || 0) + 1); let h = {}; try { h = JSON.parse(headers); } catch(e) {} fetch(url, { method: 'POST', body: body, headers: h }).then(r => r.text().then(d => ({ ok: r.ok, status: r.status, statusText: r.statusText, data: d }))).then(res => { if(res.ok) push_event_fetch_SUCCESS(id, res.data); else push_event_fetch_ERROR(id, res.data && res.data.length ? res.data : (res.status + ' ' + res.statusText)); }).catch(e => push_event_fetch_ERROR(id, e.toString())); return id; }
@@ -415,14 +382,13 @@ fetch|command|PATCH|patch|string:url string:body string:headers="" RET:handle(Fe
 # ------------------------------------------------------------------------------
 # IMAGES
 # ------------------------------------------------------------------------------
-# Both load and from_blob end in LOADED (decoded, ready to draw) or ERROR
+# LOADED or ERROR
 image|event|LOADED|handle(Image):handle int32:width int32:height|last
 image|event|ERROR|handle(Image):handle|last
 image|command|LOAD|load|string:src RET:handle(Image)|{ const handle = (window.webcc_next_id = (window.webcc_next_id || 0) + 1); const img = new Image(); images[handle] = img; elements[handle] = img; const done = () => { if (images[handle] !== img) return; push_event_image_LOADED(handle, img.naturalWidth, img.naturalHeight); }; const fail = () => { if (images[handle] !== img) return; push_event_image_ERROR(handle); }; img.src = src; img.decode().then(done, fail); return handle; }
-# Image from encoded bytes (PNG, JPEG, WebP, GIF, SVG...) in a Blob. The bytes are copied,
-# so the blob can be freed right after the call
+# encoded image in a Blob, copied, blob can be freed after
 image|command|FROM_BLOB|from_blob|handle(Blob):blob string:mime="" RET:handle(Image)|{ const handle = (window.webcc_next_id = (window.webcc_next_id || 0) + 1); const img = new Image(); images[handle] = img; elements[handle] = img; const u8 = blobs[blob]; if (!u8) { console.error('image.from_blob: invalid blob', blob); queueMicrotask(() => push_event_image_ERROR(handle)); return handle; } const url = URL.createObjectURL(new Blob([u8], mime ? { type: mime } : {})); const done = () => { if (images[handle] !== img) return; push_event_image_LOADED(handle, img.naturalWidth, img.naturalHeight); }; const fail = () => { if (images[handle] !== img) return; push_event_image_ERROR(handle); }; img.src = url; img.decode().then(done, fail).finally(() => URL.revokeObjectURL(url)); return handle; }
-# Releases the image; drawing it afterwards does nothing
+# drawing it afterwards does nothing
 image|command|FREE|free|handle(Image):handle|{ const img = images[handle]; if (!img) continue; images[handle] = undefined; if (elements[handle] === img) elements[handle] = undefined; img.src = ''; }
 
 # ------------------------------------------------------------------------------

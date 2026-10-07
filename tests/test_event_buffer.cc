@@ -1,4 +1,4 @@
-// Tests for next_event() (event_buffer.cc).
+// next_event() tests
 // Event format: [Opcode:1][SizeHi:1][SizeLo:2][Data...], size includes the header.
 #include "framework.h"
 #include "event_buffer.h"
@@ -10,7 +10,7 @@ using namespace webcc;
 
 namespace
 {
-    // Same layout the generated push_event_* helpers write
+    // same layout as push_event_*
     void push_raw_event(uint8_t opcode, uint32_t payload_len, uint8_t fill)
     {
         uint8_t *buf = webcc_event_buffer_ptr();

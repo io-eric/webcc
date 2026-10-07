@@ -61,7 +61,7 @@ const run = async () => {
     // Global update function reference for immediate discrete event processing
     let _updateFn = null;
     let _updatePending = false;
-    // set_update: no rAF loop, frames run only after an event or request_frame()
+    // on demand: no rAF loop
     let _frameOnDemand = false;
     let _frameRaf = 0;
     function _requestFrame() {
@@ -73,7 +73,6 @@ const run = async () => {
             _updatePending = true;
             queueMicrotask(() => {
                 _updatePending = false;
-                // This run is the frame for the events so far; the update can ask for another
                 if (_frameRaf) { cancelAnimationFrame(_frameRaf); _frameRaf = 0; }
                 _updateFn(performance.now());
             });

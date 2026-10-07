@@ -32,6 +32,8 @@ public:
     size_t length() const { return m_pos; }
 
     // Overload for Strings / string_view
+    formatter& operator<<(bool b) { return *this << (b ? "true" : "false"); }
+
     formatter& operator<<(const char* s) {
         while (*s && m_pos < N - 1) m_data[m_pos++] = *s++;
         m_data[m_pos] = '\0';
@@ -219,6 +221,8 @@ public:
         return ptr;
     }
 
+    dynamic_formatter& operator<<(bool b) { return *this << (b ? "true" : "false"); }
+
     dynamic_formatter& operator<<(const char* s) {
         if (!s) return *this;
         size_t len = 0;
@@ -335,6 +339,8 @@ public:
         m_on_heap = false;
         return ptr;
     }
+
+    hybrid_formatter& operator<<(bool b) { return *this << (b ? "true" : "false"); }
 
     hybrid_formatter& operator<<(const char* s) {
         if (!s) return *this;

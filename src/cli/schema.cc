@@ -451,7 +451,7 @@ namespace webcc
                     }
                     else
                     {
-                        // Choices are numbered in order, so a binding layer can map them 1:1
+                        // numbered in order
                         if (eq != std::string::npos)
                         {
                             std::cerr << "[WebCC] Error: enum values are numbered in order, no =value ('" << v << "') at line " << line_num << std::endl;
@@ -683,7 +683,7 @@ namespace webcc
                 }
                 c.action = line.substr(action_pos);
 
-                // Like C++: once a parameter has a default, the following ones need one too
+                // defaults must be trailing
                 bool seen_default = false;
                 for (const auto &p : c.params)
                 {
@@ -700,7 +700,7 @@ namespace webcc
             }
         }
         std::cout << "[WebCC] Loaded " << out.commands.size() << " commands and " << out.events.size() << " events." << std::endl;
-        // Params, fields and returns typed with a group name: keep the group, wire as its type
+        // group-typed params, fields and returns: wire as the group's type
         {
             static const std::set<std::string> base = {"string", "bytes", "handle", "int32", "uint32", "float32", "float64", "uint8", "func_ptr"};
             auto resolve = [&](std::string &type, std::string &enum_type, const std::string &where) {

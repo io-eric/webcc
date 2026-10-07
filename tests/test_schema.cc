@@ -113,7 +113,7 @@ TEST(schema_command_opcodes_past_255)
         CHECK_EQ((int)loaded.commands[299].opcode, 300);
 }
 
-// helper lines load a JS file next to the schema and survive the binary cache
+// helper lines survive the cache
 TEST(schema_parses_helpers)
 {
     {
@@ -144,7 +144,7 @@ TEST(schema_parses_helpers)
         CHECK_EQ(loaded.helpers[0].code, d.helpers[0].code);
 }
 
-// The optional 5th column marks the last event for a handle; it survives the cache
+// 'last' column survives the cache
 TEST(schema_parses_event_last)
 {
     std::string path = write_temp(
@@ -167,8 +167,7 @@ TEST(schema_parses_event_last)
     CHECK(loaded.events.size() == 2 && !loaded.events[0].last && loaded.events[1].last);
 }
 
-// enum/flags groups: values, wire type, and params/fields/returns typed with them,
-// declared before or after use
+// enum/flags groups, declared before or after use
 TEST(schema_parses_groups)
 {
     std::string path = write_temp(

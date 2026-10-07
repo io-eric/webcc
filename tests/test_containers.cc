@@ -4,6 +4,9 @@
 // path must never byte-copy those).
 
 #include "webcc/core/vector.h"
+#include "webcc/core/unordered_map.h"
+#include "webcc/core/format.h"
+#include <cstring>
 #include "webcc/core/queue.h"
 #include "framework.h"
 
@@ -107,3 +110,53 @@ TEST(queue_fifo_preserved_when_wrapped)
     }
     CHECK(q.empty());
 }
+
+TEST(vector_copy_from_non_const_lvalue)
+{
+    webcc::vector<int> a{1, 2, 3};
+    webcc::vector<int> b = a;
+    webcc::vector<int> c(a);
+    CHECK_EQ(b.size(), (size_t)3);
+    CHECK_EQ(c.size(), (size_t)3);
+    CHECK_EQ(b[2], 3);
+    a.push_back(4);
+    CHECK_EQ(b.size(), (size_t)3);
+    webcc::vector<webcc::vector<int>> nested{a, b};
+    CHECK_EQ(nested.size(), (size_t)2);
+    CHECK_EQ(nested[0].size(), (size_t)4);
+}
+
+TEST(unordered_map_const_read_and_iterate)
+{
+    webcc::unordered_map<int, int> m;
+    m[1] = 10;
+    m[2] = 20;
+    const webcc::unordered_map<int, int> &c = m;
+    CHECK_EQ(c[1], 10);
+    CHECK_EQ(c[3], 0);
+    CHECK_EQ(c.size(), (size_t)2);
+    int sum = 0;
+    for (int key : c) sum += key;
+    CHECK_EQ(sum, 3);
+}
+
+TEST(vector_front_back)
+{
+    webcc::vector<int> v{4, 5, 6};
+    CHECK_EQ(v.front(), 4);
+    CHECK_EQ(v.back(), 6);
+    v.back() = 9;
+    v.pop_back();
+    CHECK_EQ(v.back(), 5);
+    const webcc::vector<int> &c = v;
+    CHECK_EQ(c.front(), 4);
+}
+
+TEST(formatter_prints_bool_as_word)
+{
+    webcc::formatter<64> f;
+    uint8_t small = 7;
+    f << true << " " << false << " " << small;
+    CHECK(std::strcmp(f.c_str(), "true false 7") == 0);
+}
+

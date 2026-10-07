@@ -72,7 +72,7 @@ else
     ninja
 fi
 
-# Generate schema cache if it doesn't exist, schema.def changed, or the generator was rebuilt
+# regenerate schema cache when stale
 if [ ! -f "schema.wcc.bin" ] || [ "schema.def" -nt "schema.wcc.bin" ] || [ "webcc" -nt "schema.wcc.bin" ] || [ -n "$(find js -newer schema.wcc.bin 2>/dev/null)" ]; then
     echo "[WebCC] Generating schema cache..."
     ./webcc --headers

@@ -5,9 +5,7 @@
 
 namespace webcc {
 
-// Commands are batched here until flush(). When the buffer is full the
-// complete commands are flushed early; a single command larger than the
-// buffer grows it on the heap until the next flush.
+// full buffer flushes early, an oversized command grows it on the heap
 struct CommandBuffer {
     // Start a new command
     static void push_command(uint32_t opcode);

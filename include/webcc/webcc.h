@@ -10,7 +10,7 @@
 #include "core/vector.h"
 #include "core/js.h"
 
-// Copies a string/bytes result too large for the scratch buffer into dst
+// copies an oversized result into dst
 extern "C" void webcc_js_read_result(void* dst);
 
 namespace webcc
@@ -42,7 +42,7 @@ namespace webcc
         CommandBuffer::push_double(value);
     }
 
-    // Result of a string-returning command, `len` as returned by the import
+    // len as returned by the import
     inline string take_string_result(uint32_t len){
         if (len <= SCRATCH_BUFFER_SIZE)
             return string((const char*)scratch_buffer_data(), len);
@@ -53,7 +53,7 @@ namespace webcc
         return string::adopt(buf, len);
     }
 
-    // Result of a bytes-returning command, `len` as returned by the import
+    // len as returned by the import
     inline vector<uint8_t> take_bytes_result(uint32_t len){
         vector<uint8_t> out;
         out.resize(len);
@@ -107,8 +107,7 @@ namespace webcc
         return deferred_handle_counter()++;
     }
 
-    // Reserves n consecutive handles and returns the first one.
-    // Saves reloading the counter for every node when creating many at once.
+    // reserves n consecutive handles, returns the first
     inline int32_t reserve_deferred_handles(int32_t n) {
         int32_t& counter = deferred_handle_counter();
         int32_t first = counter;

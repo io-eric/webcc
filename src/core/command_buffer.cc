@@ -5,7 +5,7 @@
 // Import for WASM
 extern "C" void webcc_js_flush(uintptr_t ptr, size_t size);
 #else
-// Stub for native build (webcc tool); weak so tests can observe flushes
+// native stub, weak so tests can override it
 extern "C" __attribute__((weak)) void webcc_js_flush(uintptr_t ptr, size_t size) {}
 #endif
 
@@ -16,17 +16,17 @@ namespace {
     alignas(8) static uint8_t g_static_buffer[STATIC_BUFFER_SIZE];
     static uint8_t* g_buffer = g_static_buffer;
     static size_t g_capacity = STATIC_BUFFER_SIZE;
-    static size_t g_start = 0;     // first pending byte (0 or 4, see make_room)
+    static size_t g_start = 0;     // first pending byte
     static size_t g_offset = 0;
     static size_t g_cmd_start = 0; // start of the command being written
     static bool g_dropped = false; // current command did not fit, drop it
 
-    // Slow path: make space for `n` more bytes while a command is being written.
+    // slow path, room for n more bytes mid-command
     __attribute__((noinline)) bool make_room(size_t n) {
         if (g_dropped) return false;
 
-        // Flush the complete commands and move the partial one to the front.
-        // Keep its offset mod 8 so double alignment stays valid.
+        // flush whole commands, move the partial one to the front
+        // keep its offset mod 8 for double alignment
         if (g_cmd_start > g_start) {
             webcc_js_flush(reinterpret_cast<uintptr_t>(g_buffer + g_start), g_cmd_start - g_start);
             size_t partial = g_offset - g_cmd_start;
@@ -37,7 +37,7 @@ namespace {
         }
         if (g_offset + n <= g_capacity) return true;
 
-        // A single command larger than the buffer: grow onto the heap.
+        // one command bigger than the buffer, grow on the heap
         size_t cap = g_capacity;
         while (cap < g_offset + n) cap *= 2;
         uint8_t* grown = static_cast<uint8_t*>(webcc::malloc(cap));

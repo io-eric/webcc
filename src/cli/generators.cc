@@ -46,8 +46,7 @@ namespace webcc
         return "void*";
     }
 
-    // Every enum/flags group in one header, so a type can be shared across
-    // namespaces (input::Mods in a dom event). Flags get |, &, ^, ~ and any().
+    // all groups in one header, shared across namespaces
     static void emit_groups_header(const SchemaDefs &defs)
     {
         CodeWriter w;
@@ -73,7 +72,7 @@ namespace webcc
                 w.write("constexpr " + t + " operator~(" + t + " a) { return " + t + "(~(" + wire + ")a); }");
                 w.write("constexpr " + t + "& operator|=(" + t + "& a, " + t + " b) { return a = a | b; }");
                 w.write("constexpr " + t + "& operator&=(" + t + "& a, " + t + " b) { return a = a & b; }");
-                w.write("// True when any of the bits in `of` is set (all of v when `of` is left out)");
+                w.write("// any bit of `of` set");
                 w.write("constexpr bool any(" + t + " v, " + t + " of = " + t + "(~(" + wire + ")0)) { return ((" + wire + ")v & (" + wire + ")of) != 0; }");
             }
             w.write("} // namespace webcc::" + g.ns);
@@ -82,7 +81,7 @@ namespace webcc
         std::cout << "[WebCC] Emitted include/webcc/core/enums.h with " << defs.groups.size() << " enum/flags types" << std::endl;
     }
 
-    // C++ default argument; a group default like 0 becomes webcc::dom::PointerFlags(0)
+    // group defaults get wrapped in the enum type
     static std::string default_expr(const SchemaParam &p)
     {
         if (p.enum_type.empty())
@@ -342,7 +341,7 @@ namespace webcc
                         std::string cpp_type = map_cpp_type(p.type, p.name, p.handle_type, p.enum_type);
                         if (!p.enum_type.empty())
                         {
-                            // Group: 4 bytes on the wire like any integer, then the enum class
+                            // group: read as int, cast to the enum
                             std::string wire = p.type == "uint8" ? "uint8_t" : p.type == "uint32" ? "uint32_t" : "int32_t";
                             w.write("res." + p.name + " = static_cast<" + cpp_type + ">(*(" + wire + "*)(data + offset)); offset += 4;");
                         }
@@ -979,7 +978,7 @@ namespace webcc
         std::set<std::string> used_event_helpers;   // Track which push_event helpers must exist
         std::vector<std::string> generated_js_imports;
         bool any_void_command_used = false; // whether any void command (and thus marker import) is used
-        bool any_buffered_return = false;   // whether any string/bytes-returning command is used
+        bool any_buffered_return = false;
         CodeWriter cases_w;
         cases_w.set_indent(4);
 
@@ -1054,8 +1053,7 @@ namespace webcc
                     ss << action_body << "\n";
                     if (d.return_type == "string")
                     {
-                        // Small results go through the scratch buffer, larger ones
-                        // wait in JS until C++ fetches them (webcc_js_read_result)
+                        // big results wait in JS for webcc_js_read_result
                         ss << "const encoded = text_encoder.encode(ret);\n";
                         ss << "if (encoded.length > " << SCRATCH_BUFFER_SIZE << ") _big_result = encoded;\n";
                         ss << "else new Uint8Array(memory.buffer, scratch_buffer_ptr_val).set(encoded);\n";
@@ -1064,7 +1062,7 @@ namespace webcc
                     }
                     else if (d.return_type == "bytes")
                     {
-                        // Same path as strings, `ret` is a Uint8Array
+                        // same as strings, ret is a Uint8Array
                         ss << "if (ret.length > " << SCRATCH_BUFFER_SIZE << ") _big_result = ret;\n";
                         ss << "else new Uint8Array(memory.buffer, scratch_buffer_ptr_val).set(ret);\n";
                         ss << "return ret.length;\n";
@@ -1178,7 +1176,7 @@ namespace webcc
         w.write("// Global update function reference for immediate discrete event processing");
         w.write("let _updateFn = null;");
         w.write("let _updatePending = false;");
-        w.write("// set_update: no rAF loop, frames run only after an event or request_frame()");
+        w.write("// on demand: no rAF loop");
         w.write("let _frameOnDemand = false;");
         w.write("let _frameRaf = 0;");
         w.write("function _requestFrame() {");
@@ -1190,7 +1188,6 @@ namespace webcc
         w.write("        _updatePending = true;");
         w.write("        queueMicrotask(() => {");
         w.write("            _updatePending = false;");
-        w.write("            // This run is the frame for the events so far; the update can ask for another");
         w.write("            if (_frameRaf) { cancelAnimationFrame(_frameRaf); _frameRaf = 0; }");
         w.write("            _updateFn(performance.now());");
         w.write("        });");
@@ -1198,8 +1195,7 @@ namespace webcc
         w.write("}");
         w.write("");
 
-        // JS helpers a used action (or another used helper) mentions; their own map and
-        // event usage counts like an action's
+        // JS helpers used by actions or other helpers
         std::vector<const SchemaHelper *> used_helpers;
         {
             std::vector<const std::string *> scan = used_actions;
@@ -1246,7 +1242,7 @@ namespace webcc
             w.write("event_offset_view = new Uint32Array(memory.buffer, event_offset_ptr_val, 1);");
             w.write("}");
 
-            // Worst-case size of the event, so it is only written if it fits
+            // worst-case event size
             uint32_t fixed_size = 4; // header
             std::string dynamic_size;
             for (size_t i = 0; i < d.params.size(); ++i)
@@ -1606,8 +1602,7 @@ namespace webcc
         // the webcc binary's mtime as the toolchain version and recompile any
         // object older than it. (Only triggers right after a toolchain rebuild;
         // ordinary app edits leave the binary's mtime untouched.)
-        // A schema change regenerates the headers and schema.wcc.bin (next to the
-        // binary) without relinking webcc, and renumbers opcodes, so it counts too.
+        // schema.wcc.bin counts too, a schema change renumbers opcodes
         struct stat exe_stat;
         bool have_exe_mtime = (stat(get_executable_path().c_str(), &exe_stat) == 0);
         if (have_exe_mtime)

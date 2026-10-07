@@ -3,8 +3,8 @@
 
 namespace webcc
 {
-    // Non-owning view over raw bytes (schema type `bytes`).
-    // Views from events point into the event buffer: valid until the next poll_event().
+    // non-owning view over raw bytes
+    // event views are valid until the next poll_event()
     class bytes_view
     {
     private:

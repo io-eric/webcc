@@ -54,8 +54,10 @@ namespace webcc
 
         vector() = default;
 
-        // Variadic constructor for brace init {a,b,c} - works in freestanding/WASM
+        // {a, b, c}; a lone vector arg goes to the copy ctor
         template<typename U, typename... Args>
+            requires (sizeof...(Args) > 0 || (!__is_same(typename remove_reference<U>::type, vector) &&
+                                              !__is_same(typename remove_reference<U>::type, const vector)))
         vector(U&& first, Args&&... rest)
         {
             reserve(1 + sizeof...(rest));
@@ -176,6 +178,11 @@ namespace webcc
                 m_size++;
             }
         }
+
+        T &back() { return m_data[m_size - 1]; }
+        const T &back() const { return m_data[m_size - 1]; }
+        T &front() { return m_data[0]; }
+        const T &front() const { return m_data[0]; }
 
         void pop_back()
         {

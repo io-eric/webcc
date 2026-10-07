@@ -16,7 +16,7 @@ namespace webcc::dom {
     constexpr PointerFlags operator~(PointerFlags a) { return PointerFlags(~(uint8_t)a); }
     constexpr PointerFlags& operator|=(PointerFlags& a, PointerFlags b) { return a = a | b; }
     constexpr PointerFlags& operator&=(PointerFlags& a, PointerFlags b) { return a = a & b; }
-    // True when any of the bits in `of` is set (all of v when `of` is left out)
+    // any bit of `of` set
     constexpr bool any(PointerFlags v, PointerFlags of = PointerFlags(~(uint8_t)0)) { return ((uint8_t)v & (uint8_t)of) != 0; }
 } // namespace webcc::dom
 
@@ -56,7 +56,7 @@ namespace webcc::dom {
     constexpr Buttons operator~(Buttons a) { return Buttons(~(uint32_t)a); }
     constexpr Buttons& operator|=(Buttons& a, Buttons b) { return a = a | b; }
     constexpr Buttons& operator&=(Buttons& a, Buttons b) { return a = a & b; }
-    // True when any of the bits in `of` is set (all of v when `of` is left out)
+    // any bit of `of` set
     constexpr bool any(Buttons v, Buttons of = Buttons(~(uint32_t)0)) { return ((uint32_t)v & (uint32_t)of) != 0; }
 } // namespace webcc::dom
 
@@ -72,7 +72,7 @@ namespace webcc::canvas {
     constexpr ContextFlags operator~(ContextFlags a) { return ContextFlags(~(uint8_t)a); }
     constexpr ContextFlags& operator|=(ContextFlags& a, ContextFlags b) { return a = a | b; }
     constexpr ContextFlags& operator&=(ContextFlags& a, ContextFlags b) { return a = a & b; }
-    // True when any of the bits in `of` is set (all of v when `of` is left out)
+    // any bit of `of` set
     constexpr bool any(ContextFlags v, ContextFlags of = ContextFlags(~(uint8_t)0)) { return ((uint8_t)v & (uint8_t)of) != 0; }
 } // namespace webcc::canvas
 
@@ -90,7 +90,7 @@ namespace webcc::input {
     constexpr Mods operator~(Mods a) { return Mods(~(uint8_t)a); }
     constexpr Mods& operator|=(Mods& a, Mods b) { return a = a | b; }
     constexpr Mods& operator&=(Mods& a, Mods b) { return a = a & b; }
-    // True when any of the bits in `of` is set (all of v when `of` is left out)
+    // any bit of `of` set
     constexpr bool any(Mods v, Mods of = Mods(~(uint8_t)0)) { return ((uint8_t)v & (uint8_t)of) != 0; }
 } // namespace webcc::input
 
