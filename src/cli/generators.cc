@@ -17,8 +17,10 @@ namespace webcc
 {
 
     // Helper to map schema types to C++ types
-    static std::string map_cpp_type(const std::string &type, const std::string &name, const std::string &handle_type = "")
+    static std::string map_cpp_type(const std::string &type, const std::string &name, const std::string &handle_type = "", const std::string &enum_type = "")
     {
+        if (!enum_type.empty())
+            return "webcc::" + enum_type;
         if (type == "string")
             return "webcc::string_view";
         if (type == "bytes")
@@ -42,6 +44,50 @@ namespace webcc
         if (type == "func_ptr")
             return "void*";
         return "void*";
+    }
+
+    // Every enum/flags group in one header, so a type can be shared across
+    // namespaces (input::Mods in a dom event). Flags get |, &, ^, ~ and any().
+    static void emit_groups_header(const SchemaDefs &defs)
+    {
+        CodeWriter w;
+        w.write("// GENERATED FILE - DO NOT EDIT");
+        w.write("#pragma once");
+        w.write("#include <stdint.h>");
+        for (const auto &g : defs.groups)
+        {
+            std::string wire = g.wire == "uint8" ? "uint8_t" : g.wire == "uint32" ? "uint32_t" : "int32_t";
+            w.write("");
+            w.write("namespace webcc::" + g.ns + " {");
+            w.write(std::string(g.flags ? "// Flags, combine with |" : "// Choices") + "");
+            w.write("enum class " + g.name + " : " + wire + " {");
+            for (const auto &[name, value] : g.values)
+                w.write(name + " = " + value + ",");
+            w.write("};");
+            if (g.flags)
+            {
+                const std::string &t = g.name;
+                w.write("constexpr " + t + " operator|(" + t + " a, " + t + " b) { return " + t + "((" + wire + ")a | (" + wire + ")b); }");
+                w.write("constexpr " + t + " operator&(" + t + " a, " + t + " b) { return " + t + "((" + wire + ")a & (" + wire + ")b); }");
+                w.write("constexpr " + t + " operator^(" + t + " a, " + t + " b) { return " + t + "((" + wire + ")a ^ (" + wire + ")b); }");
+                w.write("constexpr " + t + " operator~(" + t + " a) { return " + t + "(~(" + wire + ")a); }");
+                w.write("constexpr " + t + "& operator|=(" + t + "& a, " + t + " b) { return a = a | b; }");
+                w.write("constexpr " + t + "& operator&=(" + t + "& a, " + t + " b) { return a = a & b; }");
+                w.write("// True when any of the bits in `of` is set (all of v when `of` is left out)");
+                w.write("constexpr bool any(" + t + " v, " + t + " of = " + t + "(~(" + wire + ")0)) { return ((" + wire + ")v & (" + wire + ")of) != 0; }");
+            }
+            w.write("} // namespace webcc::" + g.ns);
+        }
+        write_file("include/webcc/core/enums.h", w.str());
+        std::cout << "[WebCC] Emitted include/webcc/core/enums.h with " << defs.groups.size() << " enum/flags types" << std::endl;
+    }
+
+    // C++ default argument; a group default like 0 becomes webcc::dom::PointerFlags(0)
+    static std::string default_expr(const SchemaParam &p)
+    {
+        if (p.enum_type.empty())
+            return p.default_value;
+        return map_cpp_type(p.type, p.name, p.handle_type, p.enum_type) + "(" + p.default_value + ")";
     }
 
     // Collect all unique handle types from schema
@@ -158,6 +204,7 @@ namespace webcc
         {
             emit_handles_header(handle_types, defs.handle_inheritance);
         }
+        emit_groups_header(defs);
 
         // Emit per-namespace headers
         std::set<std::string> namespaces;
@@ -187,6 +234,7 @@ namespace webcc
             w.write("#include \"webcc/core/string_view.h\"");
             w.write("#include \"webcc/core/string.h\"");
             w.write("#include \"webcc/core/bytes_view.h\"");
+            w.write("#include \"webcc/core/enums.h\"");
             w.write("namespace webcc::" + ns + " {");
 
             // Named constants
@@ -280,7 +328,7 @@ namespace webcc
                     w.write("static constexpr uint8_t OPCODE = EVENT_" + d.name + ";");
                     for (const auto &p : d.params)
                     {
-                        std::string type = map_cpp_type(p.type, p.name, p.handle_type);
+                        std::string type = map_cpp_type(p.type, p.name, p.handle_type, p.enum_type);
                         std::string name = p.name;
                         w.write(type + " " + name + ";");
                     }
@@ -291,8 +339,14 @@ namespace webcc
                     w.write("uint32_t offset = 0;");
                     for (const auto &p : d.params)
                     {
-                        std::string cpp_type = map_cpp_type(p.type, p.name, p.handle_type);
-                        if (p.type == "int32" || p.type == "handle")
+                        std::string cpp_type = map_cpp_type(p.type, p.name, p.handle_type, p.enum_type);
+                        if (!p.enum_type.empty())
+                        {
+                            // Group: 4 bytes on the wire like any integer, then the enum class
+                            std::string wire = p.type == "uint8" ? "uint8_t" : p.type == "uint32" ? "uint32_t" : "int32_t";
+                            w.write("res." + p.name + " = static_cast<" + cpp_type + ">(*(" + wire + "*)(data + offset)); offset += 4;");
+                        }
+                        else if (p.type == "int32" || p.type == "handle")
                         {
                             if (cpp_type.find("webcc::") != std::string::npos && cpp_type != "webcc::handle")
                             {
@@ -416,6 +470,8 @@ namespace webcc
                         wrapper_ret_type = "webcc::string";
                     else if (ret_type == "bytes")
                         wrapper_ret_type = "webcc::vector<uint8_t>";
+                    else if (!d.return_enum_type.empty())
+                        wrapper_ret_type = "webcc::" + d.return_enum_type;
                     else
                         wrapper_ret_type = ret_type;
 
@@ -427,9 +483,9 @@ namespace webcc
                             wrap << ", ";
                         const auto &p = d.params[i];
                         std::string name = p.name.empty() ? ("arg" + std::to_string(i)) : p.name;
-                        wrap << map_cpp_type(p.type, p.name, p.handle_type) << " " << name;
+                        wrap << map_cpp_type(p.type, p.name, p.handle_type, p.enum_type) << " " << name;
                         if (!p.default_value.empty())
-                            wrap << " = " << p.default_value;
+                            wrap << " = " << default_expr(p);
                     }
                     wrap << "){";
                     w.write(wrap.str());
@@ -443,7 +499,7 @@ namespace webcc
                     else
                     {
                         call << "return ";
-                        if (ret_is_any_handle)
+                        if (ret_is_any_handle || !d.return_enum_type.empty())
                             call << wrapper_ret_type << "(";
                         call << "webcc_" << d.ns << "_" << d.func_name << "(";
                     }
@@ -454,7 +510,7 @@ namespace webcc
                             call << ", ";
                         const auto &p = d.params[i];
                         std::string name = p.name.empty() ? ("arg" + std::to_string(i)) : p.name;
-                        std::string cpp_type = map_cpp_type(p.type, p.name, p.handle_type);
+                        std::string cpp_type = map_cpp_type(p.type, p.name, p.handle_type, p.enum_type);
 
                         if (cpp_type == "webcc::string_view" || cpp_type == "webcc::bytes_view")
                         {
@@ -471,7 +527,7 @@ namespace webcc
                         }
                     }
                     call << ")";
-                    if (ret_is_any_handle)
+                    if (ret_is_any_handle || !d.return_enum_type.empty())
                         call << ")";
                     call << ";";
                     w.write(call.str());
@@ -539,9 +595,9 @@ namespace webcc
                     }
                     else
                     {
-                        func << map_cpp_type(p.type, p.name, p.handle_type) << " " << name;
+                        func << map_cpp_type(p.type, p.name, p.handle_type, p.enum_type) << " " << name;
                         if (!p.default_value.empty())
-                            func << " = " << p.default_value;
+                            func << " = " << default_expr(p);
                     }
                 }
                 func << "){";
@@ -552,7 +608,7 @@ namespace webcc
                 {
                     const auto &p = d.params[i];
                     std::string name = p.name.empty() ? ("arg" + std::to_string(i)) : p.name;
-                    std::string cpp_type = map_cpp_type(p.type, p.name, p.handle_type);
+                    std::string cpp_type = map_cpp_type(p.type, p.name, p.handle_type, p.enum_type);
 
                     if (cpp_type == "webcc::string_view")
                         w.write("webcc::CommandBuffer::push_string(" + name + ".data(), " + name + ".length());");

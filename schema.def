@@ -13,7 +13,13 @@
 #   RET:bytes returns webcc::vector<uint8_t>; the action sets `ret` to a Uint8Array.
 #
 # Defaults: type:name=value gives a command parameter a C++ default (trailing parameters only).
+# Groups: NAMESPACE|enum|Name:wire|A B C declares choices, numbered 0, 1, 2 in order;
+#   NAMESPACE|flags|Name:wire|A=1 B=2 declares bit flags. wire is uint8, uint32 or int32.
+#   A param, event field or RET typed Name carries one; C++ gets `enum class Name` in
+#   webcc::NAMESPACE (flags also get |, &, ^, ~ and any()). Names are unique across
+#   namespaces, so one group can be used anywhere (input::Mods in a dom event).
 # Constants: NAMESPACE|const|NAME|VALUE becomes `inline constexpr int32_t NAME` in webcc::NAMESPACE.
+#   Prefer a group for anything a param or field carries.
 #   Data too big for an event (files, responses) goes through a Blob handle, see BLOB.
 #
 # Helpers: NAMESPACE|helper|NAME|path.js names a JS file (relative to schema.def) that
@@ -74,36 +80,22 @@ dom|command|REMOVE_CLASS|remove_class|handle(DOMElement):handle string:cls|{ con
 dom|event|CLICK|handle(DOMElement):handle
 dom|command|ADD_CLICK_LISTENER|add_click_listener|handle(DOMElement):handle|{ const el = elements[handle]; if(el) el.dataset.c = handle; }
 # Pointer (mouse, pen, touch). x/y in CSS pixels from the element's top-left corner.
-# flags: POINTER_CAPTURE keeps the pointer after it leaves the element, POINTER_COALESCED reports every
-# move sample, POINTER_NO_SCROLL stops touch scrolling and default actions
-dom|const|POINTER_CAPTURE|1
-dom|const|POINTER_COALESCED|2
-dom|const|POINTER_NO_SCROLL|4
-# Also report the browser's guess of where the pen goes next (phase POINTER_PREDICTED)
-dom|const|POINTER_PREDICT|8
-dom|const|POINTER_DOWN|0
-dom|const|POINTER_MOVE|1
-dom|const|POINTER_UP|2
-dom|const|POINTER_CANCEL|3
-# Not real input: a guess sent after each move; draw it as a temporary tail, never store it
-dom|const|POINTER_PREDICTED|4
-dom|const|POINTER_MOUSE|0
-dom|const|POINTER_PEN|1
-dom|const|POINTER_TOUCH|2
-dom|const|BUTTON_PRIMARY|1
-dom|const|BUTTON_SECONDARY|2
-dom|const|BUTTON_ERASER|32
-dom|event|POINTER|handle(DOMElement):handle uint8:phase int32:pointer_id uint8:pointer_type uint32:buttons float32:x float32:y float32:pressure float32:tilt_x float32:tilt_y float64:time
-dom|command|ADD_POINTER_LISTENER|add_pointer_listener|handle(DOMElement):handle uint8:flags=0|{ const el = elements[handle]; if(!el || el.__wcc_ptr) continue; const capture = flags & 1, coalesce = flags & 2, block = flags & 4, predict = flags & 8; if (block) el.style.touchAction = 'none'; const types = { mouse: 0, pen: 1, touch: 2 }; const send = (phase, e, r, s) => push_event_dom_POINTER(handle, phase, e.pointerId, types[e.pointerType] ?? 0, s.buttons, s.clientX - r.left, s.clientY - r.top, s.pressure, s.tiltX, s.tiltY, s.timeStamp); const on = (phase) => (e) => { const r = el.getBoundingClientRect(); if (phase === 0) { if (capture) el.setPointerCapture(e.pointerId); if (block) e.preventDefault(); } const list = phase === 1 && coalesce && e.getCoalescedEvents ? e.getCoalescedEvents() : []; if (list.length) { for (const c of list) send(1, e, r, c); } else send(phase, e, r, e); if (phase === 1 && predict && e.buttons && e.getPredictedEvents) { for (const p of e.getPredictedEvents()) send(4, e, r, p); } if (phase !== 1) _triggerDiscreteUpdate(); }; const h = [['pointerdown', on(0)], ['pointermove', on(1)], ['pointerup', on(2)], ['pointercancel', on(3)]]; for (const [n, f] of h) el.addEventListener(n, f); el.__wcc_ptr = h; }
+# PointerFlags: CAPTURE keeps the pointer after it leaves the element, COALESCED reports every
+# move sample, NO_SCROLL stops touch scrolling and default actions, PREDICT also reports the
+# browser's guess of where the pen goes next (phase PREDICTED)
+dom|flags|PointerFlags:uint8|CAPTURE=1 COALESCED=2 NO_SCROLL=4 PREDICT=8
+# PREDICTED is not real input: a guess sent after each move; draw it as a temporary tail, never store it
+dom|enum|PointerPhase:uint8|DOWN MOVE UP CANCEL PREDICTED
+dom|enum|PointerType:uint8|MOUSE PEN TOUCH
+# PointerEvent.buttons: PRIMARY is the pen tip or left button, SECONDARY the barrel or right button
+dom|flags|Buttons:uint32|PRIMARY=1 SECONDARY=2 AUXILIARY=4 BACK=8 FORWARD=16 ERASER=32
+dom|event|POINTER|handle(DOMElement):handle PointerPhase:phase int32:pointer_id PointerType:pointer_type Buttons:buttons float32:x float32:y float32:pressure float32:tilt_x float32:tilt_y float64:time
+dom|command|ADD_POINTER_LISTENER|add_pointer_listener|handle(DOMElement):handle PointerFlags:flags=0|{ const el = elements[handle]; if(!el || el.__wcc_ptr) continue; const capture = flags & 1, coalesce = flags & 2, block = flags & 4, predict = flags & 8; if (block) el.style.touchAction = 'none'; const types = { mouse: 0, pen: 1, touch: 2 }; const send = (phase, e, r, s) => push_event_dom_POINTER(handle, phase, e.pointerId, types[e.pointerType] ?? 0, s.buttons, s.clientX - r.left, s.clientY - r.top, s.pressure, s.tiltX, s.tiltY, s.timeStamp); const on = (phase) => (e) => { const r = el.getBoundingClientRect(); if (phase === 0) { if (capture) el.setPointerCapture(e.pointerId); if (block) e.preventDefault(); } const list = phase === 1 && coalesce && e.getCoalescedEvents ? e.getCoalescedEvents() : []; if (list.length) { for (const c of list) send(1, e, r, c); } else send(phase, e, r, e); if (phase === 1 && predict && e.buttons && e.getPredictedEvents) { for (const p of e.getPredictedEvents()) send(4, e, r, p); } if (phase !== 1) _triggerDiscreteUpdate(); }; const h = [['pointerdown', on(0)], ['pointermove', on(1)], ['pointerup', on(2)], ['pointercancel', on(3)]]; for (const [n, f] of h) el.addEventListener(n, f); el.__wcc_ptr = h; }
 dom|command|REMOVE_POINTER_LISTENER|remove_pointer_listener|handle(DOMElement):handle|{ const el = elements[handle]; if(!el || !el.__wcc_ptr) continue; for (const [n, f] of el.__wcc_ptr) el.removeEventListener(n, f); el.__wcc_ptr = undefined; }
 # Wheel and trackpad. delta_x/delta_y in CSS pixels (line and page scrolling converted), x/y from the element's
-# top-left corner, mods: MOD_* bits. A trackpad pinch arrives with MOD_CTRL set, also in Safari (from its
+# top-left corner, mods: input::Mods. A trackpad pinch arrives with CTRL set, also in Safari (from its
 # gesture events). prevent_default stops the page from scrolling or zooming.
-dom|const|MOD_SHIFT|1
-dom|const|MOD_CTRL|2
-dom|const|MOD_ALT|4
-dom|const|MOD_META|8
-dom|event|WHEEL|handle(DOMElement):handle float32:delta_x float32:delta_y float32:x float32:y uint8:mods
+dom|event|WHEEL|handle(DOMElement):handle float32:delta_x float32:delta_y float32:x float32:y Mods:mods
 dom|command|ADD_WHEEL_LISTENER|add_wheel_listener|handle(DOMElement):handle uint8:prevent_default=0|{ const el = elements[handle]; if(!el || el.__wcc_wh) continue; const mods = (e) => (e.shiftKey ? 1 : 0) | (e.ctrlKey ? 2 : 0) | (e.altKey ? 4 : 0) | (e.metaKey ? 8 : 0); const pos = (e) => { const r = el.getBoundingClientRect(); return [e.clientX - r.left, e.clientY - r.top]; }; const wheel = (e) => { if (prevent_default) e.preventDefault(); const k = e.deltaMode === 1 ? 40 : e.deltaMode === 2 ? el.clientHeight || 800 : 1; const [x, y] = pos(e); push_event_dom_WHEEL(handle, e.deltaX * k, e.deltaY * k, x, y, mods(e)); }; let scale = 1; const gstart = (e) => { if (prevent_default) e.preventDefault(); scale = 1; }; const gchange = (e) => { if (prevent_default) e.preventDefault(); const [x, y] = pos(e); push_event_dom_WHEEL(handle, 0, Math.log(scale / e.scale) * 100, x, y, mods(e) | 2); scale = e.scale; }; const h = [['wheel', wheel], ['gesturestart', gstart], ['gesturechange', gchange]]; for (const [n, f] of h) el.addEventListener(n, f, { passive: false }); el.__wcc_wh = h; }
 dom|command|REMOVE_WHEEL_LISTENER|remove_wheel_listener|handle(DOMElement):handle|{ const el = elements[handle]; if(!el || !el.__wcc_wh) continue; for (const [n, f] of el.__wcc_wh) el.removeEventListener(n, f, { passive: false }); el.__wcc_wh = undefined; }
 # Files dropped on the element, one DROP per file; x, y in CSS px relative to the element.
@@ -133,9 +125,8 @@ dom|command|SCROLL_TO_TOP|scroll_to_top||{ window.scrollTo({ top: 0, left: 0, be
 canvas|command|CREATE_CANVAS|create_canvas|string:dom_id float64:width float64:height RET:handle(Canvas)|{ const handle = (window.webcc_next_id = (window.webcc_next_id || 0) + 1); const c = document.createElement('canvas'); c.id = dom_id; c.width = width; c.height = height; elements[dom_id] = c; elements[handle] = c; return handle; }
 # flags: CONTEXT_LOW_LATENCY (the canvas may reach the screen without waiting for the page, less pen lag),
 # CONTEXT_OPAQUE (no transparency, a bit faster). Only the first call for a canvas decides.
-canvas|const|CONTEXT_LOW_LATENCY|1
-canvas|const|CONTEXT_OPAQUE|2
-canvas|command|GET_CONTEXT_2D|get_context_2d|handle(Canvas):canvas_handle uint8:flags=0 RET:handle(CanvasContext2D)|{ const handle = (window.webcc_next_id = (window.webcc_next_id || 0) + 1); const c = elements[canvas_handle]; if(!c) { console.warn('get_context_2d: unknown canvas', canvas_handle); return -1; } contexts[handle] = c.getContext('2d', { desynchronized: !!(flags & 1), alpha: !(flags & 2) }); return handle; }
+canvas|flags|ContextFlags:uint8|LOW_LATENCY=1 OPAQUE=2
+canvas|command|GET_CONTEXT_2D|get_context_2d|handle(Canvas):canvas_handle ContextFlags:flags=0 RET:handle(CanvasContext2D)|{ const handle = (window.webcc_next_id = (window.webcc_next_id || 0) + 1); const c = elements[canvas_handle]; if(!c) { console.warn('get_context_2d: unknown canvas', canvas_handle); return -1; } contexts[handle] = c.getContext('2d', { desynchronized: !!(flags & 1), alpha: !(flags & 2) }); return handle; }
 canvas|command|GET_CONTEXT_WEBGL|get_context_webgl|handle(Canvas):canvas_handle RET:handle(WebGLContext)|{ const handle = (window.webcc_next_id = (window.webcc_next_id || 0) + 1); const c = elements[canvas_handle]; if(!c) { console.warn('get_context_webgl: unknown canvas', canvas_handle); return -1; } contexts[handle] = c.getContext('webgl'); return handle; }
 canvas|command|GET_CONTEXT_WEBGPU|get_context_webgpu|handle(Canvas):canvas_handle RET:handle(WGPUContext)|{ const handle = (window.webcc_next_id = (window.webcc_next_id || 0) + 1); const c = elements[canvas_handle]; if(!c) { console.warn('get_context_webgpu: unknown canvas', canvas_handle); return -1; } contexts[handle] = c.getContext('webgpu'); return handle; }
 canvas|command|SET_SIZE|set_size|handle(Canvas):handle float64:width float64:height|{ const c = elements[handle]; if(c) { c.width = width; c.height = height; } }
@@ -196,21 +187,18 @@ canvas|command|MEASURE_TEXT_WIDTH|measure_text_width|handle(CanvasContext2D):han
 # ------------------------------------------------------------------------------
 # INPUT
 # ------------------------------------------------------------------------------
-# key_code = KeyboardEvent.keyCode, key = KeyboardEvent.key ("z", "+", "Enter"), mods: MOD_* bits
-input|const|MOD_SHIFT|1
-input|const|MOD_CTRL|2
-input|const|MOD_ALT|4
-input|const|MOD_META|8
-input|event|KEY_DOWN|int32:key_code uint8:mods uint8:repeat string:key
-input|event|KEY_UP|int32:key_code uint8:mods string:key
+# key_code = KeyboardEvent.keyCode, key = KeyboardEvent.key ("z", "+", "Enter"), mods: Mods bits
+input|flags|Mods:uint8|SHIFT=1 CTRL=2 ALT=4 META=8
+input|event|KEY_DOWN|int32:key_code Mods:mods uint8:repeat string:key
+input|event|KEY_UP|int32:key_code Mods:mods string:key
 input|event|MOUSE_DOWN|int32:button int32:x int32:y
 input|event|MOUSE_UP|int32:button int32:x int32:y
 input|event|MOUSE_MOVE|int32:x int32:y
 input|command|INIT_KEYBOARD|init_keyboard||{ const mods = (e) => (e.shiftKey ? 1 : 0) | (e.ctrlKey ? 2 : 0) | (e.altKey ? 4 : 0) | (e.metaKey ? 8 : 0); window.addEventListener('keydown', e => { push_event_input_KEY_DOWN(e.keyCode, mods(e), e.repeat ? 1 : 0, e.key || ''); _triggerDiscreteUpdate(); }); window.addEventListener('keyup', e => { push_event_input_KEY_UP(e.keyCode, mods(e), e.key || ''); _triggerDiscreteUpdate(); }); }
 input|command|INIT_MOUSE|init_mouse|handle(DOMElement):handle|{ const el = elements[handle] || document; el.addEventListener('mousedown', e => { push_event_input_MOUSE_DOWN(e.button, e.offsetX, e.offsetY); _triggerDiscreteUpdate(); }); el.addEventListener('mouseup', e => { push_event_input_MOUSE_UP(e.button, e.offsetX, e.offsetY); _triggerDiscreteUpdate(); }); el.addEventListener('mousemove', e => push_event_input_MOUSE_MOVE(e.offsetX, e.offsetY)); }
 # Stop the browser's default action for a key combination (e.g. ctrl+S saving the page). mods must match exactly.
-input|command|PREVENT_KEY|prevent_key|int32:key_code uint8:mods=0|{ let pk = window.__wcc_pk; if (!pk) { pk = window.__wcc_pk = new Set(); window.addEventListener('keydown', (e) => { const m = (e.shiftKey ? 1 : 0) | (e.ctrlKey ? 2 : 0) | (e.altKey ? 4 : 0) | (e.metaKey ? 8 : 0); if (pk.has(e.keyCode * 16 + m)) e.preventDefault(); }, true); } pk.add(key_code * 16 + mods); }
-input|command|ALLOW_KEY|allow_key|int32:key_code uint8:mods=0|{ const pk = window.__wcc_pk; if (pk) pk.delete(key_code * 16 + mods); }
+input|command|PREVENT_KEY|prevent_key|int32:key_code Mods:mods=0|{ let pk = window.__wcc_pk; if (!pk) { pk = window.__wcc_pk = new Set(); window.addEventListener('keydown', (e) => { const m = (e.shiftKey ? 1 : 0) | (e.ctrlKey ? 2 : 0) | (e.altKey ? 4 : 0) | (e.metaKey ? 8 : 0); if (pk.has(e.keyCode * 16 + m)) e.preventDefault(); }, true); } pk.add(key_code * 16 + mods); }
+input|command|ALLOW_KEY|allow_key|int32:key_code Mods:mods=0|{ const pk = window.__wcc_pk; if (pk) pk.delete(key_code * 16 + mods); }
 input|command|EXIT_POINTER_LOCK|exit_pointer_lock||{ document.exitPointerLock(); }
 
 # ------------------------------------------------------------------------------
@@ -305,14 +293,10 @@ pdf|command|ADD_PAGE|add_page|handle(PdfWriter):writer float32:width float32:hei
 pdf|command|SET_STROKE_COLOR|set_stroke_color|handle(PdfWriter):writer uint8:r uint8:g uint8:b float32:alpha=1|{ __wcc_pdf.color(writer, r, g, b, alpha, false); }
 pdf|command|SET_FILL_COLOR|set_fill_color|handle(PdfWriter):writer uint8:r uint8:g uint8:b float32:alpha=1|{ __wcc_pdf.color(writer, r, g, b, alpha, true); }
 pdf|command|SET_LINE_WIDTH|set_line_width|handle(PdfWriter):writer float32:width|{ __wcc_pdf.op(writer, __wcc_pdf.num(width) + ' w'); }
-pdf|const|CAP_BUTT|0
-pdf|const|CAP_ROUND|1
-pdf|const|CAP_SQUARE|2
-pdf|command|SET_LINE_CAP|set_line_cap|handle(PdfWriter):writer uint8:cap|{ __wcc_pdf.op(writer, cap + ' J'); }
-pdf|const|JOIN_MITER|0
-pdf|const|JOIN_ROUND|1
-pdf|const|JOIN_BEVEL|2
-pdf|command|SET_LINE_JOIN|set_line_join|handle(PdfWriter):writer uint8:join|{ __wcc_pdf.op(writer, join + ' j'); }
+pdf|enum|LineCap:uint8|BUTT ROUND SQUARE
+pdf|command|SET_LINE_CAP|set_line_cap|handle(PdfWriter):writer LineCap:cap|{ __wcc_pdf.op(writer, cap + ' J'); }
+pdf|enum|LineJoin:uint8|MITER ROUND BEVEL
+pdf|command|SET_LINE_JOIN|set_line_join|handle(PdfWriter):writer LineJoin:join|{ __wcc_pdf.op(writer, join + ' j'); }
 pdf|command|MOVE_TO|move_to|handle(PdfWriter):writer float32:x float32:y|{ __wcc_pdf.move(writer, x, y); }
 pdf|command|LINE_TO|line_to|handle(PdfWriter):writer float32:x float32:y|{ __wcc_pdf.line(writer, x, y); }
 pdf|command|QUAD_TO|quad_to|handle(PdfWriter):writer float32:cx float32:cy float32:x float32:y|{ __wcc_pdf.quad(writer, cx, cy, x, y); }
@@ -400,12 +384,8 @@ websocket|command|SEND_BINARY|send_binary|handle(WebSocket):handle bytes:data RE
 websocket|command|CLOSE|close|handle(WebSocket):handle|{ const ws = websockets[handle]; if(ws) ws.close(); }
 # code: 1000 or 3000-4999, reason: max 123 bytes
 websocket|command|CLOSE_WITH_CODE|close_with_code|handle(WebSocket):handle int32:code string:reason|{ const ws = websockets[handle]; if(ws) { try { ws.close(code, reason); } catch (e) { console.error('WebSocket close failed:', e); } } }
-# Returns one of the STATE_* constants
-websocket|const|STATE_CONNECTING|0
-websocket|const|STATE_OPEN|1
-websocket|const|STATE_CLOSING|2
-websocket|const|STATE_CLOSED|3
-websocket|command|GET_READY_STATE|get_ready_state|handle(WebSocket):handle RET:int32|{ const ws = websockets[handle]; return ws ? ws.readyState : 3; }
+websocket|enum|ReadyState:uint8|CONNECTING OPEN CLOSING CLOSED
+websocket|command|GET_READY_STATE|get_ready_state|handle(WebSocket):handle RET:ReadyState|{ const ws = websockets[handle]; return ws ? ws.readyState : 3; }
 websocket|command|GET_BUFFERED_AMOUNT|get_buffered_amount|handle(WebSocket):handle RET:uint32|{ const ws = websockets[handle]; return ws ? ws.bufferedAmount : 0; }
 websocket|command|GET_PROTOCOL|get_protocol|handle(WebSocket):handle RET:string|{ const ws = websockets[handle]; const ret = ws ? ws.protocol : ""; }
 websocket|command|GET_EXTENSIONS|get_extensions|handle(WebSocket):handle RET:string|{ const ws = websockets[handle]; const ret = ws ? ws.extensions : ""; }

@@ -198,26 +198,27 @@ Reports mouse, pen and touch input on an element as `PointerEvent`s.
 void add_pointer_listener(webcc::DOMElement handle, uint8_t flags = 0);
 ```
 
-`flags` is a combination of:
+`flags` is a combination of `dom::PointerFlags`:
 
 | Flag | Effect |
 | --- | --- |
-| `dom::POINTER_CAPTURE` | Capture the pointer on down, so moves and the final up keep arriving when it leaves the element. |
-| `dom::POINTER_COALESCED` | Report every coalesced sample of a move instead of one per event. Pens and fast mice produce several samples per frame; without this, fast strokes look jagged. |
-| `dom::POINTER_NO_SCROLL` | Set `touch-action: none` and cancel the default action on down, so touch and pen don't scroll the page or select text. |
-| `dom::POINTER_PREDICT` | After each move with a button down, also report where the browser expects the pointer to be next, as `POINTER_PREDICTED` samples. See below. |
+| `PointerFlags::CAPTURE` | Capture the pointer on down, so moves and the final up keep arriving when it leaves the element. |
+| `PointerFlags::COALESCED` | Report every coalesced sample of a move instead of one per event. Pens and fast mice produce several samples per frame; without this, fast strokes look jagged. |
+| `PointerFlags::NO_SCROLL` | Set `touch-action: none` and cancel the default action on down, so touch and pen don't scroll the page or select text. |
+| `PointerFlags::PREDICT` | After each move with a button down, also report where the browser expects the pointer to be next, as `PointerPhase::PREDICTED` samples. See below. |
 
-For a drawing surface use the first three, plus `POINTER_PREDICT` for less visible lag:
+For a drawing surface use the first three, plus `PREDICT` for less visible lag:
 
 ```cpp
-dom::add_pointer_listener(canvas, dom::POINTER_CAPTURE | dom::POINTER_COALESCED | dom::POINTER_NO_SCROLL | dom::POINTER_PREDICT);
+using F = dom::PointerFlags;
+dom::add_pointer_listener(canvas, F::CAPTURE | F::COALESCED | F::NO_SCROLL | F::PREDICT);
 ```
 
 **Predicted samples.** A frame shows where the pen was, not where it is: the ink trails the pen tip by a frame or two. With `POINTER_PREDICT` the browser extrapolates the motion and each move is followed by a few `POINTER_PREDICTED` samples a little ahead of it. Draw them as a temporary tail at the end of the live stroke, and throw them away when the next frame starts: they are guesses, never part of the stroke you store. Only Chrome and Edge produce them; elsewhere none arrive and strokes work as before.
 
 ```cpp
-if (p->phase == dom::POINTER_MOVE) stroke.push(p->x, p->y, p->pressure);
-else if (p->phase == dom::POINTER_PREDICTED) tail.push(p->x, p->y, p->pressure);
+if (p->phase == dom::PointerPhase::MOVE) stroke.push(p->x, p->y, p->pressure);
+else if (p->phase == dom::PointerPhase::PREDICTED) tail.push(p->x, p->y, p->pressure);
 // frame: draw stroke + tail, then tail.clear()
 ```
 
@@ -285,11 +286,11 @@ struct WheelEvent {
     webcc::DOMElement handle;
     float delta_x, delta_y;  // CSS pixels; positive = scroll right / down
     float x, y;              // CSS pixels from the element's top-left corner
-    uint8_t mods;            // bits: dom::MOD_SHIFT, MOD_CTRL, MOD_ALT, MOD_META
+    input::Mods mods;        // flags: Mods::SHIFT, CTRL, ALT, META
 };
 ```
 
-- **Pinch to zoom:** a trackpad pinch arrives as a wheel event with `dom::MOD_CTRL` set; `delta_y < 0` means zoom in. Safari reports pinches as gesture events instead; these are converted to the same form.
+- **Pinch to zoom:** a trackpad pinch arrives as a wheel event with `input::Mods::CTRL` set; `delta_y < 0` means zoom in. Safari reports pinches as gesture events instead; these are converted to the same form.
 - **Line and page scrolling** (Firefox with a mouse wheel) is converted to pixels: 40 per line, the element's height per page.
 - Wheel events arrive with the next frame, like pointer moves.
 
@@ -297,7 +298,7 @@ A typical pan and zoom handler:
 
 ```cpp
 if (auto w = e.as<dom::WheelEvent>()) {
-    if (w->mods & dom::MOD_CTRL) zoom_at(w->x, w->y, exp(-w->delta_y / 100));
+    if (any(w->mods, input::Mods::CTRL)) zoom_at(w->x, w->y, exp(-w->delta_y / 100));
     else             pan(w->delta_x, w->delta_y);
 }
 ```
@@ -307,10 +308,10 @@ if (auto w = e.as<dom::WheelEvent>()) {
 ```cpp
 struct PointerEvent {
     webcc::DOMElement handle;
-    uint8_t phase;        // POINTER_DOWN, POINTER_MOVE, POINTER_UP, POINTER_CANCEL, POINTER_PREDICTED
+    dom::PointerPhase phase;  // DOWN, MOVE, UP, CANCEL, PREDICTED
     int32_t pointer_id;   // tells apart fingers and devices
-    uint8_t pointer_type; // POINTER_MOUSE, POINTER_PEN, POINTER_TOUCH
-    uint32_t buttons;     // bits: BUTTON_PRIMARY (pen tip), BUTTON_SECONDARY (barrel), BUTTON_ERASER
+    dom::PointerType pointer_type; // MOUSE, PEN, TOUCH
+    dom::Buttons buttons;     // flags: PRIMARY (pen tip), SECONDARY (barrel), AUXILIARY, BACK, FORWARD, ERASER
     float x, y;           // CSS pixels from the element's top-left corner
     float pressure;       // 0..1; a mouse reports 0.5 while a button is down
     float tilt_x, tilt_y; // pen tilt in degrees, -90..90

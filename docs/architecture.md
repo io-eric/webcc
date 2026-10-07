@@ -106,17 +106,24 @@ The schema can hold up to 65535 commands and 255 events.
 
 A parameter is only a handle when written as one: an `int32` is a plain number whatever its name.
 
-A command parameter can have a default, written `type:name=value` (e.g. `uint8:flags=0`, `string:protocols=""`). It becomes a C++ default argument, so like in C++ only trailing parameters can have one.
+A command parameter can have a default, written `type:name=value` (e.g. `ContextFlags:flags=0`, `string:protocols=""`). It becomes a C++ default argument, so like in C++ only trailing parameters can have one.
 
-Named constants are their own lines, `NAMESPACE|const|NAME|VALUE`, and become `inline constexpr int32_t NAME` in `webcc::NAMESPACE`. Use them for flags and enum-like values instead of raw numbers:
+Values from a fixed set are groups, declared on their own line and then used as a type:
 
 ```
-canvas|const|CONTEXT_LOW_LATENCY|1
-canvas|const|CONTEXT_OPAQUE|2
-canvas|command|GET_CONTEXT_2D|get_context_2d|handle(Canvas):canvas_handle uint8:flags=0 RET:handle(CanvasContext2D)|{ ... }
+canvas|flags|ContextFlags:uint8|LOW_LATENCY=1 OPAQUE=2
+canvas|command|GET_CONTEXT_2D|get_context_2d|handle(Canvas):canvas_handle ContextFlags:flags=0 RET:handle(CanvasContext2D)|{ ... }
+websocket|enum|ReadyState:uint8|CONNECTING OPEN CLOSING CLOSED
 ```
 
-Commands can use every type as a parameter; events can use all but `func_ptr`. `RET:` supports the numeric types, `string`, `bytes` (returned as `webcc::vector<uint8_t>`), and `handle(Type)`.
+- `enum` is a set of choices, numbered 0, 1, 2 in order. `flags` is a set of bits, each with its value.
+- The part after `:` is the wire type: `uint8`, `uint32` or `int32`. JS actions see the plain number.
+- C++ gets `enum class ContextFlags : uint8_t` in `webcc::canvas`, so a value can't be mixed up with another group or a plain number. Flags also get `|`, `&`, `^`, `~` and `any(v, of)`.
+- Names are unique across namespaces, and a group can be used in any namespace (`dom::WheelEvent::mods` is an `input::Mods`). All groups are in `webcc/core/enums.h`.
+
+Plain constants (`NAMESPACE|const|NAME|VALUE`, an `inline constexpr int32_t`) are still supported for values no parameter carries.
+
+Commands can use every type as a parameter; events can use all but `func_ptr`. `RET:` supports the numeric types, groups, `string`, `bytes` (returned as `webcc::vector<uint8_t>`), and `handle(Type)`.
 
 To return a `string` or `bytes`, the action declares a local named `ret` (`const ret = ...;`) instead of using `return`.
 

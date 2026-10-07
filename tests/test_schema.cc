@@ -167,6 +167,40 @@ TEST(schema_parses_event_last)
     CHECK(loaded.events.size() == 2 && !loaded.events[0].last && loaded.events[1].last);
 }
 
+// enum/flags groups: values, wire type, and params/fields/returns typed with them,
+// declared before or after use
+TEST(schema_parses_groups)
+{
+    std::string path = write_temp(
+        "gfx|event|TAP|handle(Pad):h Phase:phase Mods:mods\n"
+        "gfx|command|LISTEN|listen|handle(Pad):h Mods:mods=0|{ }\n"
+        "gfx|command|STATE|state|handle(Pad):h RET:Phase|{ return 0; }\n"
+        "gfx|enum|Phase:uint8|DOWN MOVE UP\n"
+        "keys|flags|Mods:uint32|SHIFT=1 CTRL=2\n",
+        "groups");
+    SchemaDefs d = load_defs(path);
+    std::remove(path.c_str());
+    CHECK_EQ(d.groups.size(), (size_t)2);
+    if (d.groups.size() != 2)
+        return;
+    CHECK(!d.groups[0].flags);
+    CHECK_EQ(d.groups[0].values.size(), (size_t)3);
+    CHECK_EQ(d.groups[0].values[2].second, std::string("2"));
+    CHECK(d.groups[1].flags);
+    CHECK_EQ(d.groups[1].wire, std::string("uint32"));
+
+    CHECK(d.events.size() == 1 && d.events[0].params.size() == 3);
+    if (d.events.size() == 1 && d.events[0].params.size() == 3)
+    {
+        CHECK_EQ(d.events[0].params[1].enum_type, std::string("gfx::Phase"));
+        CHECK_EQ(d.events[0].params[1].type, std::string("uint8"));
+        CHECK_EQ(d.events[0].params[2].enum_type, std::string("keys::Mods"));
+        CHECK_EQ(d.events[0].params[2].type, std::string("uint32"));
+    }
+    const SchemaCommand *st = find_cmd(d, "STATE");
+    CHECK(st && st->return_enum_type == "gfx::Phase" && st->return_type == "uint8");
+}
+
 TEST(schema_parses_bytes_return)
 {
     std::string path = write_temp(
@@ -322,10 +356,21 @@ TEST(binary_cache_roundtrips_real_schema)
             CHECK_EQ(a.params[j].name, b.params[j].name);
             CHECK_EQ(a.params[j].handle_type, b.params[j].handle_type);
             CHECK_EQ(a.params[j].default_value, b.params[j].default_value);
+            CHECK_EQ(a.params[j].enum_type, b.params[j].enum_type);
         }
+        CHECK_EQ(a.return_enum_type, b.return_enum_type);
     }
 
-    CHECK(original.consts.size() > 0);
+    CHECK(original.groups.size() > 0);
+    CHECK_EQ(loaded.groups.size(), original.groups.size());
+    for (size_t i = 0; i < original.groups.size() && i < loaded.groups.size(); ++i)
+    {
+        CHECK_EQ(loaded.groups[i].name, original.groups[i].name);
+        CHECK_EQ(loaded.groups[i].wire, original.groups[i].wire);
+        CHECK(loaded.groups[i].flags == original.groups[i].flags);
+        CHECK(loaded.groups[i].values == original.groups[i].values);
+    }
+
     CHECK_EQ(loaded.consts.size(), original.consts.size());
     for (size_t i = 0; i < original.consts.size() && i < loaded.consts.size(); ++i)
     {

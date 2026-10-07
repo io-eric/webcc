@@ -674,6 +674,59 @@ TEST(codegen_js_helpers)
     CHECK(js.find("push_event_pdf_") == std::string::npos);
 }
 
+// Groups become enum classes (flags with operators); params, event fields and returns
+// typed with them use the enum class, with casts at the wire
+TEST(codegen_groups)
+{
+    const char *def_path = "/tmp/webcc_test_groups.def";
+    {
+        std::ofstream out(def_path);
+        out << "gfx|enum|Phase:uint8|DOWN MOVE UP\n"
+               "gfx|flags|Mods:uint8|SHIFT=1 CTRL=2\n"
+               "gfx|event|TAP|handle(Pad):h Phase:phase Mods:mods\n"
+               "gfx|command|LISTEN|listen|handle(Pad):h Mods:mods=0|{ sink(mods); }\n"
+               "gfx|command|STATE|state|handle(Pad):h RET:Phase|{ return 0; }\n";
+    }
+    SchemaDefs defs = load_defs(def_path);
+    std::remove(def_path);
+
+    char cwd[4096];
+    if (!getcwd(cwd, sizeof(cwd)))
+    {
+        ::webcc_test::record_failure("getcwd failed");
+        return;
+    }
+    const char *tmp = "/tmp/webcc_groups_test";
+    std::string mk = std::string("mkdir -p ") + tmp;
+    (void)system(mk.c_str());
+    if (chdir(tmp) != 0)
+    {
+        ::webcc_test::record_failure("chdir to temp failed");
+        return;
+    }
+    emit_headers(defs);
+    std::string header = read_file("include/webcc/gfx.h");
+    std::string enums = read_file("include/webcc/core/enums.h");
+    if (chdir(cwd) != 0)
+    {
+        ::webcc_test::record_failure("chdir back failed");
+        return;
+    }
+
+    CHECK(enums.find("enum class Phase : uint8_t {") != std::string::npos);
+    CHECK(enums.find("UP = 2,") != std::string::npos);
+    CHECK(enums.find("enum class Mods : uint8_t {") != std::string::npos);
+    CHECK(enums.find("constexpr Mods operator|(Mods a, Mods b)") != std::string::npos);
+    CHECK(enums.find("constexpr bool any(Mods v") != std::string::npos);
+    CHECK(enums.find("Phase operator|") == std::string::npos); // choices don't combine
+    CHECK(header.find("#include \"webcc/core/enums.h\"") != std::string::npos);
+    CHECK(header.find("webcc::gfx::Phase phase;") != std::string::npos);
+    CHECK(header.find("res.phase = static_cast<webcc::gfx::Phase>(*(uint8_t*)(data + offset));") != std::string::npos);
+    CHECK(header.find("inline void listen(webcc::Pad h, webcc::gfx::Mods mods = webcc::gfx::Mods(0))") != std::string::npos);
+    CHECK(header.find("inline webcc::gfx::Phase state(webcc::Pad h)") != std::string::npos);
+    CHECK(header.find("return webcc::gfx::Phase(webcc_gfx_state(") != std::string::npos);
+}
+
 // Constants become constexpr, defaults become C++ default arguments.
 TEST(codegen_consts_and_defaults)
 {

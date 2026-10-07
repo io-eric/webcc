@@ -23,19 +23,19 @@ webcc::Canvas create_canvas(webcc::string_view dom_id, float width, float height
 Gets the 2D rendering context for a canvas.
 
 ```cpp
-webcc::CanvasContext2D get_context_2d(webcc::Canvas canvas_handle, uint8_t flags = 0);
+webcc::CanvasContext2D get_context_2d(webcc::Canvas canvas_handle, canvas::ContextFlags flags = canvas::ContextFlags(0));
 ```
 
-`flags` is a combination of:
+`flags` is a combination of `canvas::ContextFlags`:
 
 | Flag | Effect |
 | --- | --- |
-| `canvas::CONTEXT_LOW_LATENCY` | The browser may put the canvas on screen without waiting for the rest of the page, which noticeably cuts the delay between pen and ink. A hint: browsers that can't do it ignore it. |
-| `canvas::CONTEXT_OPAQUE` | No transparency, a little faster. The page behind the canvas doesn't show through. |
+| `ContextFlags::LOW_LATENCY` | The browser may put the canvas on screen without waiting for the rest of the page, which noticeably cuts the delay between pen and ink. A hint: browsers that can't do it ignore it. |
+| `ContextFlags::OPAQUE` | No transparency, a little faster. The page behind the canvas doesn't show through. |
 
 ```cpp
 auto ctx = canvas::get_context_2d(c);                                                   // normal
-auto ink = canvas::get_context_2d(c, canvas::CONTEXT_LOW_LATENCY | canvas::CONTEXT_OPAQUE);
+auto ink = canvas::get_context_2d(c, canvas::ContextFlags::LOW_LATENCY | canvas::ContextFlags::OPAQUE);
 ```
 
 The flags only take effect the first time a context is requested for a canvas.

@@ -50,7 +50,7 @@ int main(){ auto ws=webcc::websocket::connect("wss://x");
 int main(){ namespace w=webcc::websocket;
   auto ws=w::connect("wss://x","chat, other");
   auto ws2=w::connect("wss://y"); w::close(ws2);
-  if (w::get_ready_state(ws)==w::STATE_OPEN) w::close(ws);
+  if (w::get_ready_state(ws)==w::ReadyState::OPEN) w::close(ws);
   uint8_t b[3]={1,2,3};
   w::send_binary(ws,webcc::bytes_view(b,3));
   w::get_ready_state(ws); w::get_buffered_amount(ws);
@@ -61,13 +61,14 @@ int main(){ namespace w=webcc::websocket;
   pointer: `#include "webcc/dom.h"
 int main(){ auto el=webcc::dom::create_element("canvas");
   webcc::dom::append_child(webcc::dom::get_body(),el);
-  webcc::dom::add_pointer_listener(el,7);
+  namespace d=webcc::dom;
+  d::add_pointer_listener(el,d::PointerFlags::CAPTURE|d::PointerFlags::COALESCED|d::PointerFlags::NO_SCROLL);
   webcc::dom::remove_pointer_listener(el); }`,
 
   // Keyboard with mods/repeat/key and shortcut blocking
   keyboard: `#include "webcc/input.h"
 int main(){ webcc::input::init_keyboard();
-  webcc::input::prevent_key(83,2); webcc::input::allow_key(83,2); }`,
+  webcc::input::prevent_key(83,webcc::input::Mods::CTRL); webcc::input::allow_key(83,webcc::input::Mods::CTRL); }`,
 
   // Wheel listener with Safari gesture fallback
   wheel: `#include "webcc/dom.h"

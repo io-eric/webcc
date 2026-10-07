@@ -14,6 +14,19 @@ namespace webcc
         std::string name;        // optional; if empty we'll generate argN
         std::string handle_type; // For handle types: DOMElement, CanvasContext2D, etc.
         std::string default_value; // C++ default argument, e.g. "0" or "\"\"" (commands only)
+        std::string enum_type;     // Enum/flags group ("dom::PointerPhase"); type is then its wire type
+    };
+
+    // NAMESPACE|enum|Name:wire|A B C       choices, numbered 0, 1, 2...
+    // NAMESPACE|flags|Name:wire|A=1 B=2    bit flags, combined with |
+    // A param or event field typed Name carries one; C++ gets an enum class.
+    struct SchemaGroup
+    {
+        std::string ns;
+        std::string name;
+        std::string wire; // uint8, uint32 or int32
+        bool flags = false;
+        std::vector<std::pair<std::string, std::string>> values; // name, value
     };
 
     // Named constant from `NAMESPACE|const|NAME|VALUE`, emitted as constexpr in the namespace header.
@@ -35,6 +48,7 @@ namespace webcc
         std::string action;              // JS action body (using arg0.. or custom names)
         std::string return_type;         // Optional return type: handle, int32, string, etc.
         std::string return_handle_type;  // For handle return types: DOMElement, CanvasContext2D, etc.
+        std::string return_enum_type;    // For group return types: "websocket::ReadyState"
     };
 
     // Represents an event definition from `schema.def`.
@@ -67,6 +81,7 @@ namespace webcc
         std::map<std::string, std::string> handle_inheritance;
         std::vector<SchemaConst> consts;
         std::vector<SchemaHelper> helpers;
+        std::vector<SchemaGroup> groups;
     };
 
     // Loads and parses the command and event definitions from a file (e.g., schema.def).

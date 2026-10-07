@@ -82,8 +82,8 @@ void add_page(webcc::PdfWriter w, float width, float height);   // starts a new 
 void set_stroke_color(webcc::PdfWriter w, uint8_t r, uint8_t g, uint8_t b, float alpha = 1);
 void set_fill_color(webcc::PdfWriter w, uint8_t r, uint8_t g, uint8_t b, float alpha = 1);
 void set_line_width(webcc::PdfWriter w, float width);
-void set_line_cap(webcc::PdfWriter w, uint8_t cap);     // CAP_BUTT, CAP_ROUND, CAP_SQUARE
-void set_line_join(webcc::PdfWriter w, uint8_t join);   // JOIN_MITER, JOIN_ROUND, JOIN_BEVEL
+void set_line_cap(webcc::PdfWriter w, pdf::LineCap cap);     // LineCap::BUTT, ROUND, SQUARE
+void set_line_join(webcc::PdfWriter w, pdf::LineJoin join);  // LineJoin::MITER, ROUND, BEVEL
 
 void move_to(webcc::PdfWriter w, float x, float y);
 void line_to(webcc::PdfWriter w, float x, float y);
@@ -123,7 +123,7 @@ webcc::pdf::add_page(w, 595, 842);
 webcc::pdf::draw_image(w, background_canvas, 0, 0, 595, 842);   // rendered with render_page
 webcc::pdf::set_stroke_color(w, 20, 20, 20);
 webcc::pdf::set_line_width(w, 2);
-webcc::pdf::set_line_cap(w, webcc::pdf::CAP_ROUND);
+webcc::pdf::set_line_cap(w, webcc::pdf::LineCap::ROUND);
 for (const auto &s : strokes) {
     webcc::pdf::move_to(w, s.x[0], s.y[0]);
     for (size_t i = 1; i < s.size(); i++) webcc::pdf::line_to(w, s.x[i], s.y[i]);

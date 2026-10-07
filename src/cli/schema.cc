@@ -13,7 +13,7 @@ namespace webcc
 {
     // Binary cache magic and version for validation
     static constexpr uint32_t SCHEMA_MAGIC = 0x57434353; // "WCCS" (WebCC Schema)
-    static constexpr uint32_t SCHEMA_VERSION = 5;
+    static constexpr uint32_t SCHEMA_VERSION = 6;
 
     // Helper functions for binary serialization
     static void write_string(std::ostream &out, const std::string &s)
@@ -38,6 +38,7 @@ namespace webcc
         write_string(out, p.name);
         write_string(out, p.handle_type);
         write_string(out, p.default_value);
+        write_string(out, p.enum_type);
     }
 
     static SchemaParam read_param(std::istream &in)
@@ -47,6 +48,7 @@ namespace webcc
         p.name = read_string(in);
         p.handle_type = read_string(in);
         p.default_value = read_string(in);
+        p.enum_type = read_string(in);
         return p;
     }
 
@@ -84,6 +86,7 @@ namespace webcc
             write_string(out, c.action);
             write_string(out, c.return_type);
             write_string(out, c.return_handle_type);
+            write_string(out, c.return_enum_type);
 
             uint32_t param_count = static_cast<uint32_t>(c.params.size());
             out.write(reinterpret_cast<const char *>(&param_count), sizeof(param_count));
@@ -119,6 +122,24 @@ namespace webcc
             write_string(out, k.ns);
             write_string(out, k.name);
             write_string(out, k.value);
+        }
+
+        // Enum and flags groups
+        uint32_t group_count = static_cast<uint32_t>(defs.groups.size());
+        out.write(reinterpret_cast<const char *>(&group_count), sizeof(group_count));
+        for (const auto &g : defs.groups)
+        {
+            write_string(out, g.ns);
+            write_string(out, g.name);
+            write_string(out, g.wire);
+            out.put(g.flags ? 1 : 0);
+            uint32_t n = static_cast<uint32_t>(g.values.size());
+            out.write(reinterpret_cast<const char *>(&n), sizeof(n));
+            for (const auto &[name, value] : g.values)
+            {
+                write_string(out, name);
+                write_string(out, value);
+            }
         }
 
         // JS helpers
@@ -183,6 +204,7 @@ namespace webcc
             c.action = read_string(in);
             c.return_type = read_string(in);
             c.return_handle_type = read_string(in);
+            c.return_enum_type = read_string(in);
 
             uint32_t param_count;
             in.read(reinterpret_cast<char *>(&param_count), sizeof(param_count));
@@ -226,6 +248,27 @@ namespace webcc
             k.name = read_string(in);
             k.value = read_string(in);
             defs.consts.push_back(std::move(k));
+        }
+
+        // Enum and flags groups
+        uint32_t group_count = 0;
+        in.read(reinterpret_cast<char *>(&group_count), sizeof(group_count));
+        for (uint32_t i = 0; in && i < group_count; ++i)
+        {
+            SchemaGroup g;
+            g.ns = read_string(in);
+            g.name = read_string(in);
+            g.wire = read_string(in);
+            g.flags = in.get() != 0;
+            uint32_t n = 0;
+            in.read(reinterpret_cast<char *>(&n), sizeof(n));
+            for (uint32_t j = 0; in && j < n; ++j)
+            {
+                std::string name = read_string(in);
+                std::string value = read_string(in);
+                g.values.push_back({name, value});
+            }
+            defs.groups.push_back(std::move(g));
         }
 
         // JS helpers
@@ -359,6 +402,71 @@ namespace webcc
                     }
                 }
                 out.helpers.push_back({ns, parts[2], code});
+                continue;
+            }
+
+            // NAMESPACE|enum|Name:wire|A B C  /  NAMESPACE|flags|Name:wire|A=1 B=2
+            if (parts[1] == "enum" || parts[1] == "flags")
+            {
+                SchemaGroup g;
+                g.ns = ns;
+                g.flags = parts[1] == "flags";
+                size_t colon = parts[2].find(':');
+                g.name = parts[2].substr(0, colon);
+                g.wire = colon == std::string::npos ? "uint8" : parts[2].substr(colon + 1);
+                if (g.wire != "uint8" && g.wire != "uint32" && g.wire != "int32")
+                {
+                    std::cerr << "[WebCC] Error: " << parts[1] << " '" << g.name << "' needs a wire type uint8, uint32 or int32 at line " << line_num << std::endl;
+                    exit(1);
+                }
+                if (g.name.empty() || !std::isupper((unsigned char)g.name[0]))
+                {
+                    std::cerr << "[WebCC] Error: " << parts[1] << " name must be UpperCamelCase at line " << line_num << std::endl;
+                    exit(1);
+                }
+                for (const auto &other : out.groups)
+                {
+                    if (other.name == g.name)
+                    {
+                        std::cerr << "[WebCC] Error: Duplicate enum/flags name '" << g.name << "' at line " << line_num << " (names are unique across namespaces)" << std::endl;
+                        exit(1);
+                    }
+                }
+                std::istringstream vs(parts[3]);
+                std::string v;
+                int next = 0;
+                while (vs >> v)
+                {
+                    size_t eq = v.find('=');
+                    std::string vname = v.substr(0, eq);
+                    std::string value;
+                    if (g.flags)
+                    {
+                        if (eq == std::string::npos)
+                        {
+                            std::cerr << "[WebCC] Error: flags value '" << vname << "' needs =value at line " << line_num << std::endl;
+                            exit(1);
+                        }
+                        value = v.substr(eq + 1);
+                    }
+                    else
+                    {
+                        // Choices are numbered in order, so a binding layer can map them 1:1
+                        if (eq != std::string::npos)
+                        {
+                            std::cerr << "[WebCC] Error: enum values are numbered in order, no =value ('" << v << "') at line " << line_num << std::endl;
+                            exit(1);
+                        }
+                        value = std::to_string(next++);
+                    }
+                    g.values.push_back({vname, value});
+                }
+                if (g.values.empty())
+                {
+                    std::cerr << "[WebCC] Error: " << parts[1] << " '" << g.name << "' has no values at line " << line_num << std::endl;
+                    exit(1);
+                }
+                out.groups.push_back(std::move(g));
                 continue;
             }
 
@@ -592,6 +700,35 @@ namespace webcc
             }
         }
         std::cout << "[WebCC] Loaded " << out.commands.size() << " commands and " << out.events.size() << " events." << std::endl;
+        // Params, fields and returns typed with a group name: keep the group, wire as its type
+        {
+            static const std::set<std::string> base = {"string", "bytes", "handle", "int32", "uint32", "float32", "float64", "uint8", "func_ptr"};
+            auto resolve = [&](std::string &type, std::string &enum_type, const std::string &where) {
+                if (type.empty() || base.count(type))
+                    return;
+                for (const auto &g : out.groups)
+                {
+                    if (g.name == type)
+                    {
+                        enum_type = g.ns + "::" + g.name;
+                        type = g.wire;
+                        return;
+                    }
+                }
+                std::cerr << "[WebCC] Error: Unknown type '" << type << "' in " << where << std::endl;
+                exit(1);
+            };
+            for (auto &cmd : out.commands)
+            {
+                for (auto &p : cmd.params)
+                    resolve(p.type, p.enum_type, cmd.ns + "::" + cmd.func_name);
+                resolve(cmd.return_type, cmd.return_enum_type, cmd.ns + "::" + cmd.func_name + " return");
+            }
+            for (auto &e : out.events)
+                for (auto &p : e.params)
+                    resolve(p.type, p.enum_type, e.ns + " event " + e.name);
+        }
+
         return out;
     }
 

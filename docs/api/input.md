@@ -22,15 +22,24 @@ Note: `Canvas` handles can be passed directly as they implicitly convert to `DOM
 ## Shortcuts
 
 ```cpp
-void prevent_key(int32_t key_code, uint8_t mods = 0);
-void allow_key(int32_t key_code, uint8_t mods = 0);
+void prevent_key(int32_t key_code, input::Mods mods = input::Mods(0));
+void allow_key(int32_t key_code, input::Mods mods = input::Mods(0));
 ```
 
-`prevent_key` stops the browser's own action for a key combination, so the app can use it as a shortcut: Ctrl+S would otherwise save the page, Ctrl+Z would undo inside a text field. `mods` must match exactly (Ctrl+Z doesn't cover Ctrl+Shift+Z), and on macOS the same shortcuts use Cmd (`MOD_META`) instead of Ctrl (`MOD_CTRL`), so register both. It works whether or not `init_keyboard` was called, and the key events are still delivered. `allow_key` undoes it.
+`prevent_key` stops the browser's own action for a key combination, so the app can use it as a shortcut: Ctrl+S would otherwise save the page, Ctrl+Z would undo inside a text field. `mods` must match exactly (Ctrl+Z doesn't cover Ctrl+Shift+Z), and on macOS the same shortcuts use Cmd (`Mods::META`) instead of Ctrl (`Mods::CTRL`), so register both. It works whether or not `init_keyboard` was called, and the key events are still delivered. `allow_key` undoes it.
 
 ```cpp
-input::prevent_key(83, input::MOD_CTRL);  // Ctrl+S
-input::prevent_key(83, input::MOD_META);  // Cmd+S
+input::prevent_key(83, input::Mods::CTRL);  // Ctrl+S
+input::prevent_key(83, input::Mods::META);  // Cmd+S
+```
+
+### Modifier keys
+
+`input::Mods` is a flags type, also used by `dom::WheelEvent`. Combine values with `|` and test them with `any`:
+
+```cpp
+if (any(k->mods, input::Mods::CTRL | input::Mods::META) && k->key == "z") undo();
+if (k->mods == input::Mods::SHIFT) { /* Shift alone */ }
 ```
 
 ## Pointer Lock
@@ -49,7 +58,7 @@ Input events are polled using the main event loop.
 ```cpp
 struct KeyDownEvent {
     int32_t key_code;        // KeyboardEvent.keyCode
-    uint8_t mods;            // bits: input::MOD_SHIFT, MOD_CTRL, MOD_ALT, MOD_META (Cmd on macOS)
+    input::Mods mods;        // flags: Mods::SHIFT, CTRL, ALT, META (Cmd on macOS)
     uint8_t repeat;          // 1 when the key is held down and auto-repeats
     webcc::string_view key;  // KeyboardEvent.key: "z", "Z", "+", "Enter", "ä"
 };

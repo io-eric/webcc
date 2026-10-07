@@ -72,14 +72,14 @@ The browser only accepts `1000` or a code in the range `3000`-`4999`, and a reas
 ### State
 
 ```cpp
-int32_t       get_ready_state(webcc::WebSocket handle);     // STATE_CONNECTING, STATE_OPEN, STATE_CLOSING, STATE_CLOSED
+websocket::ReadyState get_ready_state(webcc::WebSocket handle); // ReadyState::CONNECTING, OPEN, CLOSING, CLOSED
 uint32_t      get_buffered_amount(webcc::WebSocket handle); // bytes queued by send but not yet transmitted
 webcc::string get_protocol(webcc::WebSocket handle);        // subprotocol selected by the server ("" if none)
 webcc::string get_extensions(webcc::WebSocket handle);      // extensions selected by the server
 webcc::string get_url(webcc::WebSocket handle);             // resolved URL of the connection
 ```
 
-A socket stays queryable until its `CloseEvent` has been delivered. After that (or for an invalid handle) `get_ready_state` returns `STATE_CLOSED` and the others return `0` / `""`.
+A socket stays queryable until its `CloseEvent` has been delivered. After that (or for an invalid handle) `get_ready_state` returns `ReadyState::CLOSED` and the others return `0` / `""`.
 
 ## Events
 
