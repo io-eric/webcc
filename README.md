@@ -288,6 +288,7 @@ It's growing over time, so the gap keeps shrinking. But for now: the smaller and
 - **`webcc/system.h`**: System utilities.
 - **`webcc/websocket.h`**: WebSocket communication.
 - **`webcc/storage.h`**: Local storage.
+- **`webcc/idb.h`**: Binary key-value storage on IndexedDB.
 - **`webcc/image.h`**: Image loading.
 
 ## License

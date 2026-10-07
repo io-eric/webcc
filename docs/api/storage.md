@@ -2,6 +2,8 @@
 
 The `webcc::storage` module provides an interface to the Local Storage API.
 
+Local Storage holds strings only, about 5 MB per site. For binary data or anything larger, use [IndexedDB](idb.md).
+
 ## Header
 
 ```cpp

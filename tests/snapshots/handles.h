@@ -19,9 +19,17 @@ namespace webcc {
     struct DOMElement_tag {};
     using DOMElement = typed_handle<DOMElement_tag>;
 
+    // Tag struct for Database
+    struct Database_tag {};
+    using Database = typed_handle<Database_tag>;
+
     // Tag struct for FetchRequest
     struct FetchRequest_tag {};
     using FetchRequest = typed_handle<FetchRequest_tag>;
+
+    // Tag struct for IdbRequest
+    struct IdbRequest_tag {};
+    using IdbRequest = typed_handle<IdbRequest_tag>;
 
     // Tag struct for Image
     struct Image_tag : DOMElement_tag {};

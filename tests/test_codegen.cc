@@ -510,6 +510,24 @@ TEST(codegen_js_blob_map)
     CHECK(js.find("blobs") == std::string::npos);
 }
 
+// idb pulls in its event helpers, the databases map and blobs (VALUE carries a Blob).
+TEST(codegen_js_idb)
+{
+    SchemaDefs defs = real_defs();
+    generate_js_runtime(defs, {"webcc_js_flush", "webcc_idb_open", "webcc_idb_get"}, {}, {}, "/tmp");
+    std::string js = read_file("/tmp/app.js");
+    CHECK(js.find("const databases = [];") != std::string::npos);
+    CHECK(js.find("const blobs = [];") != std::string::npos);
+    CHECK(js.find("function push_event_idb_OPENED(db, ok)") != std::string::npos);
+    CHECK(js.find("function push_event_idb_VALUE(request, blob, found)") != std::string::npos);
+    CHECK(js.find("createObjectStore('kv')") != std::string::npos);
+
+    generate_js_runtime(defs, {"webcc_js_flush", "webcc_blob_take"}, {}, {}, "/tmp");
+    js = read_file("/tmp/app.js");
+    CHECK(js.find("databases") == std::string::npos);
+    CHECK(js.find("push_event_idb_") == std::string::npos);
+}
+
 // Constants become constexpr, defaults become C++ default arguments.
 TEST(codegen_consts_and_defaults)
 {

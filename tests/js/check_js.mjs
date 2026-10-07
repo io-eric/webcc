@@ -89,6 +89,14 @@ int main(){ namespace b=webcc::blob;
   b::size(h); auto r=b::read(h); auto t=b::take(h); b::free(h);
   return (int)(r.size()+t.size()); }`,
 
+  // idb events carry Blob handles
+  idb: `#include "webcc/idb.h"
+int main(){ namespace i=webcc::idb;
+  uint8_t d[3]={1,2,3};
+  auto db=i::open("t");
+  i::put(db,"k",webcc::bytes_view(d,3)); i::get(db,"k");
+  i::remove(db,"k"); i::keys(db); i::close(db); }`,
+
   fetch_storage: `#include "webcc/fetch.h"
 #include "webcc/storage.h"
 int main(){ webcc::fetch::get("/api","{}");

@@ -237,6 +237,30 @@ blob|command|TAKE|take|handle(Blob):handle RET:bytes|{ const ret = blobs[handle]
 blob|command|FREE|free|handle(Blob):handle|{ blobs[handle] = undefined; }
 
 # ------------------------------------------------------------------------------
+# INDEXEDDB
+# ------------------------------------------------------------------------------
+# Key-value store on IndexedDB: string keys, binary values, one 'kv' store per database.
+# Every call returns at once; the result arrives as an event carrying the returned handle.
+# Calls made before OPENED wait for the database, and calls on one database run in order.
+idb|event|OPENED|handle(Database):db uint8:ok
+idb|event|DONE|handle(IdbRequest):request
+# blob is invalid and found is 0 when the key doesn't exist
+idb|event|VALUE|handle(IdbRequest):request handle(Blob):blob uint8:found
+# Matching keys sorted, joined with '\n'
+idb|event|KEYS|handle(IdbRequest):request string:keys
+idb|event|ERROR|handle(IdbRequest):request string:message
+idb|command|OPEN|open|string:name RET:handle(Database)|{ const handle = (window.webcc_next_id = (window.webcc_next_id || 0) + 1); const p = new Promise((res, rej) => { let r; try { r = indexedDB.open(name, 1); } catch (e) { rej(e); return; } r.onupgradeneeded = () => { if (!r.result.objectStoreNames.contains('kv')) r.result.createObjectStore('kv'); }; r.onsuccess = () => res(r.result); r.onerror = () => rej(r.error); }); databases[handle] = p; p.then(() => push_event_idb_OPENED(handle, 1), (e) => { console.error('idb open failed:', name, e); push_event_idb_OPENED(handle, 0); }); return handle; }
+# value is copied, the caller's buffer can be reused right away. DONE once the write is committed
+idb|command|PUT|put|handle(Database):handle string:key bytes:value RET:handle(IdbRequest)|{ const req = (window.webcc_next_id = (window.webcc_next_id || 0) + 1); const d = databases[handle]; if (!d) { push_event_idb_ERROR(req, 'invalid database'); return req; } const v = value.slice(); const fail = (e) => push_event_idb_ERROR(req, String((e && (e.message || e.name)) || e || 'aborted')); d.then(db => { const tx = db.transaction('kv', 'readwrite'); tx.onabort = () => fail(tx.error); const st = tx.objectStore('kv'); st.put(v, key); tx.oncomplete = () => push_event_idb_DONE(req); }).catch(fail); return req; }
+idb|command|GET|get|handle(Database):handle string:key RET:handle(IdbRequest)|{ const req = (window.webcc_next_id = (window.webcc_next_id || 0) + 1); const d = databases[handle]; if (!d) { push_event_idb_ERROR(req, 'invalid database'); return req; } const fail = (e) => push_event_idb_ERROR(req, String((e && (e.message || e.name)) || e || 'aborted')); d.then(db => { const tx = db.transaction('kv', 'readonly'); tx.onabort = () => fail(tx.error); const st = tx.objectStore('kv'); const r = st.get(key); tx.oncomplete = () => { const v = r.result; if (v === undefined) { push_event_idb_VALUE(req, -1, 0); return; } const u8 = v instanceof Uint8Array ? v : v instanceof ArrayBuffer ? new Uint8Array(v) : ArrayBuffer.isView(v) ? new Uint8Array(v.buffer, v.byteOffset, v.byteLength) : null; if (!u8) { push_event_idb_ERROR(req, 'value is not binary'); return; } const b = (window.webcc_next_id = (window.webcc_next_id || 0) + 1); blobs[b] = u8; push_event_idb_VALUE(req, b, 1); }; }).catch(fail); return req; }
+# DONE also when the key didn't exist
+idb|command|REMOVE|remove|handle(Database):handle string:key RET:handle(IdbRequest)|{ const req = (window.webcc_next_id = (window.webcc_next_id || 0) + 1); const d = databases[handle]; if (!d) { push_event_idb_ERROR(req, 'invalid database'); return req; } const fail = (e) => push_event_idb_ERROR(req, String((e && (e.message || e.name)) || e || 'aborted')); d.then(db => { const tx = db.transaction('kv', 'readwrite'); tx.onabort = () => fail(tx.error); const st = tx.objectStore('kv'); st.delete(key); tx.oncomplete = () => push_event_idb_DONE(req); }).catch(fail); return req; }
+# Empty prefix lists every key
+idb|command|KEYS|keys|handle(Database):handle string:prefix="" RET:handle(IdbRequest)|{ const req = (window.webcc_next_id = (window.webcc_next_id || 0) + 1); const d = databases[handle]; if (!d) { push_event_idb_ERROR(req, 'invalid database'); return req; } const fail = (e) => push_event_idb_ERROR(req, String((e && (e.message || e.name)) || e || 'aborted')); d.then(db => { const tx = db.transaction('kv', 'readonly'); tx.onabort = () => fail(tx.error); const st = tx.objectStore('kv'); const r = st.getAllKeys(prefix ? IDBKeyRange.bound(prefix, prefix + '\uffff') : undefined); tx.oncomplete = () => push_event_idb_KEYS(req, r.result.filter(k => typeof k === 'string' && k.startsWith(prefix)).join('\n')); }).catch(fail); return req; }
+# Pending calls still finish; calls after close get ERROR
+idb|command|CLOSE|close|handle(Database):handle|{ const d = databases[handle]; if (!d) continue; databases[handle] = undefined; d.then(db => db.close(), () => {}); }
+
+# ------------------------------------------------------------------------------
 # WEBSOCKETS
 # ------------------------------------------------------------------------------
 websocket|event|MESSAGE|handle(WebSocket):handle string:data
