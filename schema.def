@@ -207,6 +207,19 @@ system|event|VISIBILITY_CHANGE|uint8:hidden string:state
 system|command|INIT_VISIBILITY_CHANGE|init_visibility_change||{ document.addEventListener('visibilitychange', () => push_event_system_VISIBILITY_CHANGE(document.hidden ? 1 : 0, document.visibilityState || 'visible')); }
 
 # ------------------------------------------------------------------------------
+# CLIPBOARD
+# ------------------------------------------------------------------------------
+# Pastes outside text fields; inputs, textareas and contenteditable keep the native paste.
+# Text arrives as PASTE_TEXT, each pasted image as PASTE_IMAGE (its bytes in a Blob).
+clipboard|event|PASTE_TEXT|string:text
+clipboard|event|PASTE_IMAGE|handle(Blob):image string:mime
+# Gesture-gated: call it while handling a click or key press. Falls back to execCommand
+# where the async clipboard API is missing (plain http)
+clipboard|command|WRITE_TEXT|write_text|string:text|{ const legacy = () => { const ta = document.createElement('textarea'); ta.value = text; ta.style.cssText = 'position:fixed;opacity:0'; document.body.appendChild(ta); ta.select(); try { if (!document.execCommand('copy')) console.warn('clipboard: copy failed'); } catch (e) { console.warn('clipboard: copy failed', e); } ta.remove(); }; if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(text).catch(e => console.warn('clipboard: write failed (not in a click or key handler?)', e)); else legacy(); }
+# prevent_default=1 also blocks the browser's own paste handling outside text fields
+clipboard|command|INIT_PASTE|init_paste|uint8:prevent_default=0|{ if (window.__wcc_paste) continue; window.__wcc_paste = 1; document.addEventListener('paste', (e) => { const t = e.target; if (t && (t.isContentEditable || t.tagName === 'INPUT' || t.tagName === 'TEXTAREA')) return; const dt = e.clipboardData; if (!dt) return; if (prevent_default) e.preventDefault(); for (const it of dt.items) { if (it.kind !== 'file' || !it.type.startsWith('image/')) continue; const f = it.getAsFile(); if (!f) continue; const mime = f.type; f.arrayBuffer().then(b => { const h = (window.webcc_next_id = (window.webcc_next_id || 0) + 1); blobs[h] = new Uint8Array(b); push_event_clipboard_PASTE_IMAGE(h, mime); _triggerDiscreteUpdate(); }); } const text = dt.getData('text/plain'); if (text) { push_event_clipboard_PASTE_TEXT(text); _triggerDiscreteUpdate(); } }); }
+
+# ------------------------------------------------------------------------------
 # STORAGE (LocalStorage)
 # ------------------------------------------------------------------------------
 storage|command|SET_ITEM|set_item|string:key string:value|{ localStorage.setItem(key, value); }

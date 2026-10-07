@@ -103,6 +103,9 @@ int main(){ uint8_t d[2]={1,2};
   auto r=webcc::fetch::request("PUT","/x","{}",webcc::bytes_view(d,2));
   webcc::fetch::request("GET","/y"); webcc::fetch::abort(r); }`,
 
+  clipboard: `#include "webcc/clipboard.h"
+int main(){ webcc::clipboard::write_text("hi"); webcc::clipboard::init_paste(1); }`,
+
   fetch_storage: `#include "webcc/fetch.h"
 #include "webcc/storage.h"
 int main(){ webcc::fetch::get("/api","{}");

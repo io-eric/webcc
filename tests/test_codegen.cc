@@ -546,6 +546,27 @@ TEST(codegen_js_fetch_request)
     CHECK(js.find("push_event_fetch_DONE") == std::string::npos);
 }
 
+// init_paste pulls in both paste events and the blobs map, and pastes run an update
+// right away; write_text alone needs neither.
+TEST(codegen_js_clipboard)
+{
+    SchemaDefs defs = real_defs();
+    auto markers = void_markers(defs, {"clipboard::init_paste"});
+    generate_js_runtime(defs, {"webcc_js_flush"}, markers, {}, "/tmp");
+    std::string js = read_file("/tmp/app.js");
+    CHECK(js.find("function push_event_clipboard_PASTE_TEXT(text)") != std::string::npos);
+    CHECK(js.find("function push_event_clipboard_PASTE_IMAGE(image, mime)") != std::string::npos);
+    CHECK(js.find("const blobs = [];") != std::string::npos);
+    CHECK(js.find("_triggerDiscreteUpdate(); } });") != std::string::npos);
+
+    markers = void_markers(defs, {"clipboard::write_text"});
+    generate_js_runtime(defs, {"webcc_js_flush"}, markers, {}, "/tmp");
+    js = read_file("/tmp/app.js");
+    CHECK(js.find("navigator.clipboard.writeText") != std::string::npos);
+    CHECK(js.find("push_event_clipboard_") == std::string::npos);
+    CHECK(js.find("blobs") == std::string::npos);
+}
+
 // Constants become constexpr, defaults become C++ default arguments.
 TEST(codegen_consts_and_defaults)
 {
