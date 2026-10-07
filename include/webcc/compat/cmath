@@ -10,9 +10,27 @@ namespace std
 {
     using webcc::abs;
     using webcc::sqrt;
+    using webcc::floor;
+    using webcc::ceil;
+    using webcc::trunc;
+    using webcc::round;
+    using webcc::copysign;
+    using webcc::scalbn;
+    using webcc::hypot;
+    using webcc::isnan;
+    using webcc::isinf;
     using webcc::sin;
     using webcc::cos;
     using webcc::tan;
+    using webcc::asin;
+    using webcc::acos;
+    using webcc::atan;
+    using webcc::atan2;
+    using webcc::exp;
+    using webcc::log;
+    using webcc::log2;
+    using webcc::log10;
+    using webcc::pow;
 
     // Constants
     using webcc::PI;

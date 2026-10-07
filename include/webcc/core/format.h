@@ -1,6 +1,9 @@
 #pragma once
 #include <stdint.h>
 #include <stddef.h>
+#include "allocator.h"
+#include "string_view.h"
+#include "number.h"
 
 namespace webcc {
 
@@ -11,10 +14,11 @@ struct hex {
     explicit hex(unsigned int v) : value(v) {}
 };
 
+// fixed decimals
 struct precision {
-    float value;
+    double value;
     int places;
-    precision(float v, int p = 2) : value(v), places(p) {}
+    precision(double v, int p = 2) : value(v), places(p) {}
 };
 
 // --- The Formatter (Stack-based) ---
@@ -135,35 +139,22 @@ public:
         return *this;
     }
 
-    // Overload for float/double (defaults to 2 decimal places)
     formatter& operator<<(float val) {
-        return *this << precision(val);
+        char b[32];
+        webcc::format_float(val, b);
+        return *this << b;
     }
 
     formatter& operator<<(double val) {
-        return *this << precision((float)val);
+        char b[32];
+        webcc::format_double(val, b);
+        return *this << b;
     }
 
-    // Overload for Floats (via precision wrapper)
     formatter& operator<<(precision p) {
-        int i = (int)p.value;
-        *this << i << ".";
-        float frac = p.value - (float)i;
-        if (frac < 0) frac = -frac;
-        
-        // Multiplier based on precision
-        int mult = 1;
-        for(int j=0; j < p.places; j++) mult *= 10;
-        
-        int ifrac = (int)(frac * mult + 0.5f);
-        // Handle leading zeros in fraction (e.g. 1.05)
-        int temp = ifrac;
-        int digits = 0;
-        if (temp == 0) digits = 1;
-        while(temp > 0) { temp /= 10; digits++; }
-        for(int j=0; j < p.places - digits; j++) *this << "0";
-        
-        return *this << ifrac;
+        char b[48];
+        webcc::format_fixed(p.value, p.places, b);
+        return *this << b;
     }
 
     // Check if buffer is full (for overflow detection)
@@ -267,13 +258,21 @@ public:
     }
 
     dynamic_formatter& operator<<(float val) {
-        int i = (int)val;
-        *this << i << ".";
-        float frac = val - (float)i;
-        if (frac < 0) frac = -frac;
-        int ifrac = (int)(frac * 100 + 0.5f);
-        if (ifrac < 10) *this << "0";
-        return *this << ifrac;
+        char b[32];
+        webcc::format_float(val, b);
+        return *this << b;
+    }
+
+    dynamic_formatter& operator<<(double val) {
+        char b[32];
+        webcc::format_double(val, b);
+        return *this << b;
+    }
+
+    dynamic_formatter& operator<<(precision p) {
+        char b[48];
+        webcc::format_fixed(p.value, p.places, b);
+        return *this << b;
     }
 };
 
@@ -457,30 +456,21 @@ public:
     }
 
     hybrid_formatter& operator<<(float val) {
-        return *this << precision(val);
+        char b[32];
+        webcc::format_float(val, b);
+        return *this << b;
     }
 
     hybrid_formatter& operator<<(double val) {
-        return *this << precision((float)val);
+        char b[32];
+        webcc::format_double(val, b);
+        return *this << b;
     }
 
     hybrid_formatter& operator<<(precision p) {
-        int i = (int)p.value;
-        *this << i << ".";
-        float frac = p.value - (float)i;
-        if (frac < 0) frac = -frac;
-        
-        int mult = 1;
-        for(int j=0; j < p.places; j++) mult *= 10;
-        
-        int ifrac = (int)(frac * mult + 0.5f);
-        int temp = ifrac;
-        int digits = 0;
-        if (temp == 0) digits = 1;
-        while(temp > 0) { temp /= 10; digits++; }
-        for(int j=0; j < p.places - digits; j++) *this << "0";
-        
-        return *this << ifrac;
+        char b[48];
+        webcc::format_fixed(p.value, p.places, b);
+        return *this << b;
     }
 };
 

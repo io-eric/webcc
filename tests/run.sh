@@ -37,6 +37,8 @@ echo "[tests] Compiling C++ test suite..."
     "$ROOT/tests/test_codegen.cc" \
     "$ROOT/tests/test_allocator.cc" \
     "$ROOT/tests/test_containers.cc" \
+    "$ROOT/tests/test_math.cc" \
+    "$ROOT/tests/test_number.cc" \
     "$ROOT/src/cli/schema.cc" \
     "$ROOT/src/cli/utils.cc" \
     "$ROOT/src/cli/generators.cc" \

@@ -11,6 +11,9 @@ namespace webcc
     template <typename T>
     class vector
     {
+    public:
+        using value_type = T;
+
     private:
         T *m_data = nullptr;
         size_t m_size = 0;

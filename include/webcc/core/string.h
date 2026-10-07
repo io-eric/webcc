@@ -226,39 +226,13 @@ namespace webcc
             return negative ? -result : result;
         }
 
-        // Parse string as float (stops at second decimal point or non-digit)
+        // stops at the first char that isn't part of the number
         double to_float() const {
-            if (m_len == 0 || !m_data) return 0.0;
-            double result = 0.0;
-            double fraction = 0.0;
-            double divisor = 1.0;
             uint32_t i = 0;
-            bool negative = false;
-            bool in_fraction = false;
-            // Skip leading whitespace
             while (i < m_len && (m_data[i] == ' ' || m_data[i] == '\t')) i++;
-            // Handle sign
-            if (i < m_len && m_data[i] == '-') { negative = true; i++; }
-            else if (i < m_len && m_data[i] == '+') { i++; }
-            // Parse digits (stop at second decimal point)
-            while (i < m_len) {
-                if (m_data[i] == '.') {
-                    if (in_fraction) break;  // Second decimal point - stop parsing
-                    in_fraction = true;
-                    i++;
-                    continue;
-                }
-                if (m_data[i] < '0' || m_data[i] > '9') break;
-                if (in_fraction) {
-                    divisor *= 10.0;
-                    fraction += (m_data[i] - '0') / divisor;
-                } else {
-                    result = result * 10.0 + (m_data[i] - '0');
-                }
-                i++;
-            }
-            result += fraction;
-            return negative ? -result : result;
+            if (i >= m_len) return 0.0;
+            uint32_t used;
+            return webcc::parse_double(m_data + i, m_len - i, used);
         }
 
         iterator begin() { return m_data; }
