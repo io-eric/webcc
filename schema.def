@@ -20,6 +20,10 @@
 #   defines NAME, for code too big for one action. It is emitted once into app.js when a
 #   used action mentions NAME; maps and push_event_* calls inside it count as used.
 #
+# Events: NAMESPACE|event|NAME|FIELDS[|last]. "last" means no more events follow for the
+#   handle in the first field (a finished request, a closed socket), so a binding layer can
+#   drop the callbacks registered on it.
+#
 # Events: an action that pushes an input event the app must react to right away
 #   (click, key, pointer down/up, paste, drop) calls _triggerDiscreteUpdate() after it.
 #   Every push_event_* helper also calls _requestFrame(), so an app running on demand
@@ -264,7 +268,7 @@ clipboard|command|INIT_PASTE|init_paste|uint8:prevent_default=0|{ if (window.__w
 # One OPENED per picked file; index/count tell when all of them are in (they can arrive
 # in any order). CANCELLED when the dialog is closed without a choice.
 files|event|OPENED|handle(FileRequest):request handle(Blob):data string:name string:mime uint32:index uint32:count
-files|event|CANCELLED|handle(FileRequest):request
+files|event|CANCELLED|handle(FileRequest):request|last
 # Gesture-gated: call it while handling a click or key press. accept is the <input accept>
 # list, e.g. ".json,image/*"
 files|command|OPEN|open|string:accept="" uint8:multiple=0 RET:handle(FileRequest)|{ const req = (window.webcc_next_id = (window.webcc_next_id || 0) + 1); const inp = document.createElement('input'); inp.type = 'file'; if (accept) inp.accept = accept; inp.multiple = !!multiple; inp.style.display = 'none'; let done = false; const finish = () => { if (done) return false; done = true; inp.remove(); return true; }; inp.addEventListener('change', () => { if (!finish()) return; const list = Array.from(inp.files || []); if (!list.length) { push_event_files_CANCELLED(req); _triggerDiscreteUpdate(); return; } list.forEach((f, i) => f.arrayBuffer().then(b => { const h = (window.webcc_next_id = (window.webcc_next_id || 0) + 1); blobs[h] = new Uint8Array(b); push_event_files_OPENED(req, h, f.name, f.type, i, list.length); _triggerDiscreteUpdate(); }, (e) => console.error('files: could not read', f.name, e))); }); inp.addEventListener('cancel', () => { if (finish()) { push_event_files_CANCELLED(req); _triggerDiscreteUpdate(); } }); document.body.appendChild(inp); inp.click(); return req; }
@@ -279,10 +283,10 @@ files|command|SAVE|save|string:name string:mime bytes:data RET:uint8|{ const url
 # (loaded on first open). Export writes a PDF from canvas-like drawing commands.
 pdf|helper|__wcc_pdf|js/pdf.js
 # page_count is 0 and error set when the file couldn't be opened
-pdf|event|OPENED|handle(PdfDocument):doc int32:page_count string:error
-pdf|event|RENDERED|handle(PdfRender):render uint8:ok string:error
+pdf|event|OPENED|handle(PdfDocument):doc int32:page_count string:error|last
+pdf|event|RENDERED|handle(PdfRender):render uint8:ok string:error|last
 # data is the PDF file, invalid with error set when writing failed
-pdf|event|WRITTEN|handle(PdfWriter):writer handle(Blob):data string:error
+pdf|event|WRITTEN|handle(PdfWriter):writer handle(Blob):data string:error|last
 # URLs of pdf.min.mjs and pdf.worker.min.mjs from pdfjs-dist, relative to the page
 pdf|command|SET_LIBRARY|set_library|string:lib_url string:worker_url|{ __wcc_pdf.lib = lib_url; __wcc_pdf.worker = worker_url; __wcc_pdf.mod = null; }
 # The bytes are copied, so the blob can be freed right after the call
@@ -362,13 +366,13 @@ blob|command|FREE|free|handle(Blob):handle|{ blobs[handle] = undefined; }
 # Key-value store on IndexedDB: string keys, binary values, one 'kv' store per database.
 # Every call returns at once; the result arrives as an event carrying the returned handle.
 # Calls made before OPENED wait for the database, and calls on one database run in order.
-idb|event|OPENED|handle(Database):db uint8:ok
-idb|event|DONE|handle(IdbRequest):request
+idb|event|OPENED|handle(Database):db uint8:ok|last
+idb|event|DONE|handle(IdbRequest):request|last
 # blob is invalid and found is 0 when the key doesn't exist
-idb|event|VALUE|handle(IdbRequest):request handle(Blob):blob uint8:found
+idb|event|VALUE|handle(IdbRequest):request handle(Blob):blob uint8:found|last
 # Matching keys sorted, joined with '\n'
-idb|event|KEYS|handle(IdbRequest):request string:keys
-idb|event|ERROR|handle(IdbRequest):request string:message
+idb|event|KEYS|handle(IdbRequest):request string:keys|last
+idb|event|ERROR|handle(IdbRequest):request string:message|last
 idb|command|OPEN|open|string:name RET:handle(Database)|{ const handle = (window.webcc_next_id = (window.webcc_next_id || 0) + 1); const p = new Promise((res, rej) => { let r; try { r = indexedDB.open(name, 1); } catch (e) { rej(e); return; } r.onupgradeneeded = () => { if (!r.result.objectStoreNames.contains('kv')) r.result.createObjectStore('kv'); }; r.onsuccess = () => res(r.result); r.onerror = () => rej(r.error); }); databases[handle] = p; p.then(() => push_event_idb_OPENED(handle, 1), (e) => { console.error('idb open failed:', name, e); push_event_idb_OPENED(handle, 0); }); return handle; }
 # value is copied, the caller's buffer can be reused right away. DONE once the write is committed
 idb|command|PUT|put|handle(Database):handle string:key bytes:value RET:handle(IdbRequest)|{ const req = (window.webcc_next_id = (window.webcc_next_id || 0) + 1); const d = databases[handle]; if (!d) { push_event_idb_ERROR(req, 'invalid database'); return req; } const v = value.slice(); const fail = (e) => push_event_idb_ERROR(req, String((e && (e.message || e.name)) || e || 'aborted')); d.then(db => { const tx = db.transaction('kv', 'readwrite'); tx.onabort = () => fail(tx.error); const st = tx.objectStore('kv'); st.put(v, key); tx.oncomplete = () => push_event_idb_DONE(req); }).catch(fail); return req; }
@@ -385,7 +389,7 @@ idb|command|CLOSE|close|handle(Database):handle|{ const d = databases[handle]; i
 # ------------------------------------------------------------------------------
 websocket|event|MESSAGE|handle(WebSocket):handle string:data
 websocket|event|OPEN|handle(WebSocket):handle
-websocket|event|CLOSE|handle(WebSocket):handle int32:code string:reason uint8:was_clean
+websocket|event|CLOSE|handle(WebSocket):handle int32:code string:reason uint8:was_clean|last
 websocket|event|ERROR|handle(WebSocket):handle
 websocket|event|BINARY_MESSAGE|handle(WebSocket):handle bytes:data
 # protocols: comma-separated, e.g. "chat, superchat"
@@ -410,10 +414,10 @@ websocket|command|GET_URL|get_url|handle(WebSocket):handle RET:string|{ const ws
 # ------------------------------------------------------------------------------
 # FETCH
 # ------------------------------------------------------------------------------
-fetch|event|SUCCESS|handle(FetchRequest):id string:data
-fetch|event|ERROR|handle(FetchRequest):id string:error
+fetch|event|SUCCESS|handle(FetchRequest):id string:data|last
+fetch|event|ERROR|handle(FetchRequest):id string:error|last
 # Any HTTP response (2xx or not) from request(); body is a Blob, take or free it
-fetch|event|DONE|handle(FetchRequest):id int32:status handle(Blob):body
+fetch|event|DONE|handle(FetchRequest):id int32:status handle(Blob):body|last
 # Binary request: any method, headers as a JSON object, empty body sends none. Network
 # failure and abort() end in ERROR; every response, 404 and 500 included, ends in DONE.
 # The body goes in as a Blob: Chrome's fetch() handles an array body on the main thread
@@ -421,16 +425,16 @@ fetch|event|DONE|handle(FetchRequest):id int32:status handle(Blob):body
 fetch|command|REQUEST|request|string:method string:url string:headers="" bytes:body={} RET:handle(FetchRequest)|{ const id = (window.webcc_next_id = (window.webcc_next_id || 0) + 1); let h = {}; if (headers) { try { h = JSON.parse(headers); } catch (e) { console.warn('fetch: headers are not valid JSON', headers); } } const ac = new AbortController(); fetches[id] = ac; const init = { method: method || 'GET', headers: h, signal: ac.signal }; if (body.length) init.body = new Blob([body]); fetch(url, init).then(r => r.arrayBuffer().then(b => { if (fetches[id] !== ac) return; fetches[id] = undefined; const bh = (window.webcc_next_id = (window.webcc_next_id || 0) + 1); blobs[bh] = new Uint8Array(b); push_event_fetch_DONE(id, r.status, bh); })).catch(e => { if (fetches[id] !== ac) return; fetches[id] = undefined; push_event_fetch_ERROR(id, e && e.name === 'AbortError' ? 'aborted' : String(e)); }); return id; }
 # Only for request(); ERROR 'aborted' follows unless the request already finished
 fetch|command|ABORT|abort|handle(FetchRequest):id|{ const ac = fetches[id]; if (ac) ac.abort(); }
-fetch|command|GET|get|string:url string:headers RET:handle(FetchRequest)|{ const id = (window.webcc_next_id = (window.webcc_next_id || 0) + 1); let h = {}; try { h = JSON.parse(headers); } catch(e) {} fetch(url, { headers: h }).then(r => r.text().then(d => ({ ok: r.ok, status: r.status, statusText: r.statusText, data: d }))).then(res => { if(res.ok) push_event_fetch_SUCCESS(id, res.data); else push_event_fetch_ERROR(id, res.data && res.data.length ? res.data : (res.status + ' ' + res.statusText)); }).catch(e => push_event_fetch_ERROR(id, e.toString())); return id; }
-fetch|command|POST|post|string:url string:body string:headers RET:handle(FetchRequest)|{ const id = (window.webcc_next_id = (window.webcc_next_id || 0) + 1); let h = {}; try { h = JSON.parse(headers); } catch(e) {} fetch(url, { method: 'POST', body: body, headers: h }).then(r => r.text().then(d => ({ ok: r.ok, status: r.status, statusText: r.statusText, data: d }))).then(res => { if(res.ok) push_event_fetch_SUCCESS(id, res.data); else push_event_fetch_ERROR(id, res.data && res.data.length ? res.data : (res.status + ' ' + res.statusText)); }).catch(e => push_event_fetch_ERROR(id, e.toString())); return id; }
-fetch|command|PATCH|patch|string:url string:body string:headers RET:handle(FetchRequest)|{ const id = (window.webcc_next_id = (window.webcc_next_id || 0) + 1); let h = {}; try { h = JSON.parse(headers); } catch(e) {} fetch(url, { method: 'PATCH', body: body, headers: h }).then(r => r.text().then(d => ({ ok: r.ok, status: r.status, statusText: r.statusText, data: d }))).then(res => { if(res.ok) push_event_fetch_SUCCESS(id, res.data); else push_event_fetch_ERROR(id, res.data && res.data.length ? res.data : (res.status + ' ' + res.statusText)); }).catch(e => push_event_fetch_ERROR(id, e.toString())); return id; }
+fetch|command|GET|get|string:url string:headers="" RET:handle(FetchRequest)|{ const id = (window.webcc_next_id = (window.webcc_next_id || 0) + 1); let h = {}; try { h = JSON.parse(headers); } catch(e) {} fetch(url, { headers: h }).then(r => r.text().then(d => ({ ok: r.ok, status: r.status, statusText: r.statusText, data: d }))).then(res => { if(res.ok) push_event_fetch_SUCCESS(id, res.data); else push_event_fetch_ERROR(id, res.data && res.data.length ? res.data : (res.status + ' ' + res.statusText)); }).catch(e => push_event_fetch_ERROR(id, e.toString())); return id; }
+fetch|command|POST|post|string:url string:body string:headers="" RET:handle(FetchRequest)|{ const id = (window.webcc_next_id = (window.webcc_next_id || 0) + 1); let h = {}; try { h = JSON.parse(headers); } catch(e) {} fetch(url, { method: 'POST', body: body, headers: h }).then(r => r.text().then(d => ({ ok: r.ok, status: r.status, statusText: r.statusText, data: d }))).then(res => { if(res.ok) push_event_fetch_SUCCESS(id, res.data); else push_event_fetch_ERROR(id, res.data && res.data.length ? res.data : (res.status + ' ' + res.statusText)); }).catch(e => push_event_fetch_ERROR(id, e.toString())); return id; }
+fetch|command|PATCH|patch|string:url string:body string:headers="" RET:handle(FetchRequest)|{ const id = (window.webcc_next_id = (window.webcc_next_id || 0) + 1); let h = {}; try { h = JSON.parse(headers); } catch(e) {} fetch(url, { method: 'PATCH', body: body, headers: h }).then(r => r.text().then(d => ({ ok: r.ok, status: r.status, statusText: r.statusText, data: d }))).then(res => { if(res.ok) push_event_fetch_SUCCESS(id, res.data); else push_event_fetch_ERROR(id, res.data && res.data.length ? res.data : (res.status + ' ' + res.statusText)); }).catch(e => push_event_fetch_ERROR(id, e.toString())); return id; }
 
 # ------------------------------------------------------------------------------
 # IMAGES
 # ------------------------------------------------------------------------------
 # Both load and from_blob end in LOADED (decoded, ready to draw) or ERROR
-image|event|LOADED|handle(Image):handle int32:width int32:height
-image|event|ERROR|handle(Image):handle
+image|event|LOADED|handle(Image):handle int32:width int32:height|last
+image|event|ERROR|handle(Image):handle|last
 image|command|LOAD|load|string:src RET:handle(Image)|{ const handle = (window.webcc_next_id = (window.webcc_next_id || 0) + 1); const img = new Image(); images[handle] = img; elements[handle] = img; const done = () => { if (images[handle] !== img) return; push_event_image_LOADED(handle, img.naturalWidth, img.naturalHeight); }; const fail = () => { if (images[handle] !== img) return; push_event_image_ERROR(handle); }; img.src = src; img.decode().then(done, fail); return handle; }
 # Image from encoded bytes (PNG, JPEG, WebP, GIF, SVG...) in a Blob. The bytes are copied,
 # so the blob can be freed right after the call

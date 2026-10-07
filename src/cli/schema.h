@@ -42,6 +42,9 @@ namespace webcc
     {
         std::string ns;
         std::string name;
+        // "last" in the 5th column: no more events follow for the handle in the first
+        // field, so callbacks registered on it can be dropped
+        bool last = false;
         uint8_t opcode; // one byte in the event header
         std::vector<SchemaParam> params;
     };

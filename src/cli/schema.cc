@@ -13,7 +13,7 @@ namespace webcc
 {
     // Binary cache magic and version for validation
     static constexpr uint32_t SCHEMA_MAGIC = 0x57434353; // "WCCS" (WebCC Schema)
-    static constexpr uint32_t SCHEMA_VERSION = 4;
+    static constexpr uint32_t SCHEMA_VERSION = 5;
 
     // Helper functions for binary serialization
     static void write_string(std::ostream &out, const std::string &s)
@@ -101,6 +101,7 @@ namespace webcc
             write_string(out, e.ns);
             write_string(out, e.name);
             out.write(reinterpret_cast<const char *>(&e.opcode), sizeof(e.opcode));
+            out.put(e.last ? 1 : 0);
 
             uint32_t param_count = static_cast<uint32_t>(e.params.size());
             out.write(reinterpret_cast<const char *>(&param_count), sizeof(param_count));
@@ -203,6 +204,7 @@ namespace webcc
             e.ns = read_string(in);
             e.name = read_string(in);
             in.read(reinterpret_cast<char *>(&e.opcode), sizeof(e.opcode));
+            e.last = in.get() != 0;
 
             uint32_t param_count;
             in.read(reinterpret_cast<char *>(&param_count), sizeof(param_count));
@@ -420,6 +422,19 @@ namespace webcc
                 e.ns = ns;
                 e.name = event_name;
                 e.opcode = static_cast<uint8_t>(current_event_opcode++);
+                if (parts.size() > (size_t)name_idx + 2)
+                {
+                    std::string flag = parts[name_idx + 2];
+                    flag.erase(0, flag.find_first_not_of(" \t"));
+                    flag.erase(flag.find_last_not_of(" \t\r") + 1);
+                    if (flag == "last")
+                        e.last = true;
+                    else if (!flag.empty())
+                    {
+                        std::cerr << "[WebCC] Error: Unknown event flag '" << flag << "' at line " << line_num << " (only 'last')" << std::endl;
+                        exit(1);
+                    }
+                }
 
                 std::istringstream tss(parts[name_idx + 1]);
                 std::string tkn;

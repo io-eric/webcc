@@ -144,6 +144,29 @@ TEST(schema_parses_helpers)
         CHECK_EQ(loaded.helpers[0].code, d.helpers[0].code);
 }
 
+// The optional 5th column marks the last event for a handle; it survives the cache
+TEST(schema_parses_event_last)
+{
+    std::string path = write_temp(
+        "net|event|DATA|handle(Req):id string:data\n"
+        "net|event|DONE|handle(Req):id|last\n",
+        "event_last");
+    SchemaDefs d = load_defs(path);
+    std::remove(path.c_str());
+    CHECK_EQ(d.events.size(), (size_t)2);
+    if (d.events.size() != 2)
+        return;
+    CHECK(!d.events[0].last);
+    CHECK(d.events[1].last);
+
+    std::string cache = "/tmp/webcc_test_event_last.bin";
+    CHECK(save_defs_binary(d, cache));
+    SchemaDefs loaded;
+    CHECK(load_defs_binary(loaded, cache));
+    std::remove(cache.c_str());
+    CHECK(loaded.events.size() == 2 && !loaded.events[0].last && loaded.events[1].last);
+}
+
 TEST(schema_parses_bytes_return)
 {
     std::string path = write_temp(
