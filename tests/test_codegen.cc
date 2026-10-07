@@ -458,6 +458,17 @@ TEST(codegen_js_frames_on_demand)
     CHECK(js.find("_frameOnDemand = false;") != std::string::npos);
 }
 
+TEST(codegen_js_svg_elements_get_their_namespace)
+{
+    SchemaDefs defs = real_defs();
+    auto markers = void_markers(defs, {"dom::create_element", "dom::create_element_deferred_scoped"});
+    generate_js_runtime(defs, {"webcc_js_flush"}, markers, {}, "/tmp");
+    std::string js = read_file("/tmp/app.js");
+    CHECK(js.find("createElementNS('http://www.w3.org/2000/svg', tag)") != std::string::npos);
+    CHECK(js.find("const el = _mkel(tag);") != std::string::npos);
+    CHECK(js.find("document.createElement(tag); elements[handle]") == std::string::npos);
+}
+
 TEST(codegen_js_events_in_hidden_tab)
 {
     SchemaDefs defs = real_defs();

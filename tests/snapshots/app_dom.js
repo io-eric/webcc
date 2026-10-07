@@ -30,7 +30,7 @@ const run = async () => {
 ,
             webcc_dom_create_element: (tag_ptr, tag_len) => {
                 const tag = decoder.decode(new Uint8Array(memory.buffer, tag_ptr, tag_len));
-                const handle = (window.webcc_next_id = (window.webcc_next_id || 0) + 1); const el = document.createElement(tag); elements[handle] = el; return handle;
+                const handle = (window.webcc_next_id = (window.webcc_next_id || 0) + 1); const el = _mkel(tag); elements[handle] = el; return handle;
             }
 
         },
@@ -55,6 +55,9 @@ const run = async () => {
     let event_i32 = new Int32Array(memory.buffer, event_buffer_ptr_val);
     let event_f32 = new Float32Array(memory.buffer, event_buffer_ptr_val);
     let event_f64 = new Float64Array(memory.buffer, event_buffer_ptr_val);
+    // svg tags need their namespace, and keep attribute case there
+    const _svgTags = new Set(['svg','path','circle','ellipse','rect','line','polyline','polygon','g','defs','use','text','tspan','linearGradient','radialGradient','stop','clipPath','mask','pattern','symbol','marker','foreignObject','filter','feGaussianBlur','feOffset','feBlend','feColorMatrix']);
+    const _mkel = (tag) => _svgTags.has(tag) ? document.createElementNS('http://www.w3.org/2000/svg', tag) : document.createElement(tag);
     function _eventViews() {
         if (event_u8.buffer === memory.buffer) return;
         event_u8 = new Uint8Array(memory.buffer, event_buffer_ptr_val);
