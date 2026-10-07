@@ -61,10 +61,22 @@ const run = async () => {
     // Global update function reference for immediate discrete event processing
     let _updateFn = null;
     let _updatePending = false;
+    // set_update: no rAF loop, frames run only after an event or request_frame()
+    let _frameOnDemand = false;
+    let _frameRaf = 0;
+    function _requestFrame() {
+        if (_frameRaf || (_updateFn && !_frameOnDemand)) return;
+        _frameRaf = requestAnimationFrame((t) => { _frameRaf = 0; if (_updateFn && _frameOnDemand) _updateFn(t); });
+    }
     function _triggerDiscreteUpdate() {
         if (_updateFn && !_updatePending) {
             _updatePending = true;
-            queueMicrotask(() => { _updatePending = false; _updateFn(performance.now()); });
+            queueMicrotask(() => {
+                _updatePending = false;
+                // This run is the frame for the events so far; the update can ask for another
+                if (_frameRaf) { cancelAnimationFrame(_frameRaf); _frameRaf = 0; }
+                _updateFn(performance.now());
+            });
         }
     }
 

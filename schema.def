@@ -18,6 +18,8 @@
 #
 # Events: an action that pushes an input event the app must react to right away
 #   (click, key, pointer down/up, paste, drop) calls _triggerDiscreteUpdate() after it.
+#   Every push_event_* helper also calls _requestFrame(), so an app running on demand
+#   (set_update) gets a frame to process the event; nothing to do in the action for that.
 #
 # Inheritance: Use meta|inherit|Derived|Base to allow implicit conversion:
 meta|inherit|Canvas|DOMElement
@@ -183,7 +185,9 @@ input|command|EXIT_POINTER_LOCK|exit_pointer_lock||{ document.exitPointerLock();
 system|command|LOG|log|string:msg|{ console.log(msg); }
 system|command|WARN|warn|string:msg|{ console.warn(msg); }
 system|command|ERROR|error|string:msg|{ console.error(msg); }
-system|command|SET_MAIN_LOOP|set_main_loop|func_ptr:func|{ const fn = table.get(func); if(!fn){ console.error('set_main_loop: function not found in table', func); continue; } _updateFn = fn; const loop = (t) => { fn(t); requestAnimationFrame(loop); }; requestAnimationFrame(loop); }
+system|command|SET_MAIN_LOOP|set_main_loop|func_ptr:func|{ const fn = table.get(func); if(!fn){ console.error('set_main_loop: function not found in table', func); continue; } _updateFn = fn; _frameOnDemand = false; const loop = (t) => { fn(t); requestAnimationFrame(loop); }; requestAnimationFrame(loop); }
+system|command|SET_UPDATE|set_update|func_ptr:func|{ const fn = table.get(func); if(!fn){ console.error('set_update: function not found in table', func); continue; } _updateFn = fn; _frameOnDemand = true; }
+system|command|REQUEST_FRAME|request_frame||{ _requestFrame(); }
 system|command|SET_TITLE|set_title|string:title|{ document.title = title; }
 system|command|RELOAD|reload||{ location.reload(); }
 system|command|OPEN_URL|open_url|string:url|{ window.open(url, '_blank'); }

@@ -15,6 +15,7 @@ WebCC uses a secondary shared memory buffer for sending events (like mouse click
 - **Zero-Copy**: Events are written directly into WASM memory by the JS runtime.
 - **Polling**: The C++ application polls this buffer (e.g., once per frame) to process pending events.
 - **Immediate for input**: Events the application should react to right away (click, key and mouse down/up) run the main loop function once immediately instead of waiting for the next frame. This also keeps the handler inside the browser's user gesture, which APIs like the clipboard or file pickers require. A schema action opts in by calling `_triggerDiscreteUpdate()` after pushing the event.
+- **Frames on demand**: With `system::set_update` instead of `set_main_loop` there is no `requestAnimationFrame` loop. Every pushed event requests one frame (coalesced), and the app requests more with `system::request_frame()`, so an idle app runs no code at all.
 - **Bounded**: The buffer is 1MB. An event is only written if all of it fits; otherwise it is dropped and a warning is logged to the console. Views into an event (`string_view`, `bytes_view`) are valid until the next poll.
 
 ## Schema Generation

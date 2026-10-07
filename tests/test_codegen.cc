@@ -433,6 +433,31 @@ TEST(codegen_js_pointer_listener)
     CHECK(js.find("push_event_dom_POINTER") == std::string::npos);
 }
 
+// set_update registers without a loop; every event helper requests a frame so an
+// on-demand app processes it, and a discrete update cancels the pending frame.
+TEST(codegen_js_frames_on_demand)
+{
+    SchemaDefs defs = real_defs();
+    auto markers = void_markers(defs, {"system::set_update", "system::request_frame", "dom::add_pointer_listener"});
+    generate_js_runtime(defs, {"webcc_js_flush"}, markers, {}, "/tmp");
+    std::string js = read_file("/tmp/app.js");
+
+    CHECK(js.find("function _requestFrame()") != std::string::npos);
+    CHECK(js.find("_frameOnDemand = true;") != std::string::npos);
+    CHECK(js.find("cancelAnimationFrame(_frameRaf)") != std::string::npos);
+    // The POINTER helper ends by requesting a frame
+    size_t helper = js.find("function push_event_dom_POINTER(");
+    CHECK(helper != std::string::npos);
+    size_t helper_end = js.find("\n    }\n", helper);
+    CHECK(helper_end != std::string::npos);
+    CHECK(helper != std::string::npos && js.find("_requestFrame();", helper) < helper_end);
+    // set_main_loop turns on-demand mode back off
+    markers = void_markers(defs, {"system::set_main_loop"});
+    generate_js_runtime(defs, {"webcc_js_flush"}, markers, {}, "/tmp");
+    js = read_file("/tmp/app.js");
+    CHECK(js.find("_frameOnDemand = false;") != std::string::npos);
+}
+
 // Key events carry mods, repeat and the key string.
 TEST(codegen_js_keyboard_events)
 {

@@ -27,7 +27,43 @@ template <typename T_func>
 void set_main_loop(T_func func);
 ```
 
-The callback function should have the signature `void(float time_ms)`.
+The callback function should have the signature `void(double time_ms)`.
+
+### Frames on demand
+
+An app that only changes in response to input (an editor, a notes app) has no reason to redraw 60 times a second while idle. `set_update` registers the same kind of function without starting a loop:
+
+```cpp
+template <typename T_func>
+void set_update(T_func func);   // register without a loop
+void request_frame();           // run the update function once on the next frame
+```
+
+With `set_update`, the update function runs:
+
+- right away for input events (click, key, pointer down/up, resize), as with `set_main_loop`
+- on the next frame after any other event arrives (pointer move, fetch result, WebSocket message), so polling `poll_event` inside the update still sees everything
+- on the next frame after `request_frame()`
+
+Several events or `request_frame()` calls before a frame produce one update. To animate, call `request_frame()` from inside the update while the animation is running and stop calling it when it ends. `request_frame()` is a no-op when a `set_main_loop` loop is already running.
+
+```cpp
+bool animating = false;
+
+void update(double t) {
+    webcc::Event e;
+    while (webcc::poll_event(e)) { /* ... */ }
+    draw();
+    if (animating) webcc::system::request_frame();
+    webcc::flush();
+}
+
+int main() {
+    webcc::system::set_update(update);
+    webcc::system::request_frame();   // first paint
+    webcc::flush();
+}
+```
 
 ## Browser Interaction
 

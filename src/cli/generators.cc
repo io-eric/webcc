@@ -1119,10 +1119,22 @@ namespace webcc
         w.write("// Global update function reference for immediate discrete event processing");
         w.write("let _updateFn = null;");
         w.write("let _updatePending = false;");
+        w.write("// set_update: no rAF loop, frames run only after an event or request_frame()");
+        w.write("let _frameOnDemand = false;");
+        w.write("let _frameRaf = 0;");
+        w.write("function _requestFrame() {");
+        w.write("    if (_frameRaf || (_updateFn && !_frameOnDemand)) return;");
+        w.write("    _frameRaf = requestAnimationFrame((t) => { _frameRaf = 0; if (_updateFn && _frameOnDemand) _updateFn(t); });");
+        w.write("}");
         w.write("function _triggerDiscreteUpdate() {");
         w.write("    if (_updateFn && !_updatePending) {");
         w.write("        _updatePending = true;");
-        w.write("        queueMicrotask(() => { _updatePending = false; _updateFn(performance.now()); });");
+        w.write("        queueMicrotask(() => {");
+        w.write("            _updatePending = false;");
+        w.write("            // This run is the frame for the events so far; the update can ask for another");
+        w.write("            if (_frameRaf) { cancelAnimationFrame(_frameRaf); _frameRaf = 0; }");
+        w.write("            _updateFn(performance.now());");
+        w.write("        });");
         w.write("    }");
         w.write("}");
         w.write("");
@@ -1219,6 +1231,7 @@ namespace webcc
             w.write("const len = pos - start_pos;");
             w.write("event_i32[start_pos >> 2] = " + std::to_string((int)d.opcode) + " | (len >> 16 << 8) | (len << 16);");
             w.write("event_offset_view[0] = pos;");
+            w.write("_requestFrame();");
             w.write("}");
         }
 
