@@ -287,6 +287,7 @@ It's growing over time, so the gap keeps shrinking. But for now: the smaller and
 - **`webcc/input.h`**: Mouse and keyboard input.
 - **`webcc/system.h`**: System utilities.
 - **`webcc/websocket.h`**: WebSocket communication.
+- **`webcc/files.h`**: Open files with the file dialog, save files as downloads.
 - **`webcc/clipboard.h`**: Copy text, receive pasted text and images.
 - **`webcc/storage.h`**: Local storage.
 - **`webcc/idb.h`**: Binary key-value storage on IndexedDB.

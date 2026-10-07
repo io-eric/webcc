@@ -261,6 +261,31 @@ WebCC uses a command buffer architecture where API calls are batched and sent to
 
 **Deferred handles** solve this problem by letting C++ assign the handle *before* the element is created. The creation command is then added to the command buffer like any other command, and the element is created when the buffer is flushed.
 
+
+#### `add_drop_listener`
+
+Lets the user drop files on an element. Each dropped file produces a `DropEvent` with its bytes. Dragging files over the element shows the copy cursor; elsewhere the browser keeps its default (usually opening the file). Calling it again on the same element does nothing.
+
+```cpp
+void add_drop_listener(webcc::DOMElement handle);
+void remove_drop_listener(webcc::DOMElement handle);
+```
+
+#### `DropEvent`
+
+```cpp
+struct DropEvent {
+    webcc::DOMElement handle; // The element the files were dropped on
+    webcc::Blob data;         // File contents, release with blob::take or blob::free
+    webcc::string_view name;  // File name, e.g. "notes.md"
+    webcc::string_view mime;  // e.g. "image/png"; empty when the browser doesn't know the type
+    float x, y;               // Drop position in CSS px, relative to the element
+    uint32_t index, count;    // This file's position in the drop, and how many files it had
+};
+```
+
+Files are read asynchronously, so the events of one drop can arrive in any order and over several frames; `count` tells when all of them are in. Each one runs the update function right away. Dropped text or links (not files) are ignored.
+
 ### How It Works
 
 1. **Generate a deferred handle** using `webcc::next_deferred_handle()` (or reserve several at once with `webcc::reserve_deferred_handles(n)`). This returns a unique integer handle that won't collide with handles assigned by JavaScript.

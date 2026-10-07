@@ -567,6 +567,26 @@ TEST(codegen_js_clipboard)
     CHECK(js.find("blobs") == std::string::npos);
 }
 
+// files::open and the drop listener pull in their events and the blobs map;
+// save alone needs neither.
+TEST(codegen_js_files)
+{
+    SchemaDefs defs = real_defs();
+    auto markers = void_markers(defs, {"dom::add_drop_listener"});
+    generate_js_runtime(defs, {"webcc_js_flush", "webcc_files_open"}, markers, {}, "/tmp");
+    std::string js = read_file("/tmp/app.js");
+    CHECK(js.find("function push_event_files_OPENED(request, data, name, mime, index, count)") != std::string::npos);
+    CHECK(js.find("function push_event_files_CANCELLED(request)") != std::string::npos);
+    CHECK(js.find("function push_event_dom_DROP(handle, data, name, mime, x, y, index, count)") != std::string::npos);
+    CHECK(js.find("const blobs = [];") != std::string::npos);
+
+    generate_js_runtime(defs, {"webcc_js_flush", "webcc_files_save"}, {}, {}, "/tmp");
+    js = read_file("/tmp/app.js");
+    CHECK(js.find("a.download = name") != std::string::npos);
+    CHECK(js.find("push_event_files_") == std::string::npos);
+    CHECK(js.find("blobs") == std::string::npos);
+}
+
 // Constants become constexpr, defaults become C++ default arguments.
 TEST(codegen_consts_and_defaults)
 {

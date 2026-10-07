@@ -106,6 +106,13 @@ int main(){ uint8_t d[2]={1,2};
   clipboard: `#include "webcc/clipboard.h"
 int main(){ webcc::clipboard::write_text("hi"); webcc::clipboard::init_paste(1); }`,
 
+  files: `#include "webcc/files.h"
+#include "webcc/dom.h"
+int main(){ uint8_t d[2]={1,2};
+  webcc::files::open(".txt",1); webcc::files::save("a.bin","",webcc::bytes_view(d,2));
+  auto el=webcc::dom::create_element("div");
+  webcc::dom::add_drop_listener(el); webcc::dom::remove_drop_listener(el); }`,
+
   fetch_storage: `#include "webcc/fetch.h"
 #include "webcc/storage.h"
 int main(){ webcc::fetch::get("/api","{}");

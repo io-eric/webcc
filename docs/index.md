@@ -29,6 +29,7 @@ WebCC provides a direct, high-performance bridge between C++ and HTML5 APIs. It 
     - [Storage](api/storage.md)
     - [Blob](api/blob.md)
     - [Clipboard](api/clipboard.md)
+    - [Files](api/files.md)
     - [IndexedDB](api/idb.md)
     - [WebSocket](api/websocket.md)
     - [Inline JavaScript (`WEBCC_JS`)](api/inline_js.md): The raw-JS escape hatch.

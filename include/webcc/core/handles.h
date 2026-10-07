@@ -27,6 +27,10 @@ namespace webcc {
     struct FetchRequest_tag {};
     using FetchRequest = typed_handle<FetchRequest_tag>;
 
+    // Tag struct for FileRequest
+    struct FileRequest_tag {};
+    using FileRequest = typed_handle<FileRequest_tag>;
+
     // Tag struct for IdbRequest
     struct IdbRequest_tag {};
     using IdbRequest = typed_handle<IdbRequest_tag>;
