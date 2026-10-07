@@ -425,6 +425,7 @@ TEST(codegen_js_pointer_listener)
     CHECK(js.find("function push_event_dom_POINTER(handle, phase, pointer_id, pointer_type, buttons, x, y, pressure, tilt_x, tilt_y, time)") != std::string::npos);
     CHECK(js.find("getCoalescedEvents") != std::string::npos);
     CHECK(js.find("setPointerCapture") != std::string::npos);
+    CHECK(js.find("for (const p of e.getPredictedEvents()) send(4, e, r, p);") != std::string::npos);
     CHECK(js.find("_triggerDiscreteUpdate()") != std::string::npos);
     // Not pulled in by unrelated DOM use
     markers = void_markers(defs, {"dom::append_child"});

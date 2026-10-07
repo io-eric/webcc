@@ -205,11 +205,20 @@ void add_pointer_listener(webcc::DOMElement handle, uint8_t flags = 0);
 | `dom::POINTER_CAPTURE` | Capture the pointer on down, so moves and the final up keep arriving when it leaves the element. |
 | `dom::POINTER_COALESCED` | Report every coalesced sample of a move instead of one per event. Pens and fast mice produce several samples per frame; without this, fast strokes look jagged. |
 | `dom::POINTER_NO_SCROLL` | Set `touch-action: none` and cancel the default action on down, so touch and pen don't scroll the page or select text. |
+| `dom::POINTER_PREDICT` | After each move with a button down, also report where the browser expects the pointer to be next, as `POINTER_PREDICTED` samples. See below. |
 
-For a drawing surface use all three:
+For a drawing surface use the first three, plus `POINTER_PREDICT` for less visible lag:
 
 ```cpp
-dom::add_pointer_listener(canvas, dom::POINTER_CAPTURE | dom::POINTER_COALESCED | dom::POINTER_NO_SCROLL);
+dom::add_pointer_listener(canvas, dom::POINTER_CAPTURE | dom::POINTER_COALESCED | dom::POINTER_NO_SCROLL | dom::POINTER_PREDICT);
+```
+
+**Predicted samples.** A frame shows where the pen was, not where it is: the ink trails the pen tip by a frame or two. With `POINTER_PREDICT` the browser extrapolates the motion and each move is followed by a few `POINTER_PREDICTED` samples a little ahead of it. Draw them as a temporary tail at the end of the live stroke, and throw them away when the next frame starts: they are guesses, never part of the stroke you store. Only Chrome and Edge produce them; elsewhere none arrive and strokes work as before.
+
+```cpp
+if (p->phase == dom::POINTER_MOVE) stroke.push(p->x, p->y, p->pressure);
+else if (p->phase == dom::POINTER_PREDICTED) tail.push(p->x, p->y, p->pressure);
+// frame: draw stroke + tail, then tail.clear()
 ```
 
 Calling it again on the same element does nothing.
@@ -298,7 +307,7 @@ if (auto w = e.as<dom::WheelEvent>()) {
 ```cpp
 struct PointerEvent {
     webcc::DOMElement handle;
-    uint8_t phase;        // POINTER_DOWN, POINTER_MOVE, POINTER_UP, POINTER_CANCEL
+    uint8_t phase;        // POINTER_DOWN, POINTER_MOVE, POINTER_UP, POINTER_CANCEL, POINTER_PREDICTED
     int32_t pointer_id;   // tells apart fingers and devices
     uint8_t pointer_type; // POINTER_MOUSE, POINTER_PEN, POINTER_TOUCH
     uint32_t buttons;     // bits: BUTTON_PRIMARY (pen tip), BUTTON_SECONDARY (barrel), BUTTON_ERASER
@@ -310,13 +319,6 @@ struct PointerEvent {
 ```
 
 Moves are also reported while nothing is pressed (`buttons == 0`), e.g. a pen hovering over the screen. A stroke ends with either up or cancel; cancel means the browser took over the pointer (e.g. a touch turned into a scroll), so don't treat it as a finished stroke.
-
-## Deferred Handles
-
-WebCC uses a command buffer architecture where API calls are batched and sent to JavaScript in bulk (see [Architecture](../architecture.md)). However, functions that return values, like `create_element`, must synchronously call into JavaScript and trigger a `flush()` to ensure correct execution order. This can be expensive when creating many elements in a loop.
-
-**Deferred handles** solve this problem by letting C++ assign the handle *before* the element is created. The creation command is then added to the command buffer like any other command, and the element is created when the buffer is flushed.
-
 
 #### `add_drop_listener`
 
@@ -341,6 +343,13 @@ struct DropEvent {
 ```
 
 Files are read asynchronously, so the events of one drop can arrive in any order and over several frames; `count` tells when all of them are in. Each one runs the update function right away. Dropped text or links (not files) are ignored.
+
+## Deferred Handles
+
+WebCC uses a command buffer architecture where API calls are batched and sent to JavaScript in bulk (see [Architecture](../architecture.md)). However, functions that return values, like `create_element`, must synchronously call into JavaScript and trigger a `flush()` to ensure correct execution order. This can be expensive when creating many elements in a loop.
+
+**Deferred handles** solve this problem by letting C++ assign the handle *before* the element is created. The creation command is then added to the command buffer like any other command, and the element is created when the buffer is flushed.
+
 
 ### How It Works
 

@@ -71,10 +71,14 @@ dom|command|ADD_CLICK_LISTENER|add_click_listener|handle(DOMElement):handle|{ co
 dom|const|POINTER_CAPTURE|1
 dom|const|POINTER_COALESCED|2
 dom|const|POINTER_NO_SCROLL|4
+# Also report the browser's guess of where the pen goes next (phase POINTER_PREDICTED)
+dom|const|POINTER_PREDICT|8
 dom|const|POINTER_DOWN|0
 dom|const|POINTER_MOVE|1
 dom|const|POINTER_UP|2
 dom|const|POINTER_CANCEL|3
+# Not real input: a guess sent after each move; draw it as a temporary tail, never store it
+dom|const|POINTER_PREDICTED|4
 dom|const|POINTER_MOUSE|0
 dom|const|POINTER_PEN|1
 dom|const|POINTER_TOUCH|2
@@ -82,7 +86,7 @@ dom|const|BUTTON_PRIMARY|1
 dom|const|BUTTON_SECONDARY|2
 dom|const|BUTTON_ERASER|32
 dom|event|POINTER|handle(DOMElement):handle uint8:phase int32:pointer_id uint8:pointer_type uint32:buttons float32:x float32:y float32:pressure float32:tilt_x float32:tilt_y float64:time
-dom|command|ADD_POINTER_LISTENER|add_pointer_listener|handle(DOMElement):handle uint8:flags=0|{ const el = elements[handle]; if(!el || el.__wcc_ptr) continue; const capture = flags & 1, coalesce = flags & 2, block = flags & 4; if (block) el.style.touchAction = 'none'; const types = { mouse: 0, pen: 1, touch: 2 }; const send = (phase, e, r, s) => push_event_dom_POINTER(handle, phase, e.pointerId, types[e.pointerType] ?? 0, s.buttons, s.clientX - r.left, s.clientY - r.top, s.pressure, s.tiltX, s.tiltY, s.timeStamp); const on = (phase) => (e) => { const r = el.getBoundingClientRect(); if (phase === 0) { if (capture) el.setPointerCapture(e.pointerId); if (block) e.preventDefault(); } if (phase === 1 && coalesce && e.getCoalescedEvents) { const list = e.getCoalescedEvents(); if (list.length) { for (const c of list) send(1, e, r, c); return; } } send(phase, e, r, e); if (phase !== 1) _triggerDiscreteUpdate(); }; const h = [['pointerdown', on(0)], ['pointermove', on(1)], ['pointerup', on(2)], ['pointercancel', on(3)]]; for (const [n, f] of h) el.addEventListener(n, f); el.__wcc_ptr = h; }
+dom|command|ADD_POINTER_LISTENER|add_pointer_listener|handle(DOMElement):handle uint8:flags=0|{ const el = elements[handle]; if(!el || el.__wcc_ptr) continue; const capture = flags & 1, coalesce = flags & 2, block = flags & 4, predict = flags & 8; if (block) el.style.touchAction = 'none'; const types = { mouse: 0, pen: 1, touch: 2 }; const send = (phase, e, r, s) => push_event_dom_POINTER(handle, phase, e.pointerId, types[e.pointerType] ?? 0, s.buttons, s.clientX - r.left, s.clientY - r.top, s.pressure, s.tiltX, s.tiltY, s.timeStamp); const on = (phase) => (e) => { const r = el.getBoundingClientRect(); if (phase === 0) { if (capture) el.setPointerCapture(e.pointerId); if (block) e.preventDefault(); } const list = phase === 1 && coalesce && e.getCoalescedEvents ? e.getCoalescedEvents() : []; if (list.length) { for (const c of list) send(1, e, r, c); } else send(phase, e, r, e); if (phase === 1 && predict && e.buttons && e.getPredictedEvents) { for (const p of e.getPredictedEvents()) send(4, e, r, p); } if (phase !== 1) _triggerDiscreteUpdate(); }; const h = [['pointerdown', on(0)], ['pointermove', on(1)], ['pointerup', on(2)], ['pointercancel', on(3)]]; for (const [n, f] of h) el.addEventListener(n, f); el.__wcc_ptr = h; }
 dom|command|REMOVE_POINTER_LISTENER|remove_pointer_listener|handle(DOMElement):handle|{ const el = elements[handle]; if(!el || !el.__wcc_ptr) continue; for (const [n, f] of el.__wcc_ptr) el.removeEventListener(n, f); el.__wcc_ptr = undefined; }
 # Wheel and trackpad. delta_x/delta_y in CSS pixels (line and page scrolling converted), x/y from the element's
 # top-left corner, mods: MOD_* bits. A trackpad pinch arrives with MOD_CTRL set, also in Safari (from its
