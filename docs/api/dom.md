@@ -273,11 +273,11 @@ if (auto r = e.as<dom::ResizeEvent>()) {
 Reports mouse wheel and trackpad scrolling on an element as `WheelEvent`s.
 
 ```cpp
-void add_wheel_listener(webcc::DOMElement handle, uint8_t prevent_default = 0);
+void add_wheel_listener(webcc::DOMElement handle, WheelFlags flags = 0);
 void remove_wheel_listener(webcc::DOMElement handle);
 ```
 
-With `prevent_default` set to `true` the page doesn't scroll or zoom while the pointer is over the element, which is what a pannable, zoomable canvas wants. Calling `add_wheel_listener` again on the same element does nothing.
+`WheelFlags::PREVENT_DEFAULT` keeps the page from scrolling or zooming while the pointer is over the element, which is what a pannable, zoomable canvas wants. `WheelFlags::ZOOM_ONLY` leaves plain scrolling to the browser and only takes ctrl/meta wheel and trackpad pinches, for a scrolling view that zooms with ctrl+wheel. Calling `add_wheel_listener` again on the same element does nothing.
 
 #### `WheelEvent`
 
