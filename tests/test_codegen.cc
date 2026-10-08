@@ -511,6 +511,8 @@ TEST(codegen_js_wheel_listener)
     CHECK(js.find("function push_event_dom_WHEEL(handle, delta_x, delta_y, x, y, mods)") != std::string::npos);
     CHECK(js.find("{ passive: false }") != std::string::npos);
     CHECK(js.find("gesturechange") != std::string::npos);
+    // ZOOM_ONLY: the page keeps scrolling, only ctrl/meta wheel and pinch gestures are taken
+    CHECK(js.find("zoomOnly && (e.ctrlKey || e.metaKey)") != std::string::npos);
 }
 
 // observe_resize pulls in the RESIZE event helper.

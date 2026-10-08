@@ -21,6 +21,22 @@ namespace webcc::dom {
 } // namespace webcc::dom
 
 namespace webcc::dom {
+    // Flags, combine with |
+    enum class WheelFlags : uint8_t {
+        PREVENT_DEFAULT = 1,
+        ZOOM_ONLY = 2,
+    };
+    constexpr WheelFlags operator|(WheelFlags a, WheelFlags b) { return WheelFlags((uint8_t)a | (uint8_t)b); }
+    constexpr WheelFlags operator&(WheelFlags a, WheelFlags b) { return WheelFlags((uint8_t)a & (uint8_t)b); }
+    constexpr WheelFlags operator^(WheelFlags a, WheelFlags b) { return WheelFlags((uint8_t)a ^ (uint8_t)b); }
+    constexpr WheelFlags operator~(WheelFlags a) { return WheelFlags(~(uint8_t)a); }
+    constexpr WheelFlags& operator|=(WheelFlags& a, WheelFlags b) { return a = a | b; }
+    constexpr WheelFlags& operator&=(WheelFlags& a, WheelFlags b) { return a = a & b; }
+    // any bit of `of` set
+    constexpr bool any(WheelFlags v, WheelFlags of = WheelFlags(~(uint8_t)0)) { return ((uint8_t)v & (uint8_t)of) != 0; }
+} // namespace webcc::dom
+
+namespace webcc::dom {
     // Choices
     enum class PointerPhase : uint8_t {
         DOWN = 0,
