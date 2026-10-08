@@ -121,6 +121,7 @@ canvas|command|GET_CONTEXT_2D|get_context_2d|handle(Canvas):canvas_handle Contex
 canvas|command|GET_CONTEXT_WEBGL|get_context_webgl|handle(Canvas):canvas_handle RET:handle(WebGLContext)|{ const handle = (window.webcc_next_id = (window.webcc_next_id || 0) + 1); const c = elements[canvas_handle]; if(!c) { console.warn('get_context_webgl: unknown canvas', canvas_handle); return -1; } contexts[handle] = c.getContext('webgl'); return handle; }
 canvas|command|GET_CONTEXT_WEBGPU|get_context_webgpu|handle(Canvas):canvas_handle RET:handle(WGPUContext)|{ const handle = (window.webcc_next_id = (window.webcc_next_id || 0) + 1); const c = elements[canvas_handle]; if(!c) { console.warn('get_context_webgpu: unknown canvas', canvas_handle); return -1; } contexts[handle] = c.getContext('webgpu'); return handle; }
 canvas|command|SET_SIZE|set_size|handle(Canvas):handle float64:width float64:height|{ const c = elements[handle]; if(c) { c.width = width; c.height = height; } }
+canvas|command|TO_DATA_URL|to_data_url|handle(Canvas):handle string:mime="image/png" float64:quality=0.92 RET:string|{ const c = elements[handle]; if(!c || !c.toDataURL){ console.warn('to_data_url: not a canvas', handle); return 0; } const ret = c.toDataURL(mime, quality); }
 # frees the canvas and its pixel memory now
 canvas|command|FREE|free|handle(Canvas):handle|{ const c = elements[handle]; if(!c || !c.getContext) continue; for (let i = 0; i < contexts.length; i++) { if (contexts[i] && contexts[i].canvas === c) contexts[i] = undefined; } if (elements[c.id] === c) elements[c.id] = undefined; elements[handle] = undefined; c.width = 0; c.height = 0; }
 canvas|command|SET_FILL_STYLE|set_fill_style|handle(CanvasContext2D):handle uint8:r uint8:g uint8:b|{ const ctx = contexts[handle]; if(!ctx){ console.warn('set_fill_style: unknown context', handle); continue; } ctx.fillStyle = `rgb(${r},${g},${b})`; }
@@ -205,6 +206,10 @@ system|command|OPEN_URL|open_url|string:url|{ window.open(url, '_blank'); }
 system|command|GET_TIME|get_time|RET:float64|{ return performance.now(); }
 system|command|GET_DEVICE_PIXEL_RATIO|get_device_pixel_ratio|RET:float64|{ return window.devicePixelRatio || 1; }
 system|command|GET_DATE_NOW|get_date_now|RET:float64|{ return Date.now(); }
+# one-shot timer: TIMER fires once, then the handle is done
+system|event|TIMER|handle(Timeout):timer|last
+system|command|SET_TIMEOUT|set_timeout|float64:ms RET:handle(Timeout)|{ const handle = (window.webcc_next_id = (window.webcc_next_id || 0) + 1); const timers = (window.__wcc_timers = window.__wcc_timers || {}); timers[handle] = setTimeout(() => { delete timers[handle]; push_event_system_TIMER(handle); _triggerDiscreteUpdate(); }, ms); return handle; }
+system|command|CLEAR_TIMEOUT|clear_timeout|handle(Timeout):timer|{ const timers = window.__wcc_timers; if (timers && timers[timer] != null) { clearTimeout(timers[timer]); delete timers[timer]; } }
 system|command|GET_TIMEZONE_OFFSET_MS|get_timezone_offset_ms|RET:float64|{ return -new Date().getTimezoneOffset()*60000; }
 system|command|GET_PATHNAME|get_pathname|RET:string|{ const ret = window.location.pathname || "/"; }
 system|command|GET_SEARCH|get_search|RET:string|{ const ret = window.location.search || ""; }

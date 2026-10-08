@@ -114,6 +114,15 @@ double get_date_now();
 double get_timezone_offset_ms();
 ```
 
+### One-shot timer
+
+```cpp
+Timeout set_timeout(double ms);   // TIMER event once after ms, then the handle is done
+void clear_timeout(Timeout t);  // nothing fires; a no-op after it fired
+```
+
+The `TIMER` event runs the main loop function right away, like a click does. A debounce is `clear_timeout` on the previous handle followed by a new `set_timeout`. Handles are not reused, so a late event for a cleared timer never arrives.
+
 ## Display
 
 ```cpp

@@ -180,3 +180,11 @@ Size tiles in device pixels (CSS size × `system::get_device_pixel_ratio()`) and
 void log_canvas_info(webcc::handle handle);
 ```
 ```
+
+## Export
+
+```cpp
+webcc::string to_data_url(Canvas handle, const char* mime = "image/png", double quality = 0.92);
+```
+
+The canvas as a `data:` URL, synchronously, the way `canvas.toDataURL()` gives it. `quality` only matters for lossy types (`image/jpeg`, `image/webp`). Big canvases make big strings; for a thumbnail, draw into a small offscreen canvas first. A canvas tainted by a cross-origin image returns an empty string (the browser throws, the warning is in the console).

@@ -528,6 +528,29 @@ TEST(codegen_js_scroll_listener)
     CHECK(js.find("el.scrollLeft, el.scrollTop") != std::string::npos);
 }
 
+// set_timeout pulls in the TIMER event helper and fires a discrete update.
+TEST(codegen_js_timer)
+{
+    SchemaDefs defs = real_defs();
+    auto markers = void_markers(defs, {"system::clear_timeout"});
+    generate_js_runtime(defs, {"webcc_js_flush", "webcc_system_set_timeout"}, markers, {}, "/tmp");
+    std::string js = read_file("/tmp/app.js");
+
+    CHECK(js.find("function push_event_system_TIMER(timer)") != std::string::npos);
+    CHECK(js.find("__wcc_timers") != std::string::npos);
+    CHECK(js.find("clearTimeout(timers[timer])") != std::string::npos);
+}
+
+// to_data_url returns the canvas as a data URL string.
+TEST(codegen_js_canvas_data_url)
+{
+    SchemaDefs defs = real_defs();
+    generate_js_runtime(defs, {"webcc_js_flush", "webcc_canvas_to_data_url"}, {}, {}, "/tmp");
+    std::string js = read_file("/tmp/app.js");
+
+    CHECK(js.find("c.toDataURL(mime, quality)") != std::string::npos);
+}
+
 // observe_resize pulls in the RESIZE event helper.
 TEST(codegen_js_resize_observer)
 {

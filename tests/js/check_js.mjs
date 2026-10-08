@@ -80,6 +80,12 @@ int main(){ auto el=webcc::dom::create_element("canvas");
 int main(){ auto el=webcc::dom::create_element("div");
   webcc::dom::add_scroll_listener(el); webcc::dom::remove_scroll_listener(el); }`,
 
+  // One-shot timer and canvas export
+  timer: `#include "webcc/system.h"
+#include "webcc/canvas.h"
+int main(){ auto t=webcc::system::set_timeout(250); webcc::system::clear_timeout(t);
+  auto c=webcc::canvas::create_canvas("c",8,8); auto s=webcc::canvas::to_data_url(c,"image/png",0.9); return (int)s.size(); }`,
+
   // Resize observer and devicePixelRatio
   resize: `#include "webcc/dom.h"
 #include "webcc/system.h"
