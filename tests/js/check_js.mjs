@@ -75,6 +75,11 @@ int main(){ webcc::input::init_keyboard();
 int main(){ auto el=webcc::dom::create_element("canvas");
   webcc::dom::add_wheel_listener(el,static_cast<webcc::dom::WheelFlags>(3)); webcc::dom::remove_wheel_listener(el); }`,
 
+  // Scroll listener: one event per frame with the scroll offsets
+  scroll: `#include "webcc/dom.h"
+int main(){ auto el=webcc::dom::create_element("div");
+  webcc::dom::add_scroll_listener(el); webcc::dom::remove_scroll_listener(el); }`,
+
   // Resize observer and devicePixelRatio
   resize: `#include "webcc/dom.h"
 #include "webcc/system.h"

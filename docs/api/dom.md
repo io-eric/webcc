@@ -232,6 +232,26 @@ Down, up and cancel run the main loop function right away; moves arrive with the
 void remove_pointer_listener(webcc::DOMElement handle);
 ```
 
+#### `add_scroll_listener`
+
+Reports the scroll offsets of a scrolling element as `ScrollEvent`s, at most once per frame.
+
+```cpp
+void add_scroll_listener(webcc::DOMElement handle);
+void remove_scroll_listener(webcc::DOMElement handle);
+```
+
+The listener is passive, so scrolling itself is never delayed by the app. The event is coalesced to the next animation frame and processed with the frame after it, so a view that redraws from the scroll position should cover a little more than the visible area. Calling `add_scroll_listener` again on the same element does nothing.
+
+#### `ScrollEvent`
+
+```cpp
+struct ScrollEvent {
+    webcc::DOMElement handle;
+    float left, top;   // scrollLeft / scrollTop in CSS pixels
+};
+```
+
 #### `observe_resize`
 
 Reports the size of an element as `ResizeEvent`s: once right away, then whenever its size or the device pixel ratio changes (window resize, layout change, browser zoom, moving the window to another monitor).

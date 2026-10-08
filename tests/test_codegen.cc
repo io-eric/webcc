@@ -515,6 +515,19 @@ TEST(codegen_js_wheel_listener)
     CHECK(js.find("zoomOnly && (e.ctrlKey || e.metaKey)") != std::string::npos);
 }
 
+// add_scroll_listener pulls in the SCROLL event helper; the listener is passive and coalesced per frame.
+TEST(codegen_js_scroll_listener)
+{
+    SchemaDefs defs = real_defs();
+    auto markers = void_markers(defs, {"dom::add_scroll_listener"});
+    generate_js_runtime(defs, {"webcc_js_flush"}, markers, {}, "/tmp");
+    std::string js = read_file("/tmp/app.js");
+
+    CHECK(js.find("function push_event_dom_SCROLL(handle, left, top)") != std::string::npos);
+    CHECK(js.find("{ passive: true }") != std::string::npos);
+    CHECK(js.find("el.scrollLeft, el.scrollTop") != std::string::npos);
+}
+
 // observe_resize pulls in the RESIZE event helper.
 TEST(codegen_js_resize_observer)
 {
