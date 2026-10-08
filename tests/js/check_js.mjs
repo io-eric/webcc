@@ -84,7 +84,8 @@ int main(){ auto el=webcc::dom::create_element("div");
   timer: `#include "webcc/system.h"
 #include "webcc/canvas.h"
 int main(){ auto t=webcc::system::set_timeout(250); webcc::system::clear_timeout(t);
-  auto c=webcc::canvas::create_canvas("c",8,8); auto s=webcc::canvas::to_data_url(c,"image/png",0.9); return (int)s.size(); }`,
+  auto c=webcc::canvas::create_canvas("c",8,8); auto s=webcc::canvas::to_data_url(c,"image/png",0.9);
+  auto b=webcc::canvas::to_bytes(c,"image/png",0.9); return (int)s.size()+(int)b.size(); }`,
 
   // Resize observer and devicePixelRatio
   resize: `#include "webcc/dom.h"
@@ -165,7 +166,7 @@ int main(){ namespace p=webcc::pdf; uint8_t d[2]={1,2};
   fetch_storage: `#include "webcc/fetch.h"
 #include "webcc/storage.h"
 int main(){ webcc::fetch::get("/api","{}");
-  webcc::storage::set_item("k","v"); }`,
+  webcc::storage::set_item("k","v"); webcc::storage::persist(); }`,
 
   webgpu: `#include "webcc/wgpu.h"
 int main(){ webcc::wgpu::request_adapter(); }`,

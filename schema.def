@@ -122,6 +122,8 @@ canvas|command|GET_CONTEXT_WEBGL|get_context_webgl|handle(Canvas):canvas_handle 
 canvas|command|GET_CONTEXT_WEBGPU|get_context_webgpu|handle(Canvas):canvas_handle RET:handle(WGPUContext)|{ const handle = (window.webcc_next_id = (window.webcc_next_id || 0) + 1); const c = elements[canvas_handle]; if(!c) { console.warn('get_context_webgpu: unknown canvas', canvas_handle); return -1; } contexts[handle] = c.getContext('webgpu'); return handle; }
 canvas|command|SET_SIZE|set_size|handle(Canvas):handle float64:width float64:height|{ const c = elements[handle]; if(c) { c.width = width; c.height = height; } }
 canvas|command|TO_DATA_URL|to_data_url|handle(Canvas):handle string:mime="image/png" float64:quality=0.92 RET:string|{ const c = elements[handle]; if(!c || !c.toDataURL){ console.warn('to_data_url: not a canvas', handle); return 0; } const ret = c.toDataURL(mime, quality); }
+# the canvas as a file (PNG, JPEG, WebP) in bytes, for files::save or a blob; empty when tainted
+canvas|command|TO_BYTES|to_bytes|handle(Canvas):handle string:mime="image/png" float64:quality=0.92 RET:bytes|{ const c = elements[handle]; let u = ''; if (!c || !c.toDataURL) console.warn('to_bytes: not a canvas', handle); else try { u = c.toDataURL(mime, quality); } catch (e) { console.warn('to_bytes:', e); } const b = u ? atob(u.slice(u.indexOf(',') + 1)) : ''; const ret = Uint8Array.from(b, ch => ch.charCodeAt(0)); }
 # frees the canvas and its pixel memory now
 canvas|command|FREE|free|handle(Canvas):handle|{ const c = elements[handle]; if(!c || !c.getContext) continue; for (let i = 0; i < contexts.length; i++) { if (contexts[i] && contexts[i].canvas === c) contexts[i] = undefined; } if (elements[c.id] === c) elements[c.id] = undefined; elements[handle] = undefined; c.width = 0; c.height = 0; }
 canvas|command|SET_FILL_STYLE|set_fill_style|handle(CanvasContext2D):handle uint8:r uint8:g uint8:b|{ const ctx = contexts[handle]; if(!ctx){ console.warn('set_fill_style: unknown context', handle); continue; } ctx.fillStyle = `rgb(${r},${g},${b})`; }
@@ -310,6 +312,9 @@ storage|command|SET_ITEM|set_item|string:key string:value|{ localStorage.setItem
 storage|command|GET_ITEM|get_item|string:key RET:string|{ const ret = localStorage.getItem(key) || ""; }
 storage|command|REMOVE_ITEM|remove_item|string:key|{ localStorage.removeItem(key); }
 storage|command|CLEAR|clear||{ localStorage.clear(); }
+# ask the browser to keep this site's data (IndexedDB too) out of storage eviction; PERSISTED says whether it agreed
+storage|event|PERSISTED|uint8:granted
+storage|command|PERSIST|persist||{ const st = navigator.storage; if (!st || !st.persist) { push_event_storage_PERSISTED(0); _triggerDiscreteUpdate(); continue; } st.persist().then(g => { push_event_storage_PERSISTED(g ? 1 : 0); _triggerDiscreteUpdate(); }, () => { push_event_storage_PERSISTED(0); _triggerDiscreteUpdate(); }); }
 
 # ------------------------------------------------------------------------------
 # AUDIO

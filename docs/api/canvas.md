@@ -188,3 +188,13 @@ webcc::string to_data_url(Canvas handle, const char* mime = "image/png", double 
 ```
 
 The canvas as a `data:` URL, synchronously, the way `canvas.toDataURL()` gives it. `quality` only matters for lossy types (`image/jpeg`, `image/webp`). Big canvases make big strings; for a thumbnail, draw into a small offscreen canvas first. A canvas tainted by a cross-origin image returns an empty string (the browser throws, the warning is in the console).
+
+```cpp
+webcc::vector<uint8_t> to_bytes(Canvas handle, const char* mime = "image/png", double quality = 0.92);
+```
+
+The same image as a file in bytes, for a download with [`files::save`](files.md#save) or for storing in [IndexedDB](idb.md). Synchronous, like `to_data_url`. A tainted canvas gives an empty vector.
+
+```cpp
+webcc::files::save("drawing.png", "image/png", webcc::canvas::to_bytes(canvas));
+```
