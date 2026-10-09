@@ -113,6 +113,9 @@ double get_date_now();
 // Add it to a UTC epoch-ms value to convert it to local time.
 double get_timezone_offset_ms();
 
+// The same offset at a given instant (daylight saving time can make it differ from today's)
+double get_timezone_offset_at(double ms);
+
 // An epoch-ms value as local time, laid out by a pattern. Tokens: YYYY YY, MMMM MMM MM M,
 // dddd ddd (weekday and month names in the browser's language), DD D, HH H (24h), hh h (12h),
 // mm m, ss s, A a (AM/PM). Text in [brackets] is kept as it is.
