@@ -525,7 +525,21 @@ TEST(codegen_js_scroll_listener)
 
     CHECK(js.find("function push_event_dom_SCROLL(handle, left, top)") != std::string::npos);
     CHECK(js.find("{ passive: true }") != std::string::npos);
-    CHECK(js.find("el.scrollLeft, el.scrollTop") != std::string::npos);
+    // the node comes from the event, so a morph can move the listener to another node
+    CHECK(js.find("push_event_dom_SCROLL(handle, t.scrollLeft, t.scrollTop)") != std::string::npos);
+}
+
+// morph pulls in its helper; place moves a node only when it isn't before ref already
+TEST(codegen_js_morph)
+{
+    SchemaDefs defs = real_defs();
+    auto markers = void_markers(defs, {"dom::morph", "dom::place", "dom::detach"});
+    generate_js_runtime(defs, {"webcc_js_flush"}, markers, {}, "/tmp");
+    std::string js = read_file("/tmp/app.js");
+
+    CHECK(js.find("const __wcc_morph = {") != std::string::npos);
+    CHECK(js.find("__wcc_morph.item(elements, old_handle, new_handle)") != std::string::npos);
+    CHECK(js.find("node.nextSibling !== ref") != std::string::npos);
 }
 
 // set_timeout pulls in the TIMER event helper and fires a discrete update.

@@ -30,7 +30,7 @@ const run = async () => {
 ,
             webcc_dom_create_element: (tag_ptr, tag_len) => {
                 const tag = decoder.decode(new Uint8Array(memory.buffer, tag_ptr, tag_len));
-                const handle = (window.webcc_next_id = (window.webcc_next_id || 0) + 1); const el = _mkel(tag); elements[handle] = el; return handle;
+                const handle = (window.webcc_next_id = (window.webcc_next_id || 0) + 1); const el = _mkel(tag); el.__wcc_h = handle; elements[handle] = el; return handle;
             }
 
         },
@@ -145,7 +145,7 @@ const run = async () => {
                     { const parent = elements[parent_handle]; const child = elements[child_handle]; if(!parent || !child){ console.warn('append_child: unknown handles', parent_handle, child_handle); continue; } parent.appendChild(child); }
                     break;
                 }
-                case 26: {
+                case 29: {
                     if (pos + 4 > end) { console.error('WebCC: OOB handle'); break; }
                     const handle = i32[pos >> 2]; pos += 4;
                     if (pos + 4 > end) { console.error('WebCC: OOB text_len'); break; }
