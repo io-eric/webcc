@@ -229,10 +229,13 @@ namespace webcc
         }
 
         // 2. Bump a fresh block off the wilderness, growing memory if needed.
+        // Out of linear memory (the --max-memory the binary is linked with) is fatal: callers
+        // don't check for null, so trap here, where the stack still says why, instead of
+        // corrupting memory a few calls later
         uintptr_t cur_top = heap_ptr;
         uintptr_t new_top = cur_top + HEADER_SIZE + size;
         if (!ensure_capacity(new_top))
-            return nullptr;
+            __builtin_trap();
 
         BlockHeader *b = (BlockHeader *)cur_top;
         b->prev_phys = last_block;

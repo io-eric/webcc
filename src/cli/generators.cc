@@ -1600,9 +1600,11 @@ namespace webcc
             "-Wl,--stack-first "   // Stack at address 0 (grows DOWNWARD)
             "-z stack-size=65536 " // 64KB stack (efficient for UI recursion)
 
-            // Memory allocation (Bumped to 4MB to accommodate static data > 2.1MB)
-            "-Wl,--initial-memory=4194304 " // 4MB total
-            "-Wl,--max-memory=67108864 "    // 64MB max
+            // Memory allocation (Bumped to 4MB to accommodate static data > 2.1MB).
+            // The maximum is a ceiling, not a reservation: linear memory grows on demand, and
+            // an app that parses a large record or holds a file's bytes needs well over 64MB
+            "-Wl,--initial-memory=4194304 "   // 4MB total
+            "-Wl,--max-memory=2147483648 "    // 2GB max
 
             // === PERFORMANCE OPTIMIZATIONS ===
             "-Wl,--compress-relocations " // Smaller binary = faster download
