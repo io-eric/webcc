@@ -53,6 +53,10 @@ int main(int argc, char **argv)
                 template_path = argv[++i];
             }
         }
+        else if (arg == "--quiet" || arg == "-q")
+        {
+            webcc::quiet = true;
+        }
         else
         {
             input_files.push_back(arg);
@@ -78,7 +82,7 @@ int main(int argc, char **argv)
 
     if (input_files.empty())
     {
-        std::cerr << "Usage: webcc [--defs <path>] [--out <dir> | -o <dir>] [--cache-dir <dir>] <source.cc> ... or webcc headers" << std::endl;
+        std::cerr << "Usage: webcc [--defs <path>] [--out <dir> | -o <dir>] [--cache-dir <dir>] [--template <file>] [--quiet] <source.cc> ... or webcc headers" << std::endl;
         return 1;
     }
 
@@ -142,6 +146,6 @@ int main(int argc, char **argv)
     // E. GENERATE HTML (Basic scaffolding).
     webcc::generate_html(out_dir, template_path);
 
-    std::cout << "[WebCC] Success! Run 'python3 -m http.server' in " << out_dir << " to view." << std::endl;
+    if (!webcc::quiet) std::cout << "[WebCC] Success! Run 'python3 -m http.server' in " << out_dir << " to view." << std::endl;
     return 0;
 }

@@ -969,7 +969,7 @@ namespace webcc
     {
         CodeWriter w;
 
-        std::cout << "[WebCC] Detecting features..." << std::endl;
+        if (!quiet) std::cout << "[WebCC] Detecting features..." << std::endl;
 
         std::set<std::string> used_namespaces;
         std::set<std::string> used_maps;
@@ -1007,7 +1007,7 @@ namespace webcc
                 continue;
 
             {
-                std::cout << "  -> Found " << d.func_name << " (" << d.ns << "), embedding JS support." << std::endl;
+                if (!quiet) std::cout << "  -> Found " << d.func_name << " (" << d.ns << "), embedding JS support." << std::endl;
 
                 // Handle commands that have a return value. These are implemented as JS imports.
                 if (!d.return_type.empty())
@@ -1419,7 +1419,7 @@ namespace webcc
         w.raw(cases_w.str());
         w.raw(JS_TAIL);
         write_file(out_dir + "/app.js", w.str());
-        std::cout << "[WebCC] Generated " << out_dir << "/app.js" << std::endl;
+        if (!quiet) std::cout << "[WebCC] Generated " << out_dir << "/app.js" << std::endl;
     }
 
     void generate_html(const std::string &out_dir, const std::string &template_path)
@@ -1472,7 +1472,7 @@ namespace webcc
                     html += "\n" + script_tag + "\n";
                 }
             }
-            std::cout << "[WebCC] Using template: " << found_template << std::endl;
+            if (!quiet) std::cout << "[WebCC] Using template: " << found_template << std::endl;
         }
         else
         {
@@ -1491,7 +1491,7 @@ namespace webcc
         }
 
         write_file(out_dir + "/index.html", html);
-        std::cout << "[WebCC] Generated " << out_dir << "/index.html" << std::endl;
+        if (!quiet) std::cout << "[WebCC] Generated " << out_dir << "/index.html" << std::endl;
     }
 
     bool compile_wasm(const std::vector<std::string> &input_files, const std::string &out_dir, const std::string &cache_dir, const std::set<std::string> &required_exports)
@@ -1545,7 +1545,7 @@ namespace webcc
             }
         }
 
-        std::cout << "[WebCC] Compiling..." << std::endl;
+        if (!quiet) std::cout << "[WebCC] Compiling..." << std::endl;
 
         // Ensure cache directory exists
         mkdir(cache_dir.c_str(), 0755);
@@ -1667,7 +1667,7 @@ namespace webcc
 
             if (need_compile)
             {
-                std::cout << "  [CC] " << src << std::endl;
+                if (!quiet) std::cout << "  [CC] " << src << std::endl;
                 std::string cc_full_cmd = base_cmd + compile_only_flags + include_flags + "-o \"" + obj + "\" \"" + src + "\"";
 
                 if (system(cc_full_cmd.c_str()) != 0)
@@ -1678,7 +1678,7 @@ namespace webcc
             }
             else
             {
-                std::cout << "  [Cache] " << src << std::endl;
+                if (!quiet) std::cout << "  [Cache] " << src << std::endl;
             }
             object_files_str += "\"" + obj + "\" ";
         }
@@ -1702,7 +1702,7 @@ namespace webcc
             return false;
         }
 
-        std::cout << "[WebCC] Linking..." << std::endl;
+        if (!quiet) std::cout << "[WebCC] Linking..." << std::endl;
         std::string wasm_path = out_dir + "/app.wasm";
         std::string link_full_cmd = base_cmd + link_only_flags + "-o \"" + wasm_path + "\" " + object_files_str;
 
@@ -1716,7 +1716,7 @@ namespace webcc
         /*
         if (system("command -v wasm-opt > /dev/null") == 0)
         {
-            std::cout << "[WebCC] Optimizing with wasm-opt..." << std::endl;
+            if (!quiet) std::cout << "[WebCC] Optimizing with wasm-opt..." << std::endl;
             std::string opt_cmd = "wasm-opt -Oz --strip-debug " + wasm_path + " -o " + wasm_path;
             system(opt_cmd.c_str());
         }

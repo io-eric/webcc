@@ -4,6 +4,9 @@
 
 namespace webcc
 {
+    // --quiet: no progress lines on stdout, errors and warnings still go to stderr
+    inline bool quiet = false;
+
 
   // Reads the entire contents of a file into a string.
   std::string read_file(const std::string &path);

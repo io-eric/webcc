@@ -290,7 +290,7 @@ namespace webcc
             return false;
         }
 
-        std::cout << "[WebCC] Loaded from binary cache: " << defs.commands.size() << " commands, " << defs.events.size() << " events" << std::endl;
+        if (!quiet) std::cout << "[WebCC] Loaded from binary cache: " << defs.commands.size() << " commands, " << defs.events.size() << " events" << std::endl;
         return true;
     }
 
@@ -319,7 +319,7 @@ namespace webcc
 
     SchemaDefs load_defs(const std::string &path)
     {
-        std::cout << "[WebCC] Loading definitions from " << path << std::endl;
+        if (!quiet) std::cout << "[WebCC] Loading definitions from " << path << std::endl;
         SchemaDefs out;
         std::string contents = read_file(path);
         if (contents.empty())
@@ -699,7 +699,7 @@ namespace webcc
                 out.commands.push_back(c);
             }
         }
-        std::cout << "[WebCC] Loaded " << out.commands.size() << " commands and " << out.events.size() << " events." << std::endl;
+        if (!quiet) std::cout << "[WebCC] Loaded " << out.commands.size() << " commands and " << out.events.size() << " events." << std::endl;
         // group-typed params, fields and returns: wire as the group's type
         {
             static const std::set<std::string> base = {"string", "bytes", "handle", "int32", "uint32", "float32", "float64", "uint8", "func_ptr"};
