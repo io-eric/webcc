@@ -25,6 +25,6 @@ build build/obj/wasm.o: cxx src/cli/wasm.cc
 build webcc: link build/obj/main.o build/obj/utils.o build/obj/schema.o build/obj/generators.o build/obj/wasm.o
 
 # Generate headers and binary cache (requires webcc to exist first)
-build schema.wcc.bin: generate_schema webcc schema.def | js/pdf.js
+build schema.wcc.bin: generate_schema webcc schema.def | js/pdf.js js/morph.js
 
 default webcc
