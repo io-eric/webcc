@@ -178,6 +178,23 @@ namespace webcc
             return contains(string(needle));
         }
 
+        // Byte index of the first occurrence of needle at or after from, -1 when there is none
+        int index_of(const string& needle, uint32_t from = 0) const {
+            if (needle.m_len > m_len || from > m_len - needle.m_len) return -1;
+            for (uint32_t i = from; i <= m_len - needle.m_len; i++) {
+                bool match = true;
+                for (uint32_t j = 0; j < needle.m_len && match; j++) {
+                    if (m_data[i + j] != needle.m_data[j]) match = false;
+                }
+                if (match) return (int)i;
+            }
+            return -1;
+        }
+
+        int index_of(const char* needle, uint32_t from = 0) const {
+            return index_of(string(needle), from);
+        }
+
         // Trim whitespace from start
         string trim_start() const {
             if (m_len == 0) return string();

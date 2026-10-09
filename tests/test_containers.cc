@@ -169,3 +169,15 @@ TEST(string_case_mapping_is_ascii_only)
     CHECK(std::strcmp(s.c_str(), "Hello, Wörld 42") == 0); // the original is untouched
     CHECK(webcc::string().to_lower().empty());
 }
+
+TEST(string_index_of_from_position)
+{
+    webcc::string s("a=\"1\" b=\"2\"");
+    CHECK_EQ(s.index_of("=\""), 1);
+    CHECK_EQ(s.index_of("=\"", 2), 7);
+    CHECK_EQ(s.index_of("\"", 3), 4);
+    CHECK_EQ(s.index_of("zzz"), -1);
+    CHECK_EQ(s.index_of("\"", 100), -1);  // from past the end
+    CHECK_EQ(s.index_of("", 3), 3);        // an empty needle is found where the search starts
+    CHECK_EQ(webcc::string().index_of("a"), -1);
+}
