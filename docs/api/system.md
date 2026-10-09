@@ -112,6 +112,12 @@ double get_date_now();
 // Returns the local timezone offset from UTC in milliseconds.
 // Add it to a UTC epoch-ms value to convert it to local time.
 double get_timezone_offset_ms();
+
+// An epoch-ms value as local time, laid out by a pattern. Tokens: YYYY YY, MMMM MMM MM M,
+// dddd ddd (weekday and month names in the browser's language), DD D, HH H (24h), hh h (12h),
+// mm m, ss s, A a (AM/PM). Text in [brackets] is kept as it is.
+//   format_date(ms, "ddd D MMM [at] H:mm")  ->  "Tue 7 Oct at 10:15"
+string format_date(double ms, string pattern);
 ```
 
 ### One-shot timer
