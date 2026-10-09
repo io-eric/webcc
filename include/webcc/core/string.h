@@ -207,6 +207,21 @@ namespace webcc
             return trim_start().trim_end();
         }
 
+        // ASCII case mapping; bytes outside A-Z / a-z (so every UTF-8 multibyte sequence) stay as they are
+        string to_lower() const {
+            string out(m_data, m_len);
+            for (uint32_t i = 0; i < out.m_len; i++)
+                if (out.m_data[i] >= 'A' && out.m_data[i] <= 'Z') out.m_data[i] += 'a' - 'A';
+            return out;
+        }
+
+        string to_upper() const {
+            string out(m_data, m_len);
+            for (uint32_t i = 0; i < out.m_len; i++)
+                if (out.m_data[i] >= 'a' && out.m_data[i] <= 'z') out.m_data[i] -= 'a' - 'A';
+            return out;
+        }
+
         // Parse string as integer
         int to_int() const {
             if (m_len == 0 || !m_data) return 0;

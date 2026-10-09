@@ -160,3 +160,12 @@ TEST(formatter_prints_bool_as_word)
     CHECK(std::strcmp(f.c_str(), "true false 7") == 0);
 }
 
+
+TEST(string_case_mapping_is_ascii_only)
+{
+    webcc::string s("Hello, Wörld 42");
+    CHECK(std::strcmp(s.to_lower().c_str(), "hello, wörld 42") == 0);
+    CHECK(std::strcmp(s.to_upper().c_str(), "HELLO, WöRLD 42") == 0);
+    CHECK(std::strcmp(s.c_str(), "Hello, Wörld 42") == 0); // the original is untouched
+    CHECK(webcc::string().to_lower().empty());
+}
