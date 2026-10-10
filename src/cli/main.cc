@@ -57,6 +57,14 @@ int main(int argc, char **argv)
         {
             webcc::quiet = true;
         }
+        else if (arg == "--progress")
+        {
+            webcc::progress = true;
+        }
+        else if (arg == "--dev")
+        {
+            webcc::dev = true;
+        }
         else
         {
             input_files.push_back(arg);
@@ -82,7 +90,7 @@ int main(int argc, char **argv)
 
     if (input_files.empty())
     {
-        std::cerr << "Usage: webcc [--defs <path>] [--out <dir> | -o <dir>] [--cache-dir <dir>] [--template <file>] [--quiet] <source.cc> ... or webcc headers" << std::endl;
+        std::cerr << "Usage: webcc [--defs <path>] [--out <dir> | -o <dir>] [--cache-dir <dir>] [--template <file>] [--quiet] [--progress] [--dev] <source.cc> ... or webcc headers" << std::endl;
         return 1;
     }
 

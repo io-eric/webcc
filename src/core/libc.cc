@@ -10,6 +10,11 @@
 
 extern "C"
 {
+    // An unoptimized build (-O0) keeps calls the optimizer would drop: the stub behind a pure
+    // virtual method, and the registration of static destructors. A pure virtual call is a
+    // bug, so it traps; destructors never run on a page that lives until it is closed
+    void __cxa_pure_virtual() { __builtin_trap(); }
+    int __cxa_atexit(void (*)(void *), void *, void *) { return 0; }
 
     size_t strlen(const char *s)
     {

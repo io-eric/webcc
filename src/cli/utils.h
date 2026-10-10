@@ -1,4 +1,6 @@
 #pragma once
+#include <iostream>
+#include <string>
 #include <string>
 #include <sstream>
 
@@ -6,6 +8,14 @@ namespace webcc
 {
     // --quiet: no progress lines on stdout, errors and warnings still go to stderr
     inline bool quiet = false;
+    // --dev: a build that is quick to make rather than small or fast: -O0, no link-time optimization
+    inline bool dev = false;
+    // --progress: one ">> step" line per step on stdout, for a tool that shows the current step
+    inline bool progress = false;
+    inline void report(const std::string& step)
+    {
+        if (progress) std::cout << ">> " << step << std::endl;
+    }
 
 
   // Reads the entire contents of a file into a string.

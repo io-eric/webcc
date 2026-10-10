@@ -1,3 +1,4 @@
+#include <filesystem>
 #include "generators.h"
 #include "utils.h"
 #include "js_templates.h"
@@ -970,6 +971,7 @@ namespace webcc
         CodeWriter w;
 
         if (!quiet) std::cout << "[WebCC] Detecting features..." << std::endl;
+        report("writing app.js");
 
         std::set<std::string> used_namespaces;
         std::set<std::string> used_maps;
@@ -1561,9 +1563,10 @@ namespace webcc
 
         // --- 1. CONFIGURATION ---
         // base_cmd: Shared core settings for both compilation and linking.
-        std::string base_cmd = "clang++ --target=wasm32 "
-                               "-Oz "   // Size optimization
-                               "-flto " // Link-time optimization
+        // a dev build trades size and speed for compile time: -O0 and no link-time optimization
+        std::string base_cmd = std::string("clang++ --target=wasm32 ") +
+                               (dev ? "-O0 " : "-Oz "   // Size optimization
+                                               "-flto ") + // Link-time optimization
                                "-std=c++20 "
                                "-nostdlib "
                                "-mbulk-memory "     // Enable bulk memory operations
@@ -1668,6 +1671,7 @@ namespace webcc
             if (need_compile)
             {
                 if (!quiet) std::cout << "  [CC] " << src << std::endl;
+                report("compiling " + std::filesystem::path(src).filename().string());
                 std::string cc_full_cmd = base_cmd + compile_only_flags + include_flags + "-o \"" + obj + "\" \"" + src + "\"";
 
                 if (system(cc_full_cmd.c_str()) != 0)
@@ -1703,6 +1707,7 @@ namespace webcc
         }
 
         if (!quiet) std::cout << "[WebCC] Linking..." << std::endl;
+        report("linking WebAssembly");
         std::string wasm_path = out_dir + "/app.wasm";
         std::string link_full_cmd = base_cmd + link_only_flags + "-o \"" + wasm_path + "\" " + object_files_str;
 
@@ -1717,6 +1722,7 @@ namespace webcc
         if (system("command -v wasm-opt > /dev/null") == 0)
         {
             if (!quiet) std::cout << "[WebCC] Optimizing with wasm-opt..." << std::endl;
+            report("optimizing with wasm-opt");
             std::string opt_cmd = "wasm-opt -Oz --strip-debug " + wasm_path + " -o " + wasm_path;
             system(opt_cmd.c_str());
         }
