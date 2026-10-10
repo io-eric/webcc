@@ -198,7 +198,7 @@ Use `--quiet` to print nothing but errors and warnings, `--progress` to print on
 Use the `--cache-dir <dir>` flag to specify the cache directory (defaults to `.webcc_cache` in the source directory).
 Use the `--template <path>` or `-t <path>` flag to specify a custom HTML template file.
 
-Use `--render <out.html>` for a first render without a browser: the sources are compiled for the host machine with `src/core/host_render.cc` as the runtime, run once, and the HTML of the page they build is written to the file (needs a host `clang++`). Commands that don't build the page are skipped, imports with a result answer with zero, and the page gets the frames it asks for until one changes nothing.
+Use `--render <path>=<out.html>` for a first render without a browser: the sources are compiled for the host machine with `src/core/host_render.cc` as the runtime, run once per `--render` with `system::get_pathname()` answering `<path>`, and the HTML of the page they build is written to the file (needs a host `clang++`). `--render out.html` renders `/`. Commands that don't build the page are skipped, imports with a result answer with zero, and the page gets the frames it asks for until one changes nothing.
 ```bash
 ./webcc main.cc [other_sources.cc ...] [--out dist] [--cache-dir .cache] [--template index.template.html] [--quiet] [--progress]
 ```

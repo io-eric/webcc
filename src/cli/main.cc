@@ -20,7 +20,7 @@ int main(int argc, char **argv)
     std::string out_dir = ".";
     std::string cache_dir_arg = "";
     std::string template_path = "";
-    std::string render_html = "";   // --render: a native first render to this file, no wasm
+    std::vector<webcc::RenderTarget> render_targets;   // --render [path=]out.html: native first renders, no wasm
 
     // Parse command-line arguments.
     for (int i = 1; i < argc; ++i)
@@ -59,7 +59,10 @@ int main(int argc, char **argv)
         {
             if (i + 1 < argc)
             {
-                render_html = argv[++i];
+                std::string t = argv[++i];
+                size_t eq = t.find('=');
+                if (eq == std::string::npos) render_targets.push_back({"/", t});
+                else render_targets.push_back({t.substr(0, eq), t.substr(eq + 1)});
             }
         }
         else if (arg == "--quiet" || arg == "-q")
@@ -99,7 +102,7 @@ int main(int argc, char **argv)
 
     if (input_files.empty())
     {
-        std::cerr << "Usage: webcc [--defs <path>] [--out <dir> | -o <dir>] [--cache-dir <dir>] [--template <file>] [--render <out.html>] [--quiet] [--progress] [--dev] <source.cc> ... or webcc headers" << std::endl;
+        std::cerr << "Usage: webcc [--defs <path>] [--out <dir> | -o <dir>] [--cache-dir <dir>] [--template <file>] [--render [path=]<out.html> ...] [--quiet] [--progress] [--dev] <source.cc> ... or webcc headers" << std::endl;
         return 1;
     }
 
@@ -125,9 +128,9 @@ int main(int argc, char **argv)
     std::string schema_cache_path = exe_dir + "/schema.wcc.bin";
     defs = webcc::load_defs_cached(schema_cache_path, defs_path);
 
-    if (!render_html.empty())
+    if (!render_targets.empty())
     {
-        return webcc::render_first_frame(defs, input_files, cache_dir, render_html) ? 0 : 1;
+        return webcc::render_first_frame(defs, input_files, cache_dir, render_targets) ? 0 : 1;
     }
 
     // A. COMPILE C++ TO WASM (Incremental).

@@ -13,6 +13,7 @@
 
 #include <cstdint>
 #include <cstdio>
+#include <cstdlib>
 #include <cstring>
 #include <ctime>
 #include <string>
@@ -467,7 +468,7 @@ namespace
     }
 
     // frames the page asked for, until one changes nothing; then the page
-    __attribute__((destructor)) void finish()
+    void finish()
     {
         void (*update)() = update_fn();
         for (int i = 0; i < 8 && update && g_frame_requested; i++)
@@ -493,8 +494,17 @@ namespace
     }
 } // namespace
 
+// registered on first use, so it runs when main returns and before the statics above are gone
+// (a destructor-attribute function would run after them)
+static void arm()
+{
+    static bool armed = false;
+    if (!armed) { armed = true; atexit(finish); }
+}
+
 extern "C" void webcc_js_flush(uintptr_t ptr, size_t size)
 {
+    arm();
     Reader r{(const uint8_t *)ptr, (const uint8_t *)ptr + size};
     run(r);
 }
@@ -502,6 +512,13 @@ extern "C" void webcc_js_flush(uintptr_t ptr, size_t size)
 extern "C" void webcc_js_read_result(void *dst)
 {
     memcpy(dst, g_big_result.data(), g_big_result.size());
+}
+
+// the location: the path this render is for (WEBCC_PATHNAME), "/" by default
+extern "C" uint32_t webcc_system_get_pathname()
+{
+    const char *p = getenv("WEBCC_PATHNAME");
+    return give_string(p && *p ? p : "/");
 }
 
 // the clock, as a page would see it
@@ -513,7 +530,7 @@ extern "C" double webcc_system_get_date_now()
 }
 
 // the DOM imports with a result: these build or read the tree
-extern "C" int32_t webcc_dom_get_body() { body(); return 0; }
+extern "C" int32_t webcc_dom_get_body() { arm(); body(); return 0; }
 extern "C" int32_t webcc_dom_get_element_by_id(const char *, uint32_t) { return -1; }
 extern "C" int32_t webcc_dom_create_element(const char *tag, uint32_t len)
 {

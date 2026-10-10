@@ -68,6 +68,9 @@ dom|command|MOVE_BEFORE|move_before|handle(DOMElement):parent_handle handle(DOME
 # live nodes (pointer capture, focus, hover and scroll survive); new_handle's handles then name them
 dom|helper|__wcc_morph|js/morph.js
 dom|command|MORPH|morph|handle(DOMElement):old_handle handle(DOMElement):new_handle|{ __wcc_morph.item(elements, old_handle, new_handle); }
+# a page that arrived as HTML (its root marked data-hydrate): the live root takes on the freshly
+# built fresh_handle, keeping its nodes (scroll, focus, typed text); fresh_handle's handles then name them
+dom|command|HYDRATE|hydrate|handle(DOMElement):fresh_handle|{ const n = elements[fresh_handle]; const o = document.querySelector('[data-hydrate]'); if (!n || !o) continue; if (!__wcc_morph.same(o, n)) { o.replaceWith(n); continue; } n.remove(); __wcc_morph.node(elements, o, n); }
 # out of the document, still addressable
 dom|command|DETACH|detach|handle(DOMElement):handle|{ const el = elements[handle]; if (el) el.remove(); }
 # node right before ref (null ref = last), moved only when it isn't there already

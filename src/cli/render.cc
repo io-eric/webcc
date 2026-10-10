@@ -94,7 +94,7 @@ namespace webcc
     }
 
     bool render_first_frame(const SchemaDefs &defs, const std::vector<std::string> &input_files,
-                            const std::string &cache_dir, const std::string &out_html)
+                            const std::string &cache_dir, const std::vector<RenderTarget> &targets)
     {
         std::string exe_dir = get_executable_dir();
         fs::path host_dir = fs::path(cache_dir) / "host";
@@ -120,13 +120,17 @@ namespace webcc
         }
 
         report("rendering");
-        std::string run = "\"" + bin.string() + "\" > \"" + out_html + "\"";
-        if (system(run.c_str()) != 0)
+        for (const auto &t : targets)
         {
-            std::cerr << "[WebCC] Error: the page failed while rendering" << std::endl;
-            return false;
+            // the program reads its location through get_pathname, answered from here
+            std::string run = "WEBCC_PATHNAME='" + t.path + "' \"" + bin.string() + "\" > \"" + t.out_html + "\"";
+            if (system(run.c_str()) != 0)
+            {
+                std::cerr << "[WebCC] Error: the page failed while rendering " << t.path << std::endl;
+                return false;
+            }
+            if (!quiet) std::cout << "[WebCC] Rendered " << t.path << " to " << t.out_html << std::endl;
         }
-        if (!quiet) std::cout << "[WebCC] Rendered " << out_html << std::endl;
         return true;
     }
 }
