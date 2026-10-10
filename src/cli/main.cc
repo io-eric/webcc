@@ -3,6 +3,7 @@
 #include "js_templates.h"
 #include "generators.h"
 #include "wasm.h"
+#include "render.h"
 #include <iostream>
 #include <sstream>
 #include <cstdlib>
@@ -19,6 +20,7 @@ int main(int argc, char **argv)
     std::string out_dir = ".";
     std::string cache_dir_arg = "";
     std::string template_path = "";
+    std::string render_html = "";   // --render: a native first render to this file, no wasm
 
     // Parse command-line arguments.
     for (int i = 1; i < argc; ++i)
@@ -51,6 +53,13 @@ int main(int argc, char **argv)
             if (i + 1 < argc)
             {
                 template_path = argv[++i];
+            }
+        }
+        else if (arg == "--render")
+        {
+            if (i + 1 < argc)
+            {
+                render_html = argv[++i];
             }
         }
         else if (arg == "--quiet" || arg == "-q")
@@ -90,7 +99,7 @@ int main(int argc, char **argv)
 
     if (input_files.empty())
     {
-        std::cerr << "Usage: webcc [--defs <path>] [--out <dir> | -o <dir>] [--cache-dir <dir>] [--template <file>] [--quiet] [--progress] [--dev] <source.cc> ... or webcc headers" << std::endl;
+        std::cerr << "Usage: webcc [--defs <path>] [--out <dir> | -o <dir>] [--cache-dir <dir>] [--template <file>] [--render <out.html>] [--quiet] [--progress] [--dev] <source.cc> ... or webcc headers" << std::endl;
         return 1;
     }
 
@@ -115,6 +124,11 @@ int main(int argc, char **argv)
     std::string exe_dir = webcc::get_executable_dir();
     std::string schema_cache_path = exe_dir + "/schema.wcc.bin";
     defs = webcc::load_defs_cached(schema_cache_path, defs_path);
+
+    if (!render_html.empty())
+    {
+        return webcc::render_first_frame(defs, input_files, cache_dir, render_html) ? 0 : 1;
+    }
 
     // A. COMPILE C++ TO WASM (Incremental).
     // Link first, with a constant set of exports, so the linked module's import
