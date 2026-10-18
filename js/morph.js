@@ -3,7 +3,7 @@
 // Afterwards the fresh row's handles name the live nodes and its listeners sit on them.
 const __wcc_morph = {
     // listener sets kept on a node by the add_*_listener commands, with their options
-    kinds: [['__wcc_ptr', undefined], ['__wcc_wh', { passive: false }], ['__wcc_drop', undefined], ['__wcc_focus', undefined]],
+    kinds: [['__wcc_ptr', undefined], ['__wcc_wh', { passive: false }], ['__wcc_drop', undefined], ['__wcc_focus', undefined], ['__wcc_clk', undefined]],
 
     item(elements, oh, nh) {
         const o = elements[oh], n = elements[nh];

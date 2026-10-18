@@ -134,7 +134,8 @@ struct FocusEvent { webcc::DOMElement handle; };
 struct BlurEvent  { webcc::DOMElement handle; };
 ```
 
-- `focus` moves keyboard focus to the element. `prevent_scroll = 1` keeps the page from scrolling it into view.
+- `focus` moves keyboard focus to the element. `prevent_scroll = 1` keeps the page from scrolling it into view. It runs after the rest of the flush, so an element created in the same update, or moved into place by a morph, takes focus once it is in the page.
+- `focus_end(handle)` focuses an editable element with the caret at the end of its content, inside its last element (after `set_inner_html("<ul><li>…</li></ul>")` the caret is in the item, not after the list).
 - On phones the on-screen keyboard only opens when `focus` runs inside a tap or key handler. Pointer down, click and key events run the update function right away, so calling it there works.
 - `add_focus_listener` sends `FocusEvent` and `BlurEvent` when the element itself gains or loses focus. Both run the update function right away.
 
@@ -170,6 +171,28 @@ void add_class(webcc::DOMElement handle, webcc::string_view cls);
 void remove_class(webcc::DOMElement handle, webcc::string_view cls);
 ```
 
+### Selection
+
+```cpp
+webcc::DOMElement get_selection_anchor();   // the element holding the caret, invalid when nothing is selected
+webcc::string get_selection_text();         // the selected text, empty for a caret
+```
+
+Elements the page made itself (`set_inner_html`, typing in a `contenteditable`) get a handle the first time they come back from one of these; the same node keeps the same handle.
+
+### Lookup
+
+```cpp
+webcc::DOMElement closest(webcc::DOMElement handle, webcc::string_view selector);  // Element.closest, invalid when none
+uint8_t contains(webcc::DOMElement handle, webcc::DOMElement other);              // 1 if other is the element or inside it
+```
+
+```cpp
+// is the caret in a list item of this editor?
+webcc::DOMElement at = webcc::dom::get_selection_anchor();
+bool in_list = at.is_valid() && webcc::dom::contains(editor, at) && webcc::dom::closest(at, "li").is_valid();
+```
+
 ### Events
 
 #### `add_click_listener`
@@ -189,6 +212,23 @@ struct ClickEvent {
     webcc::DOMElement handle; // The handle of the element that was clicked
 };
 ```
+
+#### `add_click_target_listener`
+
+Reports every click inside an element with the element actually clicked, e.g. one line of a `contenteditable`.
+
+```cpp
+void add_click_target_listener(webcc::DOMElement handle);
+
+struct ClickTargetEvent {
+    webcc::DOMElement handle;  // the element the listener is on
+    webcc::DOMElement target;  // the innermost element clicked (a text node's parent)
+    float x, y;                // where on target, in its own CSS px
+    webcc::input::Mods mods;   // shift, ctrl, alt, meta held
+};
+```
+
+It runs the update function right away.
 
 #### `add_pointer_listener`
 
