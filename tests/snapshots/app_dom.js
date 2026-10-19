@@ -145,7 +145,7 @@ const run = async () => {
                     { const parent = elements[parent_handle]; const child = elements[child_handle]; if(!parent || !child){ console.warn('append_child: unknown handles', parent_handle, child_handle); continue; } parent.appendChild(child); }
                     break;
                 }
-                case 29: {
+                case 30: {
                     if (pos + 4 > end) { console.error('WebCC: OOB handle'); break; }
                     const handle = i32[pos >> 2]; pos += 4;
                     if (pos + 4 > end) { console.error('WebCC: OOB text_len'); break; }
@@ -153,7 +153,7 @@ const run = async () => {
                     const text_padded = (text_len + 3) & ~3;
                     if (pos + text_padded > end) { console.error('WebCC: OOB text_data'); break; }
                     const text = decoder.decode(u8.subarray(pos, pos + text_len)); pos += text_padded;
-                    { const el = elements[handle]; if(el) el.innerText = text; }
+                    { const el = elements[handle]; if(el) { if ('innerText' in el) el.innerText = text; else el.textContent = text; } }
                     break;
                 }
 
