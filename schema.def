@@ -77,7 +77,7 @@ dom|command|DETACH|detach|handle(DOMElement):handle|{ const el = elements[handle
 # node right before ref (null ref = last), moved only when it isn't there already
 dom|command|PLACE|place|handle(DOMElement):parent_handle handle(DOMElement):node_handle handle(DOMElement):ref_handle|{ const parent = elements[parent_handle]; const node = elements[node_handle]; const ref = elements[ref_handle] || null; if (!parent || !node) continue; if (node.parentNode !== parent || node.nextSibling !== ref) parent.insertBefore(node, ref); }
 dom|command|SET_INNER_HTML|set_inner_html|handle(DOMElement):handle string:html|{ const el = elements[handle]; if(el) el.innerHTML = html; }
-dom|command|SET_INNER_TEXT|set_inner_text|handle(DOMElement):handle string:text|{ const el = elements[handle]; if(el) el.innerText = text; }
+dom|command|SET_INNER_TEXT|set_inner_text|handle(DOMElement):handle string:text|{ const el = elements[handle]; if(el) { if ('innerText' in el) el.innerText = text; else el.textContent = text; } }
 dom|command|ADD_CLASS|add_class|handle(DOMElement):handle string:cls|{ const el = elements[handle]; if(el) el.classList.add(cls); }
 dom|command|REMOVE_CLASS|remove_class|handle(DOMElement):handle string:cls|{ const el = elements[handle]; if(el) el.classList.remove(cls); }
 dom|event|CLICK|handle(DOMElement):handle
