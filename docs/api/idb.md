@@ -57,6 +57,14 @@ Deletes `key`. `DoneEvent` also arrives when the key didn't exist.
 webcc::IdbRequest remove(webcc::Database db, webcc::string_view key);
 ```
 
+### `clear`
+
+Removes every key and value. The database stays open and can be written to right away. Completes with `DoneEvent`, or `ErrorEvent` if it fails.
+
+```cpp
+webcc::IdbRequest clear(webcc::Database db);
+```
+
 ### `keys`
 
 Lists the keys starting with `prefix`, sorted. An empty prefix lists every key. `KeysEvent::keys` holds them joined with `'\n'`, so keys should not contain newlines.
