@@ -69,6 +69,9 @@ int main() {
 
 ```cpp
 void set_title(webcc::string_view title);
+// the browser's UI color (address bar, an installed app's title bar): every
+// <meta name="theme-color"> gets it, or one is added
+void set_theme_color(webcc::string_view color);
 void reload();
 void open_url(webcc::string_view url);
 ```
