@@ -23,10 +23,13 @@ Note: `Canvas` handles can be passed directly as they implicitly convert to `DOM
 
 ```cpp
 void prevent_key(int32_t key_code, input::Mods mods = input::Mods(0));
+void prevent_key_outside_fields(int32_t key_code, input::Mods mods = input::Mods(0));
 void allow_key(int32_t key_code, input::Mods mods = input::Mods(0));
 ```
 
 `prevent_key` stops the browser's own action for a key combination, so the app can use it as a shortcut: Ctrl+S would otherwise save the page, Ctrl+Z would undo inside a text field. `mods` must match exactly (Ctrl+Z doesn't cover Ctrl+Shift+Z), and on macOS the same shortcuts use Cmd (`Mods::META`) instead of Ctrl (`Mods::CTRL`), so register both. It works whether or not `init_keyboard` was called, and the key events are still delivered. `allow_key` undoes it.
+
+`prevent_key_outside_fields` does the same except while focus is in a text field (an input, a textarea, a select or anything contenteditable): there the key keeps its normal action. That suits keys that are both typed and used as shortcuts, such as Space, which types a space in a field but would otherwise scroll the page when held for a gesture. `allow_key` undoes this one too.
 
 ```cpp
 input::prevent_key(83, input::Mods::CTRL);  // Ctrl+S

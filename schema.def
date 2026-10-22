@@ -215,7 +215,10 @@ input|command|INIT_KEYBOARD|init_keyboard||{ if (window.__wcc_kb) continue; wind
 input|command|INIT_MOUSE|init_mouse|handle(DOMElement):handle|{ const el = elements[handle] || document; if (el.__wcc_mouse) continue; el.__wcc_mouse = 1; el.addEventListener('mousedown', e => { push_event_input_MOUSE_DOWN(e.button, e.offsetX, e.offsetY); _triggerDiscreteUpdate(); }); el.addEventListener('mouseup', e => { push_event_input_MOUSE_UP(e.button, e.offsetX, e.offsetY); _triggerDiscreteUpdate(); }); el.addEventListener('mousemove', e => push_event_input_MOUSE_MOVE(e.offsetX, e.offsetY)); }
 # block the browser default for a key combo, mods must match exactly
 input|command|PREVENT_KEY|prevent_key|int32:key_code Mods:mods=0|{ let pk = window.__wcc_pk; if (!pk) { pk = window.__wcc_pk = new Set(); window.addEventListener('keydown', (e) => { const m = (e.shiftKey ? 1 : 0) | (e.ctrlKey ? 2 : 0) | (e.altKey ? 4 : 0) | (e.metaKey ? 8 : 0); if (pk.has(e.keyCode * 16 + m)) e.preventDefault(); }, true); } pk.add(key_code * 16 + mods); }
-input|command|ALLOW_KEY|allow_key|int32:key_code Mods:mods=0|{ const pk = window.__wcc_pk; if (pk) pk.delete(key_code * 16 + mods); }
+# the same, except while a text field (input, textarea, contenteditable) has focus: there the key
+# keeps doing what it does (Space types a space, but no longer scrolls the page elsewhere)
+input|command|PREVENT_KEY_OUTSIDE_FIELDS|prevent_key_outside_fields|int32:key_code Mods:mods=0|{ let pf = window.__wcc_pf; if (!pf) { pf = window.__wcc_pf = new Set(); window.addEventListener('keydown', (e) => { const m = (e.shiftKey ? 1 : 0) | (e.ctrlKey ? 2 : 0) | (e.altKey ? 4 : 0) | (e.metaKey ? 8 : 0); if (!pf.has(e.keyCode * 16 + m)) return; const t = e.target; if (t && (t.isContentEditable || /^(INPUT|TEXTAREA|SELECT)$/.test(t.tagName))) return; e.preventDefault(); }, true); } pf.add(key_code * 16 + mods); }
+input|command|ALLOW_KEY|allow_key|int32:key_code Mods:mods=0|{ const pk = window.__wcc_pk; if (pk) pk.delete(key_code * 16 + mods); const pf = window.__wcc_pf; if (pf) pf.delete(key_code * 16 + mods); }
 input|command|EXIT_POINTER_LOCK|exit_pointer_lock||{ document.exitPointerLock(); }
 
 # ------------------------------------------------------------------------------
