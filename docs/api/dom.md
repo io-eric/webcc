@@ -405,6 +405,25 @@ struct DropEvent {
 
 Files are read asynchronously, so the events of one drop can arrive in any order and over several frames; `count` tells when all of them are in. Each one runs the update function right away. Dropped text or links (not files) are ignored.
 
+### View transitions
+
+```cpp
+webcc::ViewTransition start_view_transition();
+void view_transition_done(webcc::ViewTransition transition);
+
+struct ViewTransitionUpdateEvent { webcc::ViewTransition transition; };
+```
+
+`start_view_transition` has the browser keep the page as it looks now as a picture. When it is ready, a `ViewTransitionUpdateEvent` arrives for that handle: change the page then, and call `view_transition_done` once the change is made. The browser then animates from the picture to the new page; by default a crossfade, styled in CSS with `::view-transition-old(root)` and `::view-transition-new(root)`. Without browser support the event arrives right away and nothing animates.
+
+Until `view_transition_done` is called the page doesn't take input, so call it in the same update as the change. A reveal that grows from a corner:
+
+```css
+::view-transition-old(root), ::view-transition-new(root) { animation: none; mix-blend-mode: normal; }
+::view-transition-new(root) { animation: reveal .5s ease-in-out; }
+@keyframes reveal { from { clip-path: circle(0 at 100% 0); } to { clip-path: circle(150vmax at 100% 0); } }
+```
+
 ## Deferred Handles
 
 WebCC uses a command buffer architecture where API calls are batched and sent to JavaScript in bulk (see [Architecture](../architecture.md)). However, functions that return values, like `create_element`, must synchronously call into JavaScript and trigger a `flush()` to ensure correct execution order. This can be expensive when creating many elements in a loop.

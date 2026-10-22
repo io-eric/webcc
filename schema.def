@@ -73,6 +73,12 @@ dom|command|MORPH|morph|handle(DOMElement):old_handle handle(DOMElement):new_han
 # built fresh_handle, keeping its nodes (scroll, focus, typed text); fresh_handle's handles then name them
 dom|command|HYDRATE|hydrate|handle(DOMElement):fresh_handle|{ const n = elements[fresh_handle]; const o = document.querySelector('[data-hydrate]'); if (!n || !o) continue; if (!__wcc_morph.same(o, n)) { o.replaceWith(n); continue; } n.remove(); __wcc_morph.hydrating = true; try { __wcc_morph.node(elements, o, n); } finally { __wcc_morph.hydrating = false; } }
 # out of the document, still addressable
+# view transitions: the page as it is now is kept as a picture, VIEW_TRANSITION_UPDATE asks for the
+# change, and view_transition_done says it is in; the browser then animates from the picture to the
+# new page (styled with ::view-transition-old/new). Without browser support the update comes at once
+dom|event|VIEW_TRANSITION_UPDATE|handle(ViewTransition):transition|last
+dom|command|START_VIEW_TRANSITION|start_view_transition|RET:handle(ViewTransition)|{ const handle = (window.webcc_next_id = (window.webcc_next_id || 0) + 1); const vts = (window.__wcc_vt = window.__wcc_vt || {}); const ask = () => new Promise((res) => { vts[handle] = res; push_event_dom_VIEW_TRANSITION_UPDATE(handle); _triggerDiscreteUpdate(); }); if (document.startViewTransition) document.startViewTransition(ask); else queueMicrotask(ask); return handle; }
+dom|command|VIEW_TRANSITION_DONE|view_transition_done|handle(ViewTransition):transition|{ const vts = window.__wcc_vt; const res = vts && vts[transition]; if (res) { delete vts[transition]; res(); } }
 dom|command|DETACH|detach|handle(DOMElement):handle|{ const el = elements[handle]; if (el) el.remove(); }
 # node right before ref (null ref = last), moved only when it isn't there already
 dom|command|PLACE|place|handle(DOMElement):parent_handle handle(DOMElement):node_handle handle(DOMElement):ref_handle|{ const parent = elements[parent_handle]; const node = elements[node_handle]; const ref = elements[ref_handle] || null; if (!parent || !node) continue; if (node.parentNode !== parent || node.nextSibling !== ref) parent.insertBefore(node, ref); }

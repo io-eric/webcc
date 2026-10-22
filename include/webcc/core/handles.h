@@ -55,6 +55,10 @@ namespace webcc {
     struct Timeout_tag {};
     using Timeout = typed_handle<Timeout_tag>;
 
+    // Tag struct for ViewTransition
+    struct ViewTransition_tag {};
+    using ViewTransition = typed_handle<ViewTransition_tag>;
+
     // Tag struct for WGPUAdapter
     struct WGPUAdapter_tag {};
     using WGPUAdapter = typed_handle<WGPUAdapter_tag>;
