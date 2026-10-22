@@ -63,11 +63,14 @@ namespace webcc
 
     // Holds all command and event definitions.
     // NAMESPACE|helper|NAME|path.js, path relative to schema.def
+    // NAMESPACE|early|NAME|path.js: the same, run as the script starts, before the module loads
+    // (for browser events that can fire before then)
     struct SchemaHelper
     {
         std::string ns;
         std::string name;
         std::string code;
+        bool early = false;
     };
 
     struct SchemaDefs

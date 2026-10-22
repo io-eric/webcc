@@ -1116,6 +1116,32 @@ namespace webcc
         if (any_buffered_return)
             generated_js_imports.push_back("webcc_js_read_result: (ptr) => { new Uint8Array(memory.buffer, ptr, _big_result.length).set(_big_result); _big_result = null; }");
 
+        // JS helpers used by actions or other helpers
+        std::vector<const SchemaHelper *> used_helpers;
+        {
+            std::vector<const std::string *> scan = used_actions;
+            for (size_t i = 0; i < scan.size(); i++)
+                for (const auto &h : defs.helpers)
+                {
+                    if (std::find(used_helpers.begin(), used_helpers.end(), &h) != used_helpers.end()) continue;
+                    if (!contains_whole_word(*scan[i], h.name)) continue;
+                    used_helpers.push_back(&h);
+                    scan.push_back(&h.code);
+                    for (const auto &m : get_maps_from_action(h.code)) used_maps.insert(m);
+                    for (const auto &e : get_pushed_events_from_action(h.code)) used_event_helpers.insert(e);
+                }
+        }
+
+        // early helpers run as the script starts, outside run()
+        for (const auto *h : used_helpers)
+        {
+            if (!h->early) continue;
+            std::istringstream code(h->code);
+            std::string line;
+            while (std::getline(code, line))
+                w.raw(line + "\n");
+        }
+
         w.raw(JS_INIT_HEAD);
         w.set_indent(3);
 
@@ -1222,22 +1248,6 @@ namespace webcc
         w.write("    }");
         w.write("}");
         w.write("");
-
-        // JS helpers used by actions or other helpers
-        std::vector<const SchemaHelper *> used_helpers;
-        {
-            std::vector<const std::string *> scan = used_actions;
-            for (size_t i = 0; i < scan.size(); i++)
-                for (const auto &h : defs.helpers)
-                {
-                    if (std::find(used_helpers.begin(), used_helpers.end(), &h) != used_helpers.end()) continue;
-                    if (!contains_whole_word(*scan[i], h.name)) continue;
-                    used_helpers.push_back(&h);
-                    scan.push_back(&h.code);
-                    for (const auto &m : get_maps_from_action(h.code)) used_maps.insert(m);
-                    for (const auto &e : get_pushed_events_from_action(h.code)) used_event_helpers.insert(e);
-                }
-        }
 
         // Generate push_event helpers in JS only for event types that are actually used.
         for (const auto &d : defs.events)
@@ -1346,6 +1356,7 @@ namespace webcc
 
         for (const auto *h : used_helpers)
         {
+            if (h->early) continue;
             w.write("");
             std::istringstream code(h->code);
             std::string line;

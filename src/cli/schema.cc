@@ -150,6 +150,8 @@ namespace webcc
             write_string(out, h.ns);
             write_string(out, h.name);
             write_string(out, h.code);
+            uint8_t early = h.early ? 1 : 0;
+            out.write(reinterpret_cast<const char *>(&early), 1);
         }
 
         std::cout << "[WebCC] Saved binary cache: " << path << std::endl;
@@ -280,6 +282,9 @@ namespace webcc
             h.ns = read_string(in);
             h.name = read_string(in);
             h.code = read_string(in);
+            uint8_t early = 0;
+            in.read(reinterpret_cast<char *>(&early), 1);
+            h.early = early != 0;
             defs.helpers.push_back(std::move(h));
         }
 
@@ -383,8 +388,8 @@ namespace webcc
                 continue;
             }
 
-            // NAMESPACE|helper|NAME|path.js
-            if (parts[1] == "helper")
+            // NAMESPACE|helper|NAME|path.js, NAMESPACE|early|NAME|path.js
+            if (parts[1] == "helper" || parts[1] == "early")
             {
                 std::string dir = path.substr(0, path.find_last_of('/') + 1);
                 std::string code = read_file(dir + parts[3]);
@@ -401,7 +406,7 @@ namespace webcc
                         exit(1);
                     }
                 }
-                out.helpers.push_back({ns, parts[2], code});
+                out.helpers.push_back({ns, parts[2], code, parts[1] == "early"});
                 continue;
             }
 
