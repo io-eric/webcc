@@ -85,10 +85,15 @@ webcc::dom::request_pointer_lock(webcc::DOMElement handle);
 ```cpp
 webcc::string get_pathname();
 webcc::string get_search();
+webcc::string get_hash();     // "#..." or ""
+webcc::string get_origin();   // "https://example.com"
 webcc::string get_query_param(webcc::string_view name);
 void push_state(webcc::string_view path);
+void replace_state(webcc::string_view path);  // new address for the current entry, no new history entry
 void init_popstate();
 ```
+
+`replace_state` suits cleaning up an address without adding a step to back, for example dropping a one-time token from the hash after reading it.
 
 After calling `init_popstate()`, route changes are emitted through the event system.
 
