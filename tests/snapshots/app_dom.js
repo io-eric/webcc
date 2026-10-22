@@ -145,7 +145,7 @@ const run = async () => {
                     { const parent = elements[parent_handle]; const child = elements[child_handle]; if(!parent || !child){ console.warn('append_child: unknown handles', parent_handle, child_handle); continue; } parent.appendChild(child); }
                     break;
                 }
-                case 30: {
+                case 32: {
                     if (pos + 4 > end) { console.error('WebCC: OOB handle'); break; }
                     const handle = i32[pos >> 2]; pos += 4;
                     if (pos + 4 > end) { console.error('WebCC: OOB text_len'); break; }
