@@ -225,3 +225,22 @@ if (auto v = e.as<webcc::system::VisibilityChangeEvent>()) {
 }
 ```
 
+
+## Installing as an App
+
+```cpp
+void init_install();
+void prompt_install();   // only in a click or key handler
+
+struct InstallStateEvent { uint8_t state; };
+```
+
+After `init_install()`, an `InstallStateEvent` arrives right away with the current state, and again whenever it changes:
+
+- `0`: the browser offers no install prompt. Either it has none (Safari and Firefox on desktop), the page doesn't qualify yet (a web app manifest and a service worker are needed), or the prompt was just used and turned down.
+- `1`: the browser has an install prompt ready. Show your own install button.
+- `2`: installed, or the page is running as the installed app.
+
+`prompt_install()` shows the browser's prompt; call it from the button's click handler. After the user answers, the state becomes `2` (installed) or `0`. Browsers may offer the prompt again later, which sends another `1`.
+
+The prompt can arrive before the module has loaded, so the generated JS listens for it from the moment the script starts and keeps it until `init_install()`. Browsers without a prompt still let people install by hand (Safari: Share, then Add to Home Screen), so a page usually shows a short hint instead of the button when the state stays `0`.
