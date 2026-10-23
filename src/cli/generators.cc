@@ -1581,6 +1581,7 @@ namespace webcc
                                "-std=c++20 "
                                "-nostdlib "
                                "-mbulk-memory "     // Enable bulk memory operations
+                               "-mnontrapping-fptoint " // float-to-int casts saturate (NaN gives 0) instead of trapping
                                "-mmutable-globals " // Faster global variable access
                                "-msign-ext ";       // Optimize sign extensions
 
