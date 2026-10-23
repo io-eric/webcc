@@ -1591,6 +1591,7 @@ namespace webcc
 
         // compile_only_flags: Settings applied only when generating .o files.
         std::string compile_only_flags = "-fvisibility=hidden "
+                                         "-fno-strict-float-cast-overflow " // and the optimizer treats them as saturating too, not as undefined
                                          "-fno-exceptions "
                                          "-fno-rtti "
                                          "-ffunction-sections " // For better dead code elimination

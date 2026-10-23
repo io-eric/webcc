@@ -82,7 +82,7 @@ Standard libraries provided by toolchains like Emscripten or even the default LL
 To use them, simply include the standard header name (e.g., `#include <vector>`) and ensure the `include/webcc/compat` directory is in your include path (which the `webcc` tool handles automatically).
 
 ## Float-to-int casts saturate
-Casting a float that is NaN or out of range to an integer is undefined in C++, and plain WebAssembly traps on it, which stops the program. WebCC compiles with saturating conversions instead (`-mnontrapping-fptoint`): NaN becomes 0, and a value past the integer's range becomes its largest or smallest value. Every current browser runs them (Chrome 75, Firefox 64 and Safari 15 onwards).
+Casting a float that is NaN or out of range to an integer is undefined in C++, and plain WebAssembly traps on it, which stops the program. WebCC compiles with saturating conversions instead (`-mnontrapping-fptoint`, and `-fno-strict-float-cast-overflow` so the optimizer folds a constant cast the same way rather than treating it as undefined): NaN becomes 0, and a value past the integer's range becomes its largest or smallest value. Every current browser runs them (Chrome 75, Firefox 64 and Safari 15 onwards).
 
 ## Easy Extensibility
 The entire API surface is defined in a single configuration file: `schema.def`.
