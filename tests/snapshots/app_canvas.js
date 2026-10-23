@@ -138,7 +138,7 @@ const run = async () => {
             pos += 4;
 
             switch (opcode) {
-                case 69: {
+                case 71: {
                     if (pos + 4 > end) { console.error('WebCC: OOB handle'); break; }
                     const handle = i32[pos >> 2]; pos += 4;
                     if (pos % 8 !== 0) pos += (8 - (pos % 8));
@@ -167,4 +167,6 @@ const run = async () => {
     // Run the C++ main function
     if (main) main();
 };
-run();
+// a failure while starting (the fetch, or main itself) is rethrown as an ordinary uncaught
+// error, so it shows in the console and reaches window 'error' listeners
+run().catch(e => setTimeout(() => { throw e; }));
