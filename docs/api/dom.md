@@ -176,7 +176,11 @@ void remove_class(webcc::DOMElement handle, webcc::string_view cls);
 ```cpp
 webcc::DOMElement get_selection_anchor();   // the element holding the caret, invalid when nothing is selected
 webcc::string get_selection_text();         // the selected text, empty for a caret
+int32_t get_caret_offset(webcc::DOMElement handle);   // the caret as a character offset into the element's text, -1 when it isn't inside
+void insert_at_text_offset(webcc::DOMElement handle, int32_t offset, webcc::string_view html);   // html put at that offset of the text
 ```
+
+`get_caret_offset` counts the text before the selection's focus (every text node, in UTF-16 units), and `insert_at_text_offset` puts markup at such a count, so an offset taken from one element lands at the same spot in another with the same content. Past the end, or with no text at all, the html goes at the end, inside the last element.
 
 Elements the page made itself (`set_inner_html`, typing in a `contenteditable`) get a handle the first time they come back from one of these; the same node keeps the same handle.
 
