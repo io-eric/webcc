@@ -343,8 +343,9 @@ const __wcc_pdf = {
             const cp = ch.codePointAt(0);
             let file = chain[0], gid = 0;
             for (const c of chain) { const g = this.glyphOf(c.font, cp); if (g) { file = c; gid = g; break; } }
-            if (!gid) { const q = this.glyphOf(chain[0].font, 63); file = chain[0]; gid = q; }    // '?'
-            if (!file.used.has(gid)) file.used.set(gid, ch);
+            // in no file: a '?', which copies as one too
+            if (!gid) { file = chain[0]; gid = this.glyphOf(file.font, 63); file.used.set(gid, '?'); }
+            else if (!file.used.has(gid)) file.used.set(gid, ch);
             const last = runs[runs.length - 1];
             if (last && last.file === file) last.gids.push(gid);
             else runs.push({ file, gids: [gid] });

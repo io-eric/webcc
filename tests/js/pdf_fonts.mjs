@@ -57,6 +57,7 @@ check(/\/W \[1 \[600\] 3 \[600\] 5 \[600\]\]/.test(text), "widths for the glyphs
 
 const cmap = streams.map((s) => s.toString("latin1")).find((s) => s.includes("beginbfchar"));
 check(cmap && cmap.includes("<0001> <0041>") && cmap.includes("<0005> <00c4>"), "ToUnicode maps the glyphs back to A and Ä");
+check(cmap && cmap.includes("<0003> <003f>"), "the ? standing in for z copies as ?, not z");
 
 // the embedded file: glyf keeps A (1), ? (3), Ä (5) and the dieresis it is built from (4); B (2) is empty
 const font = streams.find((s) => s.length > 12 && s.readUInt32BE(0) === 0x00010000);
