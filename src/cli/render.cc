@@ -5,6 +5,7 @@
 #include <fstream>
 #include <iostream>
 #include <sstream>
+#include <sys/wait.h>
 
 namespace fs = std::filesystem;
 
@@ -93,8 +94,9 @@ namespace webcc
         }
     }
 
-    bool render_first_frame(const SchemaDefs &defs, const std::vector<std::string> &input_files,
-                            const std::string &cache_dir, const std::vector<RenderTarget> &targets)
+    // the program, compiled for this machine with host_render.cc as its runtime
+    static bool build_host(const SchemaDefs &defs, const std::vector<std::string> &input_files,
+                           const std::string &cache_dir, fs::path &bin)
     {
         std::string exe_dir = get_executable_dir();
         fs::path host_dir = fs::path(cache_dir) / "host";
@@ -109,7 +111,7 @@ namespace webcc
             cmd += "\"" + exe_dir + "/src/core/" + core + "\" ";
         cmd += "\"" + (host_dir / "host_stubs.cc").string() + "\" ";
         if (const char *ld = getenv("LDFLAGS_LIBCXX")) cmd += std::string(ld) + " ";
-        fs::path bin = host_dir / "render";
+        bin = host_dir / "program";
         cmd += "-o \"" + bin.string() + "\"";
         if (!quiet) std::cout << "[WebCC] Building for the host" << std::endl;
         report("compiling for the host");
@@ -118,6 +120,14 @@ namespace webcc
             std::cerr << "[WebCC] Error: the host build failed" << std::endl;
             return false;
         }
+        return true;
+    }
+
+    bool render_first_frame(const SchemaDefs &defs, const std::vector<std::string> &input_files,
+                            const std::string &cache_dir, const std::vector<RenderTarget> &targets)
+    {
+        fs::path bin;
+        if (!build_host(defs, input_files, cache_dir, bin)) return false;
 
         report("rendering");
         for (const auto &t : targets)
@@ -132,5 +142,18 @@ namespace webcc
             if (!quiet) std::cout << "[WebCC] Rendered " << t.path << " to " << t.out_html << std::endl;
         }
         return true;
+    }
+
+    int run_on_host(const SchemaDefs &defs, const std::vector<std::string> &input_files, const std::string &cache_dir)
+    {
+        fs::path bin;
+        if (!build_host(defs, input_files, cache_dir, bin)) return 1;
+        report("running");
+        std::cout.flush();
+        int status = system(("\"" + bin.string() + "\"").c_str());
+        if (status == -1) return 1;
+        if (WIFEXITED(status)) return WEXITSTATUS(status);
+        std::cerr << "[WebCC] Error: the program stopped on a signal" << std::endl;
+        return 1;
     }
 }
