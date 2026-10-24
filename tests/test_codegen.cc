@@ -731,15 +731,14 @@ TEST(codegen_js_draw_image_sources)
 TEST(codegen_js_helpers)
 {
     SchemaDefs defs = real_defs();
-    auto markers = void_markers(defs, {"pdf::add_page", "pdf::finish"});
-    generate_js_runtime(defs, {"webcc_js_flush", "webcc_pdf_create_writer"}, markers, {}, "/tmp");
+    auto markers = void_markers(defs, {"pdf::set_library", "pdf::close"});
+    generate_js_runtime(defs, {"webcc_js_flush", "webcc_pdf_open"}, markers, {}, "/tmp");
     std::string js = read_file("/tmp/app.js");
     size_t first = js.find("const __wcc_pdf = {");
     CHECK(first != std::string::npos);
     CHECK(js.find("const __wcc_pdf = {", first + 1) == std::string::npos);
     // used only inside the helper
     CHECK(js.find("const blobs = [];") != std::string::npos);
-    CHECK(js.find("function push_event_pdf_WRITTEN(") != std::string::npos);
     CHECK(js.find("function push_event_pdf_OPENED(") != std::string::npos);
 
     generate_js_runtime(defs, {"webcc_js_flush", "webcc_blob_take"}, {}, {}, "/tmp");

@@ -329,13 +329,11 @@ files|command|SAVE|save|string:name string:mime bytes:data RET:uint8|{ const url
 # ------------------------------------------------------------------------------
 # PDF
 # ------------------------------------------------------------------------------
-# import via pdf.js, export from canvas-like drawing
+# reading via pdf.js: open a file, draw its pages into canvases
 pdf|helper|__wcc_pdf|js/pdf.js
 # page_count 0 and error set on failure
 pdf|event|OPENED|handle(PdfDocument):doc int32:page_count string:error|last
 pdf|event|RENDERED|handle(PdfRender):render uint8:ok string:error|last
-# data invalid and error set on failure
-pdf|event|WRITTEN|handle(PdfWriter):writer handle(Blob):data string:error|last
 # pdf.min.mjs and pdf.worker.min.mjs URLs, relative to the page
 pdf|command|SET_LIBRARY|set_library|string:lib_url string:worker_url|{ __wcc_pdf.lib = lib_url; __wcc_pdf.worker = worker_url; __wcc_pdf.mod = null; }
 # bytes are copied, blob can be freed after
@@ -348,37 +346,6 @@ pdf|command|RENDER_PAGE|render_page|handle(PdfDocument):doc int32:page handle(Ca
 # RENDERED with error 'cancelled' unless already done
 pdf|command|CANCEL_RENDER|cancel_render|handle(PdfRender):render|{ __wcc_pdf.cancel(render); }
 pdf|command|CLOSE|close|handle(PdfDocument):doc|{ __wcc_pdf.close(doc); }
-# points, origin top-left, y down; add_page first
-pdf|command|CREATE_WRITER|create_writer|RET:handle(PdfWriter)|{ const h = (window.webcc_next_id = (window.webcc_next_id || 0) + 1); __wcc_pdf.create(h); return h; }
-pdf|command|ADD_PAGE|add_page|handle(PdfWriter):writer float32:width float32:height|{ __wcc_pdf.page(writer, width, height); }
-pdf|command|SET_STROKE_COLOR|set_stroke_color|handle(PdfWriter):writer uint8:r uint8:g uint8:b float32:alpha=1|{ __wcc_pdf.color(writer, r, g, b, alpha, false); }
-pdf|command|SET_FILL_COLOR|set_fill_color|handle(PdfWriter):writer uint8:r uint8:g uint8:b float32:alpha=1|{ __wcc_pdf.color(writer, r, g, b, alpha, true); }
-pdf|command|SET_LINE_WIDTH|set_line_width|handle(PdfWriter):writer float32:width|{ __wcc_pdf.op(writer, __wcc_pdf.num(width) + ' w'); }
-pdf|enum|LineCap:uint8|BUTT ROUND SQUARE
-pdf|command|SET_LINE_CAP|set_line_cap|handle(PdfWriter):writer LineCap:cap|{ __wcc_pdf.op(writer, cap + ' J'); }
-pdf|enum|LineJoin:uint8|MITER ROUND BEVEL
-pdf|command|SET_LINE_JOIN|set_line_join|handle(PdfWriter):writer LineJoin:join|{ __wcc_pdf.op(writer, join + ' j'); }
-pdf|command|MOVE_TO|move_to|handle(PdfWriter):writer float32:x float32:y|{ __wcc_pdf.move(writer, x, y); }
-pdf|command|LINE_TO|line_to|handle(PdfWriter):writer float32:x float32:y|{ __wcc_pdf.line(writer, x, y); }
-pdf|command|QUAD_TO|quad_to|handle(PdfWriter):writer float32:cx float32:cy float32:x float32:y|{ __wcc_pdf.quad(writer, cx, cy, x, y); }
-pdf|command|CURVE_TO|curve_to|handle(PdfWriter):writer float32:c1x float32:c1y float32:c2x float32:c2y float32:x float32:y|{ __wcc_pdf.curve(writer, c1x, c1y, c2x, c2y, x, y); }
-pdf|command|RECT|rect|handle(PdfWriter):writer float32:x float32:y float32:w float32:h|{ __wcc_pdf.op(writer, [x, y, w, h].map(__wcc_pdf.num).join(' ') + ' re'); }
-pdf|command|CLOSE_PATH|close_path|handle(PdfWriter):writer|{ __wcc_pdf.op(writer, 'h'); }
-pdf|command|STROKE|stroke|handle(PdfWriter):writer|{ __wcc_pdf.op(writer, 'S'); }
-pdf|command|FILL|fill|handle(PdfWriter):writer|{ __wcc_pdf.op(writer, 'f'); }
-pdf|command|SAVE|save|handle(PdfWriter):writer|{ __wcc_pdf.op(writer, 'q'); }
-pdf|command|RESTORE|restore|handle(PdfWriter):writer|{ __wcc_pdf.op(writer, 'Q'); }
-# Image or Canvas, pixels copied right away
-pdf|command|DRAW_IMAGE|draw_image|handle(PdfWriter):writer handle(DOMElement):source float32:x float32:y float32:w float32:h|{ __wcc_pdf.image(writer, elements[source], x, y, w, h); }
-# a TrueType font for draw_text, fetched from url when the writer finishes and cut down to the
-# glyphs used; more files under one name make a chain, each character taking the first that has it
-pdf|command|ADD_FONT|add_font|handle(PdfWriter):writer string:name string:url|{ __wcc_pdf.addFont(writer, name, url); }
-# the font draw_text uses from here on, by its add_font name; "" (or a name never added) is Helvetica
-pdf|command|SET_FONT|set_font|handle(PdfWriter):writer string:name|{ __wcc_pdf.setFont(writer, name); }
-# in the set font (Helvetica, Latin-1 only, when none), y is the baseline
-pdf|command|DRAW_TEXT|draw_text|handle(PdfWriter):writer string:text float32:x float32:y float32:size|{ __wcc_pdf.text(writer, text, x, y, size); }
-# WRITTEN when done, the writer is gone after this
-pdf|command|FINISH|finish|handle(PdfWriter):writer|{ __wcc_pdf.finish(writer); }
 
 # ------------------------------------------------------------------------------
 # STORAGE (LocalStorage)

@@ -1,6 +1,6 @@
 # PDF API
 
-The `webcc::pdf` module imports PDFs, rendering their pages into a canvas, and exports PDFs written with canvas-like drawing commands.
+The `webcc::pdf` module reads PDFs: it opens a file and renders its pages into a canvas.
 
 ## Header
 
@@ -71,76 +71,6 @@ struct RenderedEvent { webcc::PdfRender render; uint8_t ok; webcc::string_view e
 - `page_count` is `0` and `error` says why when the file couldn't be opened (not a PDF, damaged, password protected, pdf.js not found).
 - `ok` is `0` for a page that doesn't exist, a failed render, or a cancelled one (`error` is `"cancelled"`).
 
-## Export
-
-A writer collects pages and drawing commands, then builds the file in the background. Coordinates are PDF points with the origin at the top-left and y going down, like a canvas. Strokes stay vectors, so the file is sharp at any zoom.
-
-```cpp
-webcc::PdfWriter create_writer();
-void add_page(webcc::PdfWriter w, float width, float height);   // starts a new page
-
-void set_stroke_color(webcc::PdfWriter w, uint8_t r, uint8_t g, uint8_t b, float alpha = 1);
-void set_fill_color(webcc::PdfWriter w, uint8_t r, uint8_t g, uint8_t b, float alpha = 1);
-void set_line_width(webcc::PdfWriter w, float width);
-void set_line_cap(webcc::PdfWriter w, pdf::LineCap cap);     // LineCap::BUTT, ROUND, SQUARE
-void set_line_join(webcc::PdfWriter w, pdf::LineJoin join);  // LineJoin::MITER, ROUND, BEVEL
-
-void move_to(webcc::PdfWriter w, float x, float y);
-void line_to(webcc::PdfWriter w, float x, float y);
-void quad_to(webcc::PdfWriter w, float cx, float cy, float x, float y);
-void curve_to(webcc::PdfWriter w, float c1x, float c1y, float c2x, float c2y, float x, float y);
-void rect(webcc::PdfWriter w, float x, float y, float width, float height);
-void close_path(webcc::PdfWriter w);
-void stroke(webcc::PdfWriter w);
-void fill(webcc::PdfWriter w);
-void save(webcc::PdfWriter w);      // push the current colors, width, etc.
-void restore(webcc::PdfWriter w);   // and pop them
-
-void draw_image(webcc::PdfWriter w, webcc::DOMElement source, float x, float y, float width, float height);
-void add_font(webcc::PdfWriter w, webcc::string_view name, webcc::string_view url);
-void set_font(webcc::PdfWriter w, webcc::string_view name);
-void draw_text(webcc::PdfWriter w, webcc::string_view text, float x, float y, float size);
-
-void finish(webcc::PdfWriter w);
-```
-
-- **Transparency** (`alpha` below 1) works for strokes and fills, e.g. a highlighter.
-- **`draw_image`** takes an `Image` or a `Canvas`, so a page rendered by `render_page` can be the background of an exported page. Its pixels are copied right away, so the source can change or be freed afterwards. Opaque images are stored as JPEG, images with transparency as lossless RGB with an alpha mask. The same `Image` drawn several times is stored once.
-- **`draw_text`** writes in the fill color, with `y` as the baseline, in the font `set_font` picked. Without one it's Helvetica, built into every PDF reader, which covers Latin-1 only: other characters (`€`, `Ł`, CJK, emoji) become `?`.
-- **`add_font`** gives a TrueType file (`.ttf`, glyph outlines in `glyf`; not OpenType/CFF, not woff/woff2) a name for `set_font`. Several files under one name make a chain: each character is drawn from the first file that has it, so a Latin file and an extended one act as one font; a character none has becomes `?`. The files are fetched when the writer finishes and embedded with only the glyphs used, along with the text behind them, so the PDF's text can be searched and copied. A variable font is used at its default instance: give each weight its own static file (and name). A file that can't be fetched or read is left out, and its text falls back to Helvetica (a warning in the console). There's no kerning or shaping: text that needs ligatures to read (Arabic, Indic scripts) won't come out right.
-- Commands before the first `add_page` are ignored.
-
-### `WrittenEvent`
-
-```cpp
-struct WrittenEvent { webcc::PdfWriter writer; webcc::Blob data; webcc::string_view error; };
-```
-
-`data` holds the PDF file. Save it with `files::save`, store it, or upload it. The writer is gone after `finish`.
-
-## Example: export a page of ink over an imported PDF
-
-```cpp
-auto w = webcc::pdf::create_writer();
-webcc::pdf::add_page(w, 595, 842);
-webcc::pdf::draw_image(w, background_canvas, 0, 0, 595, 842);   // rendered with render_page
-webcc::pdf::set_stroke_color(w, 20, 20, 20);
-webcc::pdf::set_line_width(w, 2);
-webcc::pdf::set_line_cap(w, webcc::pdf::LineCap::ROUND);
-for (const auto &s : strokes) {
-    webcc::pdf::move_to(w, s.x[0], s.y[0]);
-    for (size_t i = 1; i < s.size(); i++) webcc::pdf::line_to(w, s.x[i], s.y[i]);
-    webcc::pdf::stroke(w);
-}
-webcc::pdf::finish(w);
-
-// later, in the event loop
-if (auto done = e.as<webcc::pdf::WrittenEvent>()) {
-    webcc::files::save("notes.pdf", "application/pdf", webcc::blob::take(done->data));
-}
-```
-
 ## Notes
 
-- An imported page is exported as an image of the page at the resolution it was rendered at, not as the original vector page. Render at scale 2 or more before exporting for print quality.
-- The writer needs `CompressionStream` (Chrome 80, Firefox 113, Safari 16.4).
+- A rendered page is pixels in a canvas: to put it into a PDF of your own, use it as an image at the resolution it was rendered at. Render at scale 2 or more for print quality.

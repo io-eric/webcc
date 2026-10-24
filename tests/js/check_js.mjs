@@ -158,10 +158,15 @@ int main(){ namespace p=webcc::pdf; uint8_t d[2]={1,2};
   auto doc=p::open(webcc::blob::create(webcc::bytes_view(d,2)));
   auto c=webcc::canvas::create_canvas("",1,1);
   auto r=p::render_page(doc,0,c,1); p::cancel_render(r); p::close(doc);
-  auto w=p::create_writer(); p::add_page(w,100,100); p::set_fill_color(w,1,2,3,0.5f);
-  p::move_to(w,0,0); p::quad_to(w,1,1,2,2); p::stroke(w); p::draw_image(w,c,0,0,1,1);
-  p::draw_text(w,"hi",0,10,12); p::finish(w);
   return (int)p::page_width(doc,0); }`,
+
+  compression: `#include "webcc/compression.h"
+#include "webcc/canvas.h"
+int main(){ uint8_t d[3]={1,2,3};
+  webcc::compression::compress(webcc::bytes_view(d,3),"deflate");
+  webcc::compression::decompress(webcc::bytes_view(d,3),"gzip");
+  auto c=webcc::canvas::create_canvas("",1,1); auto x=webcc::canvas::get_context_2d(c);
+  auto px=webcc::canvas::get_image_data(x,0,0,1,1); return (int)px.size(); }`,
 
   fetch_storage: `#include "webcc/fetch.h"
 #include "webcc/storage.h"

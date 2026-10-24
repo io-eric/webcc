@@ -110,24 +110,6 @@ namespace webcc::input {
     constexpr bool any(Mods v, Mods of = Mods(~(uint8_t)0)) { return ((uint8_t)v & (uint8_t)of) != 0; }
 } // namespace webcc::input
 
-namespace webcc::pdf {
-    // Choices
-    enum class LineCap : uint8_t {
-        BUTT = 0,
-        ROUND = 1,
-        SQUARE = 2,
-    };
-} // namespace webcc::pdf
-
-namespace webcc::pdf {
-    // Choices
-    enum class LineJoin : uint8_t {
-        MITER = 0,
-        ROUND = 1,
-        BEVEL = 2,
-    };
-} // namespace webcc::pdf
-
 namespace webcc::websocket {
     // Choices
     enum class ReadyState : uint8_t {

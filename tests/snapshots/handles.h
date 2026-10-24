@@ -51,10 +51,6 @@ namespace webcc {
     struct PdfRender_tag {};
     using PdfRender = typed_handle<PdfRender_tag>;
 
-    // Tag struct for PdfWriter
-    struct PdfWriter_tag {};
-    using PdfWriter = typed_handle<PdfWriter_tag>;
-
     // Tag struct for Timeout
     struct Timeout_tag {};
     using Timeout = typed_handle<Timeout_tag>;
