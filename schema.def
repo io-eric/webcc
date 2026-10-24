@@ -367,7 +367,12 @@ pdf|command|SAVE|save|handle(PdfWriter):writer|{ __wcc_pdf.op(writer, 'q'); }
 pdf|command|RESTORE|restore|handle(PdfWriter):writer|{ __wcc_pdf.op(writer, 'Q'); }
 # Image or Canvas, pixels copied right away
 pdf|command|DRAW_IMAGE|draw_image|handle(PdfWriter):writer handle(DOMElement):source float32:x float32:y float32:w float32:h|{ __wcc_pdf.image(writer, elements[source], x, y, w, h); }
-# Helvetica, y is the baseline, Latin-1 only
+# a TrueType font for draw_text, fetched from url when the writer finishes and cut down to the
+# glyphs used; more files under one name make a chain, each character taking the first that has it
+pdf|command|ADD_FONT|add_font|handle(PdfWriter):writer string:name string:url|{ __wcc_pdf.addFont(writer, name, url); }
+# the font draw_text uses from here on, by its add_font name; "" (or a name never added) is Helvetica
+pdf|command|SET_FONT|set_font|handle(PdfWriter):writer string:name|{ __wcc_pdf.setFont(writer, name); }
+# in the set font (Helvetica, Latin-1 only, when none), y is the baseline
 pdf|command|DRAW_TEXT|draw_text|handle(PdfWriter):writer string:text float32:x float32:y float32:size|{ __wcc_pdf.text(writer, text, x, y, size); }
 # WRITTEN when done, the writer is gone after this
 pdf|command|FINISH|finish|handle(PdfWriter):writer|{ __wcc_pdf.finish(writer); }

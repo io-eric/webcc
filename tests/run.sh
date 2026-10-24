@@ -72,3 +72,6 @@ fi
 
 echo "[tests] Validating generated JavaScript..."
 node "$ROOT/tests/js/check_js.mjs" "$ROOT/webcc" "$ROOT"
+
+echo "[tests] The PDF writer's fonts..."
+node "$ROOT/tests/js/pdf_fonts.mjs" "$ROOT"

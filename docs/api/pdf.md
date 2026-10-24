@@ -97,6 +97,8 @@ void save(webcc::PdfWriter w);      // push the current colors, width, etc.
 void restore(webcc::PdfWriter w);   // and pop them
 
 void draw_image(webcc::PdfWriter w, webcc::DOMElement source, float x, float y, float width, float height);
+void add_font(webcc::PdfWriter w, webcc::string_view name, webcc::string_view url);
+void set_font(webcc::PdfWriter w, webcc::string_view name);
 void draw_text(webcc::PdfWriter w, webcc::string_view text, float x, float y, float size);
 
 void finish(webcc::PdfWriter w);
@@ -104,7 +106,8 @@ void finish(webcc::PdfWriter w);
 
 - **Transparency** (`alpha` below 1) works for strokes and fills, e.g. a highlighter.
 - **`draw_image`** takes an `Image` or a `Canvas`, so a page rendered by `render_page` can be the background of an exported page. Its pixels are copied right away, so the source can change or be freed afterwards. Opaque images are stored as JPEG, images with transparency as lossless RGB with an alpha mask. The same `Image` drawn several times is stored once.
-- **`draw_text`** uses Helvetica, built into every PDF reader, in the fill color, with `y` as the baseline. It covers Latin-1 only; other characters (`€`, CJK, emoji) become `?`. For other text, draw it into a canvas and add that with `draw_image`.
+- **`draw_text`** writes in the fill color, with `y` as the baseline, in the font `set_font` picked. Without one it's Helvetica, built into every PDF reader, which covers Latin-1 only: other characters (`€`, `Ł`, CJK, emoji) become `?`.
+- **`add_font`** gives a TrueType file (`.ttf`, glyph outlines in `glyf`; not OpenType/CFF, not woff/woff2) a name for `set_font`. Several files under one name make a chain: each character is drawn from the first file that has it, so a Latin file and an extended one act as one font; a character none has becomes `?`. The files are fetched when the writer finishes and embedded with only the glyphs used, along with the text behind them, so the PDF's text can be searched and copied. A variable font is used at its default instance: give each weight its own static file (and name). A file that can't be fetched or read is left out, and its text falls back to Helvetica (a warning in the console). There's no kerning or shaping: text that needs ligatures to read (Arabic, Indic scripts) won't come out right.
 - Commands before the first `add_page` are ignored.
 
 ### `WrittenEvent`
