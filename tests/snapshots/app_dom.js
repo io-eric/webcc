@@ -109,6 +109,13 @@ const run = async () => {
 
     // Reusable text decoder to avoid garbage collection overhead
     const decoder = new TextDecoder();
+    // most strings in a command are a tag, an attribute or a short text: for those a decode call
+    // costs more than the string, so short ASCII runs are built directly
+    const _str = (pos, len) => {
+        if (len > 64) return decoder.decode(u8.subarray(pos, pos + len));
+        for (let i = pos, e = pos + len; i < e; i++) if (u8[i] > 127) return decoder.decode(u8.subarray(pos, pos + len));
+        return String.fromCharCode.apply(null, u8.subarray(pos, pos + len));
+    };
     let u8 = new Uint8Array(memory.buffer);
     let i32 = new Int32Array(memory.buffer);
     let f32 = new Float32Array(memory.buffer);
@@ -152,7 +159,7 @@ const run = async () => {
                     const text_len = i32[pos >> 2]; pos += 4;
                     const text_padded = (text_len + 3) & ~3;
                     if (pos + text_padded > end) { console.error('WebCC: OOB text_data'); break; }
-                    const text = decoder.decode(u8.subarray(pos, pos + text_len)); pos += text_padded;
+                    const text = _str(pos, text_len); pos += text_padded;
                     { const el = elements[handle]; if(el) { if ('innerText' in el) el.innerText = text; else el.textContent = text; } }
                     break;
                 }

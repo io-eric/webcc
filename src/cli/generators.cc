@@ -690,7 +690,7 @@ namespace webcc
                 w.write("const " + varName + "_len = i32[pos >> 2]; pos += 4;");
                 w.write("const " + varName + "_padded = (" + varName + "_len + 3) & ~3;");
                 w.write("if (pos + " + varName + "_padded > end) { console.error('WebCC: OOB " + varName + "_data'); break; }");
-                w.write("const " + varName + " = decoder.decode(u8.subarray(pos, pos + " + varName + "_len)); pos += " + varName + "_padded;");
+                w.write("const " + varName + " = _str(pos, " + varName + "_len); pos += " + varName + "_padded;");
             }
             else if (p.type == "bytes")
             {

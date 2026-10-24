@@ -57,6 +57,13 @@ const run = async () => {
     const std::string JS_FLUSH_HEAD = R"(
     // Reusable text decoder to avoid garbage collection overhead
     const decoder = new TextDecoder();
+    // most strings in a command are a tag, an attribute or a short text: for those a decode call
+    // costs more than the string, so short ASCII runs are built directly
+    const _str = (pos, len) => {
+        if (len > 64) return decoder.decode(u8.subarray(pos, pos + len));
+        for (let i = pos, e = pos + len; i < e; i++) if (u8[i] > 127) return decoder.decode(u8.subarray(pos, pos + len));
+        return String.fromCharCode.apply(null, u8.subarray(pos, pos + len));
+    };
     let u8 = new Uint8Array(memory.buffer);
     let i32 = new Int32Array(memory.buffer);
     let f32 = new Float32Array(memory.buffer);
