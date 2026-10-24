@@ -41,6 +41,7 @@ namespace
     };
 
     std::unordered_map<int32_t, Node *> g_nodes;
+    std::unordered_map<int32_t, Node *> g_templates;   // subtrees kept off the page, cloned by id
     Node *g_body = nullptr;
     int32_t g_next_handle = 1;
     size_t g_mutations = 0;      // tree changes, to tell a frame that did something
@@ -99,6 +100,17 @@ namespace
         c.insert(c.begin() + at, child);
         child->parent = parent;
         g_mutations++;
+    }
+
+    // a deep copy whose nodes take the handles from h on, in document order
+    Node *copy(const Node *src, int32_t &h, int32_t end)
+    {
+        Node *n = new Node{src->kind};
+        n->tag = src->tag; n->attrs = src->attrs; n->text = src->text; n->raw_html = src->raw_html; n->has_raw = src->has_raw;
+        if (h < end) { n->handle = h; g_nodes[h] = n; }
+        h++;
+        for (const Node *c : src->children) { Node *cc = copy(c, h, end); cc->parent = n; n->children.push_back(cc); }
+        return n;
     }
 
     const std::string *attr(const Node *n, const std::string &name)
@@ -332,6 +344,21 @@ namespace
             }
             case OP_CREATE_COMMENT_DEFERRED: { int32_t h = r.i32(); make(COMMENT, h)->text = r.str(); break; }
             case OP_CREATE_TEXT_NODE_DEFERRED: { int32_t h = r.i32(); make(TEXT, h)->text = r.str(); break; }
+            case OP_SAVE_TEMPLATE:
+            {
+                int32_t id = r.i32(), first = r.i32(), count = r.i32();
+                Node *t = first > 0 ? get(first) : nullptr;
+                for (int32_t h = first; h < first + count; h++) g_nodes.erase(h);
+                if (t) g_templates[id] = t;
+                break;
+            }
+            case OP_CLONE_TEMPLATE:
+            {
+                int32_t first = r.i32(), id = r.i32(), count = r.i32();
+                auto it = g_templates.find(id);
+                if (it != g_templates.end()) { int32_t h = first; copy(it->second, h, first + count); }
+                break;
+            }
             case OP_SET_NODE_VALUE: { Node *n = get(r.i32()); std::string t = r.str(); if (n && n->kind != ELEMENT) { n->text = t; g_mutations++; } break; }
             case OP_SET_ATTRIBUTE: { Node *n = get(r.i32()); std::string k = r.str(), v = r.str(); if (n && n->kind == ELEMENT) set_attr(n, k, v); break; }
             case OP_SET_PROPERTY: { Node *n = get(r.i32()); std::string k = r.str(), v = r.str(); if (n && n->kind == ELEMENT) set_property(n, k, v); break; }

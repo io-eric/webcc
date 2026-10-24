@@ -9,63 +9,63 @@
 #include "webcc/core/enums.h"
 namespace webcc::canvas {
     enum OpCode {
-        OP_CREATE_CANVAS = 0x3e,
-        OP_GET_CONTEXT_2D = 0x3f,
-        OP_GET_CONTEXT_WEBGL = 0x40,
-        OP_GET_CONTEXT_WEBGPU = 0x41,
-        OP_SET_SIZE = 0x42,
-        OP_TO_DATA_URL = 0x43,
-        OP_TO_BYTES = 0x44,
-        OP_FREE = 0x45,
-        OP_SET_FILL_STYLE = 0x46,
-        OP_SET_FILL_STYLE_STR = 0x47,
-        OP_FILL_RECT = 0x48,
-        OP_CLEAR_RECT = 0x49,
-        OP_STROKE_RECT = 0x4a,
-        OP_SET_STROKE_STYLE = 0x4b,
-        OP_SET_STROKE_STYLE_STR = 0x4c,
-        OP_SET_LINE_WIDTH = 0x4d,
-        OP_BEGIN_PATH = 0x4e,
-        OP_CLOSE_PATH = 0x4f,
-        OP_MOVE_TO = 0x50,
-        OP_LINE_TO = 0x51,
-        OP_STROKE = 0x52,
-        OP_FILL = 0x53,
-        OP_ARC = 0x54,
-        OP_FILL_TEXT = 0x55,
-        OP_FILL_TEXT_F = 0x56,
-        OP_FILL_TEXT_I = 0x57,
-        OP_SET_FONT = 0x58,
-        OP_SET_TEXT_ALIGN = 0x59,
-        OP_DRAW_IMAGE = 0x5a,
-        OP_TRANSLATE = 0x5b,
-        OP_ROTATE = 0x5c,
-        OP_SCALE = 0x5d,
-        OP_SAVE = 0x5e,
-        OP_RESTORE = 0x5f,
-        OP_LOG_CANVAS_INFO = 0x60,
-        OP_SET_GLOBAL_ALPHA = 0x61,
-        OP_SET_LINE_CAP = 0x62,
-        OP_SET_LINE_JOIN = 0x63,
-        OP_SET_SHADOW = 0x64,
-        OP_BEZIER_CURVE_TO = 0x65,
-        OP_QUADRATIC_CURVE_TO = 0x66,
-        OP_RECT = 0x67,
-        OP_CLIP = 0x68,
-        OP_STROKE_TEXT = 0x69,
-        OP_SET_TEXT_BASELINE = 0x6a,
-        OP_SET_GLOBAL_COMPOSITE_OPERATION = 0x6b,
-        OP_DRAW_IMAGE_SCALED = 0x6c,
-        OP_DRAW_IMAGE_FULL = 0x6d,
-        OP_RESET_TRANSFORM = 0x6e,
-        OP_ELLIPSE = 0x6f,
-        OP_ARC_TO = 0x70,
-        OP_SET_TRANSFORM = 0x71,
-        OP_TRANSFORM = 0x72,
-        OP_SET_MITER_LIMIT = 0x73,
-        OP_SET_IMAGE_SMOOTHING_ENABLED = 0x74,
-        OP_MEASURE_TEXT_WIDTH = 0x75,
-        OP_GET_IMAGE_DATA = 0x76,
+        OP_CREATE_CANVAS = 0x40,
+        OP_GET_CONTEXT_2D = 0x41,
+        OP_GET_CONTEXT_WEBGL = 0x42,
+        OP_GET_CONTEXT_WEBGPU = 0x43,
+        OP_SET_SIZE = 0x44,
+        OP_TO_DATA_URL = 0x45,
+        OP_TO_BYTES = 0x46,
+        OP_FREE = 0x47,
+        OP_SET_FILL_STYLE = 0x48,
+        OP_SET_FILL_STYLE_STR = 0x49,
+        OP_FILL_RECT = 0x4a,
+        OP_CLEAR_RECT = 0x4b,
+        OP_STROKE_RECT = 0x4c,
+        OP_SET_STROKE_STYLE = 0x4d,
+        OP_SET_STROKE_STYLE_STR = 0x4e,
+        OP_SET_LINE_WIDTH = 0x4f,
+        OP_BEGIN_PATH = 0x50,
+        OP_CLOSE_PATH = 0x51,
+        OP_MOVE_TO = 0x52,
+        OP_LINE_TO = 0x53,
+        OP_STROKE = 0x54,
+        OP_FILL = 0x55,
+        OP_ARC = 0x56,
+        OP_FILL_TEXT = 0x57,
+        OP_FILL_TEXT_F = 0x58,
+        OP_FILL_TEXT_I = 0x59,
+        OP_SET_FONT = 0x5a,
+        OP_SET_TEXT_ALIGN = 0x5b,
+        OP_DRAW_IMAGE = 0x5c,
+        OP_TRANSLATE = 0x5d,
+        OP_ROTATE = 0x5e,
+        OP_SCALE = 0x5f,
+        OP_SAVE = 0x60,
+        OP_RESTORE = 0x61,
+        OP_LOG_CANVAS_INFO = 0x62,
+        OP_SET_GLOBAL_ALPHA = 0x63,
+        OP_SET_LINE_CAP = 0x64,
+        OP_SET_LINE_JOIN = 0x65,
+        OP_SET_SHADOW = 0x66,
+        OP_BEZIER_CURVE_TO = 0x67,
+        OP_QUADRATIC_CURVE_TO = 0x68,
+        OP_RECT = 0x69,
+        OP_CLIP = 0x6a,
+        OP_STROKE_TEXT = 0x6b,
+        OP_SET_TEXT_BASELINE = 0x6c,
+        OP_SET_GLOBAL_COMPOSITE_OPERATION = 0x6d,
+        OP_DRAW_IMAGE_SCALED = 0x6e,
+        OP_DRAW_IMAGE_FULL = 0x6f,
+        OP_RESET_TRANSFORM = 0x70,
+        OP_ELLIPSE = 0x71,
+        OP_ARC_TO = 0x72,
+        OP_SET_TRANSFORM = 0x73,
+        OP_TRANSFORM = 0x74,
+        OP_SET_MITER_LIMIT = 0x75,
+        OP_SET_IMAGE_SMOOTHING_ENABLED = 0x76,
+        OP_MEASURE_TEXT_WIDTH = 0x77,
+        OP_GET_IMAGE_DATA = 0x78,
     };
 
     extern "C" int32_t webcc_canvas_create_canvas(const char* dom_id, uint32_t dom_id_len, double width, double height);
@@ -92,9 +92,9 @@ namespace webcc::canvas {
         return webcc::WGPUContext(webcc_canvas_get_context_webgpu((int32_t)canvas_handle));
     }
 
-    extern "C" __attribute__((import_module("w"), import_name("66"))) void __webcc_m_66(void);
+    extern "C" __attribute__((import_module("w"), import_name("68"))) void __webcc_m_68(void);
     inline void set_size(webcc::Canvas handle, double width, double height){
-        [[maybe_unused]] static void (*const __webcc_keep)(void) __attribute__((used)) = &__webcc_m_66;
+        [[maybe_unused]] static void (*const __webcc_keep)(void) __attribute__((used)) = &__webcc_m_68;
         push_command((uint32_t)OP_SET_SIZE);
         push_data<int32_t>((int32_t)handle);
         push_data<double>(width);
@@ -115,16 +115,16 @@ namespace webcc::canvas {
         return ::webcc::take_bytes_result(len);
     }
 
-    extern "C" __attribute__((import_module("w"), import_name("69"))) void __webcc_m_69(void);
+    extern "C" __attribute__((import_module("w"), import_name("71"))) void __webcc_m_71(void);
     inline void free(webcc::Canvas handle){
-        [[maybe_unused]] static void (*const __webcc_keep)(void) __attribute__((used)) = &__webcc_m_69;
+        [[maybe_unused]] static void (*const __webcc_keep)(void) __attribute__((used)) = &__webcc_m_71;
         push_command((uint32_t)OP_FREE);
         push_data<int32_t>((int32_t)handle);
     }
 
-    extern "C" __attribute__((import_module("w"), import_name("70"))) void __webcc_m_70(void);
+    extern "C" __attribute__((import_module("w"), import_name("72"))) void __webcc_m_72(void);
     inline void set_fill_style(webcc::CanvasContext2D handle, uint8_t r, uint8_t g, uint8_t b){
-        [[maybe_unused]] static void (*const __webcc_keep)(void) __attribute__((used)) = &__webcc_m_70;
+        [[maybe_unused]] static void (*const __webcc_keep)(void) __attribute__((used)) = &__webcc_m_72;
         push_command((uint32_t)OP_SET_FILL_STYLE);
         push_data<int32_t>((int32_t)handle);
         push_data<uint32_t>((uint32_t)r);
@@ -132,17 +132,17 @@ namespace webcc::canvas {
         push_data<uint32_t>((uint32_t)b);
     }
 
-    extern "C" __attribute__((import_module("w"), import_name("71"))) void __webcc_m_71(void);
+    extern "C" __attribute__((import_module("w"), import_name("73"))) void __webcc_m_73(void);
     inline void set_fill_style_str(webcc::CanvasContext2D handle, webcc::string_view color){
-        [[maybe_unused]] static void (*const __webcc_keep)(void) __attribute__((used)) = &__webcc_m_71;
+        [[maybe_unused]] static void (*const __webcc_keep)(void) __attribute__((used)) = &__webcc_m_73;
         push_command((uint32_t)OP_SET_FILL_STYLE_STR);
         push_data<int32_t>((int32_t)handle);
         webcc::CommandBuffer::push_string(color.data(), color.length());
     }
 
-    extern "C" __attribute__((import_module("w"), import_name("72"))) void __webcc_m_72(void);
+    extern "C" __attribute__((import_module("w"), import_name("74"))) void __webcc_m_74(void);
     inline void fill_rect(webcc::CanvasContext2D handle, double x, double y, double w, double h){
-        [[maybe_unused]] static void (*const __webcc_keep)(void) __attribute__((used)) = &__webcc_m_72;
+        [[maybe_unused]] static void (*const __webcc_keep)(void) __attribute__((used)) = &__webcc_m_74;
         push_command((uint32_t)OP_FILL_RECT);
         push_data<int32_t>((int32_t)handle);
         push_data<double>(x);
@@ -151,9 +151,9 @@ namespace webcc::canvas {
         push_data<double>(h);
     }
 
-    extern "C" __attribute__((import_module("w"), import_name("73"))) void __webcc_m_73(void);
+    extern "C" __attribute__((import_module("w"), import_name("75"))) void __webcc_m_75(void);
     inline void clear_rect(webcc::CanvasContext2D handle, double x, double y, double w, double h){
-        [[maybe_unused]] static void (*const __webcc_keep)(void) __attribute__((used)) = &__webcc_m_73;
+        [[maybe_unused]] static void (*const __webcc_keep)(void) __attribute__((used)) = &__webcc_m_75;
         push_command((uint32_t)OP_CLEAR_RECT);
         push_data<int32_t>((int32_t)handle);
         push_data<double>(x);
@@ -162,9 +162,9 @@ namespace webcc::canvas {
         push_data<double>(h);
     }
 
-    extern "C" __attribute__((import_module("w"), import_name("74"))) void __webcc_m_74(void);
+    extern "C" __attribute__((import_module("w"), import_name("76"))) void __webcc_m_76(void);
     inline void stroke_rect(webcc::CanvasContext2D handle, double x, double y, double w, double h){
-        [[maybe_unused]] static void (*const __webcc_keep)(void) __attribute__((used)) = &__webcc_m_74;
+        [[maybe_unused]] static void (*const __webcc_keep)(void) __attribute__((used)) = &__webcc_m_76;
         push_command((uint32_t)OP_STROKE_RECT);
         push_data<int32_t>((int32_t)handle);
         push_data<double>(x);
@@ -173,9 +173,9 @@ namespace webcc::canvas {
         push_data<double>(h);
     }
 
-    extern "C" __attribute__((import_module("w"), import_name("75"))) void __webcc_m_75(void);
+    extern "C" __attribute__((import_module("w"), import_name("77"))) void __webcc_m_77(void);
     inline void set_stroke_style(webcc::CanvasContext2D handle, uint8_t r, uint8_t g, uint8_t b){
-        [[maybe_unused]] static void (*const __webcc_keep)(void) __attribute__((used)) = &__webcc_m_75;
+        [[maybe_unused]] static void (*const __webcc_keep)(void) __attribute__((used)) = &__webcc_m_77;
         push_command((uint32_t)OP_SET_STROKE_STYLE);
         push_data<int32_t>((int32_t)handle);
         push_data<uint32_t>((uint32_t)r);
@@ -183,71 +183,71 @@ namespace webcc::canvas {
         push_data<uint32_t>((uint32_t)b);
     }
 
-    extern "C" __attribute__((import_module("w"), import_name("76"))) void __webcc_m_76(void);
+    extern "C" __attribute__((import_module("w"), import_name("78"))) void __webcc_m_78(void);
     inline void set_stroke_style_str(webcc::CanvasContext2D handle, webcc::string_view color){
-        [[maybe_unused]] static void (*const __webcc_keep)(void) __attribute__((used)) = &__webcc_m_76;
+        [[maybe_unused]] static void (*const __webcc_keep)(void) __attribute__((used)) = &__webcc_m_78;
         push_command((uint32_t)OP_SET_STROKE_STYLE_STR);
         push_data<int32_t>((int32_t)handle);
         webcc::CommandBuffer::push_string(color.data(), color.length());
     }
 
-    extern "C" __attribute__((import_module("w"), import_name("77"))) void __webcc_m_77(void);
+    extern "C" __attribute__((import_module("w"), import_name("79"))) void __webcc_m_79(void);
     inline void set_line_width(webcc::CanvasContext2D handle, double width){
-        [[maybe_unused]] static void (*const __webcc_keep)(void) __attribute__((used)) = &__webcc_m_77;
+        [[maybe_unused]] static void (*const __webcc_keep)(void) __attribute__((used)) = &__webcc_m_79;
         push_command((uint32_t)OP_SET_LINE_WIDTH);
         push_data<int32_t>((int32_t)handle);
         push_data<double>(width);
     }
 
-    extern "C" __attribute__((import_module("w"), import_name("78"))) void __webcc_m_78(void);
+    extern "C" __attribute__((import_module("w"), import_name("80"))) void __webcc_m_80(void);
     inline void begin_path(webcc::CanvasContext2D handle){
-        [[maybe_unused]] static void (*const __webcc_keep)(void) __attribute__((used)) = &__webcc_m_78;
+        [[maybe_unused]] static void (*const __webcc_keep)(void) __attribute__((used)) = &__webcc_m_80;
         push_command((uint32_t)OP_BEGIN_PATH);
         push_data<int32_t>((int32_t)handle);
     }
 
-    extern "C" __attribute__((import_module("w"), import_name("79"))) void __webcc_m_79(void);
+    extern "C" __attribute__((import_module("w"), import_name("81"))) void __webcc_m_81(void);
     inline void close_path(webcc::CanvasContext2D handle){
-        [[maybe_unused]] static void (*const __webcc_keep)(void) __attribute__((used)) = &__webcc_m_79;
+        [[maybe_unused]] static void (*const __webcc_keep)(void) __attribute__((used)) = &__webcc_m_81;
         push_command((uint32_t)OP_CLOSE_PATH);
         push_data<int32_t>((int32_t)handle);
     }
 
-    extern "C" __attribute__((import_module("w"), import_name("80"))) void __webcc_m_80(void);
+    extern "C" __attribute__((import_module("w"), import_name("82"))) void __webcc_m_82(void);
     inline void move_to(webcc::CanvasContext2D handle, double x, double y){
-        [[maybe_unused]] static void (*const __webcc_keep)(void) __attribute__((used)) = &__webcc_m_80;
+        [[maybe_unused]] static void (*const __webcc_keep)(void) __attribute__((used)) = &__webcc_m_82;
         push_command((uint32_t)OP_MOVE_TO);
         push_data<int32_t>((int32_t)handle);
         push_data<double>(x);
         push_data<double>(y);
     }
 
-    extern "C" __attribute__((import_module("w"), import_name("81"))) void __webcc_m_81(void);
+    extern "C" __attribute__((import_module("w"), import_name("83"))) void __webcc_m_83(void);
     inline void line_to(webcc::CanvasContext2D handle, double x, double y){
-        [[maybe_unused]] static void (*const __webcc_keep)(void) __attribute__((used)) = &__webcc_m_81;
+        [[maybe_unused]] static void (*const __webcc_keep)(void) __attribute__((used)) = &__webcc_m_83;
         push_command((uint32_t)OP_LINE_TO);
         push_data<int32_t>((int32_t)handle);
         push_data<double>(x);
         push_data<double>(y);
     }
 
-    extern "C" __attribute__((import_module("w"), import_name("82"))) void __webcc_m_82(void);
+    extern "C" __attribute__((import_module("w"), import_name("84"))) void __webcc_m_84(void);
     inline void stroke(webcc::CanvasContext2D handle){
-        [[maybe_unused]] static void (*const __webcc_keep)(void) __attribute__((used)) = &__webcc_m_82;
+        [[maybe_unused]] static void (*const __webcc_keep)(void) __attribute__((used)) = &__webcc_m_84;
         push_command((uint32_t)OP_STROKE);
         push_data<int32_t>((int32_t)handle);
     }
 
-    extern "C" __attribute__((import_module("w"), import_name("83"))) void __webcc_m_83(void);
+    extern "C" __attribute__((import_module("w"), import_name("85"))) void __webcc_m_85(void);
     inline void fill(webcc::CanvasContext2D handle){
-        [[maybe_unused]] static void (*const __webcc_keep)(void) __attribute__((used)) = &__webcc_m_83;
+        [[maybe_unused]] static void (*const __webcc_keep)(void) __attribute__((used)) = &__webcc_m_85;
         push_command((uint32_t)OP_FILL);
         push_data<int32_t>((int32_t)handle);
     }
 
-    extern "C" __attribute__((import_module("w"), import_name("84"))) void __webcc_m_84(void);
+    extern "C" __attribute__((import_module("w"), import_name("86"))) void __webcc_m_86(void);
     inline void arc(webcc::CanvasContext2D handle, double x, double y, double radius, double start_angle, double end_angle){
-        [[maybe_unused]] static void (*const __webcc_keep)(void) __attribute__((used)) = &__webcc_m_84;
+        [[maybe_unused]] static void (*const __webcc_keep)(void) __attribute__((used)) = &__webcc_m_86;
         push_command((uint32_t)OP_ARC);
         push_data<int32_t>((int32_t)handle);
         push_data<double>(x);
@@ -257,9 +257,9 @@ namespace webcc::canvas {
         push_data<double>(end_angle);
     }
 
-    extern "C" __attribute__((import_module("w"), import_name("85"))) void __webcc_m_85(void);
+    extern "C" __attribute__((import_module("w"), import_name("87"))) void __webcc_m_87(void);
     inline void fill_text(webcc::CanvasContext2D handle, webcc::string_view text, double x, double y){
-        [[maybe_unused]] static void (*const __webcc_keep)(void) __attribute__((used)) = &__webcc_m_85;
+        [[maybe_unused]] static void (*const __webcc_keep)(void) __attribute__((used)) = &__webcc_m_87;
         push_command((uint32_t)OP_FILL_TEXT);
         push_data<int32_t>((int32_t)handle);
         webcc::CommandBuffer::push_string(text.data(), text.length());
@@ -267,9 +267,9 @@ namespace webcc::canvas {
         push_data<double>(y);
     }
 
-    extern "C" __attribute__((import_module("w"), import_name("86"))) void __webcc_m_86(void);
+    extern "C" __attribute__((import_module("w"), import_name("88"))) void __webcc_m_88(void);
     inline void fill_text_f(webcc::CanvasContext2D handle, webcc::string_view fmt, double val, double x, double y){
-        [[maybe_unused]] static void (*const __webcc_keep)(void) __attribute__((used)) = &__webcc_m_86;
+        [[maybe_unused]] static void (*const __webcc_keep)(void) __attribute__((used)) = &__webcc_m_88;
         push_command((uint32_t)OP_FILL_TEXT_F);
         push_data<int32_t>((int32_t)handle);
         webcc::CommandBuffer::push_string(fmt.data(), fmt.length());
@@ -278,9 +278,9 @@ namespace webcc::canvas {
         push_data<double>(y);
     }
 
-    extern "C" __attribute__((import_module("w"), import_name("87"))) void __webcc_m_87(void);
+    extern "C" __attribute__((import_module("w"), import_name("89"))) void __webcc_m_89(void);
     inline void fill_text_i(webcc::CanvasContext2D handle, webcc::string_view fmt, int32_t val, double x, double y){
-        [[maybe_unused]] static void (*const __webcc_keep)(void) __attribute__((used)) = &__webcc_m_87;
+        [[maybe_unused]] static void (*const __webcc_keep)(void) __attribute__((used)) = &__webcc_m_89;
         push_command((uint32_t)OP_FILL_TEXT_I);
         push_data<int32_t>((int32_t)handle);
         webcc::CommandBuffer::push_string(fmt.data(), fmt.length());
@@ -289,25 +289,25 @@ namespace webcc::canvas {
         push_data<double>(y);
     }
 
-    extern "C" __attribute__((import_module("w"), import_name("88"))) void __webcc_m_88(void);
+    extern "C" __attribute__((import_module("w"), import_name("90"))) void __webcc_m_90(void);
     inline void set_font(webcc::CanvasContext2D handle, webcc::string_view font){
-        [[maybe_unused]] static void (*const __webcc_keep)(void) __attribute__((used)) = &__webcc_m_88;
+        [[maybe_unused]] static void (*const __webcc_keep)(void) __attribute__((used)) = &__webcc_m_90;
         push_command((uint32_t)OP_SET_FONT);
         push_data<int32_t>((int32_t)handle);
         webcc::CommandBuffer::push_string(font.data(), font.length());
     }
 
-    extern "C" __attribute__((import_module("w"), import_name("89"))) void __webcc_m_89(void);
+    extern "C" __attribute__((import_module("w"), import_name("91"))) void __webcc_m_91(void);
     inline void set_text_align(webcc::CanvasContext2D handle, webcc::string_view align){
-        [[maybe_unused]] static void (*const __webcc_keep)(void) __attribute__((used)) = &__webcc_m_89;
+        [[maybe_unused]] static void (*const __webcc_keep)(void) __attribute__((used)) = &__webcc_m_91;
         push_command((uint32_t)OP_SET_TEXT_ALIGN);
         push_data<int32_t>((int32_t)handle);
         webcc::CommandBuffer::push_string(align.data(), align.length());
     }
 
-    extern "C" __attribute__((import_module("w"), import_name("90"))) void __webcc_m_90(void);
+    extern "C" __attribute__((import_module("w"), import_name("92"))) void __webcc_m_92(void);
     inline void draw_image(webcc::CanvasContext2D handle, webcc::DOMElement source, double x, double y){
-        [[maybe_unused]] static void (*const __webcc_keep)(void) __attribute__((used)) = &__webcc_m_90;
+        [[maybe_unused]] static void (*const __webcc_keep)(void) __attribute__((used)) = &__webcc_m_92;
         push_command((uint32_t)OP_DRAW_IMAGE);
         push_data<int32_t>((int32_t)handle);
         push_data<int32_t>((int32_t)source);
@@ -315,80 +315,80 @@ namespace webcc::canvas {
         push_data<double>(y);
     }
 
-    extern "C" __attribute__((import_module("w"), import_name("91"))) void __webcc_m_91(void);
+    extern "C" __attribute__((import_module("w"), import_name("93"))) void __webcc_m_93(void);
     inline void translate(webcc::CanvasContext2D handle, double x, double y){
-        [[maybe_unused]] static void (*const __webcc_keep)(void) __attribute__((used)) = &__webcc_m_91;
+        [[maybe_unused]] static void (*const __webcc_keep)(void) __attribute__((used)) = &__webcc_m_93;
         push_command((uint32_t)OP_TRANSLATE);
         push_data<int32_t>((int32_t)handle);
         push_data<double>(x);
         push_data<double>(y);
     }
 
-    extern "C" __attribute__((import_module("w"), import_name("92"))) void __webcc_m_92(void);
+    extern "C" __attribute__((import_module("w"), import_name("94"))) void __webcc_m_94(void);
     inline void rotate(webcc::CanvasContext2D handle, double angle){
-        [[maybe_unused]] static void (*const __webcc_keep)(void) __attribute__((used)) = &__webcc_m_92;
+        [[maybe_unused]] static void (*const __webcc_keep)(void) __attribute__((used)) = &__webcc_m_94;
         push_command((uint32_t)OP_ROTATE);
         push_data<int32_t>((int32_t)handle);
         push_data<double>(angle);
     }
 
-    extern "C" __attribute__((import_module("w"), import_name("93"))) void __webcc_m_93(void);
+    extern "C" __attribute__((import_module("w"), import_name("95"))) void __webcc_m_95(void);
     inline void scale(webcc::CanvasContext2D handle, double x, double y){
-        [[maybe_unused]] static void (*const __webcc_keep)(void) __attribute__((used)) = &__webcc_m_93;
+        [[maybe_unused]] static void (*const __webcc_keep)(void) __attribute__((used)) = &__webcc_m_95;
         push_command((uint32_t)OP_SCALE);
         push_data<int32_t>((int32_t)handle);
         push_data<double>(x);
         push_data<double>(y);
     }
 
-    extern "C" __attribute__((import_module("w"), import_name("94"))) void __webcc_m_94(void);
+    extern "C" __attribute__((import_module("w"), import_name("96"))) void __webcc_m_96(void);
     inline void save(webcc::CanvasContext2D handle){
-        [[maybe_unused]] static void (*const __webcc_keep)(void) __attribute__((used)) = &__webcc_m_94;
+        [[maybe_unused]] static void (*const __webcc_keep)(void) __attribute__((used)) = &__webcc_m_96;
         push_command((uint32_t)OP_SAVE);
         push_data<int32_t>((int32_t)handle);
     }
 
-    extern "C" __attribute__((import_module("w"), import_name("95"))) void __webcc_m_95(void);
+    extern "C" __attribute__((import_module("w"), import_name("97"))) void __webcc_m_97(void);
     inline void restore(webcc::CanvasContext2D handle){
-        [[maybe_unused]] static void (*const __webcc_keep)(void) __attribute__((used)) = &__webcc_m_95;
+        [[maybe_unused]] static void (*const __webcc_keep)(void) __attribute__((used)) = &__webcc_m_97;
         push_command((uint32_t)OP_RESTORE);
         push_data<int32_t>((int32_t)handle);
     }
 
-    extern "C" __attribute__((import_module("w"), import_name("96"))) void __webcc_m_96(void);
+    extern "C" __attribute__((import_module("w"), import_name("98"))) void __webcc_m_98(void);
     inline void log_canvas_info(webcc::Canvas handle){
-        [[maybe_unused]] static void (*const __webcc_keep)(void) __attribute__((used)) = &__webcc_m_96;
+        [[maybe_unused]] static void (*const __webcc_keep)(void) __attribute__((used)) = &__webcc_m_98;
         push_command((uint32_t)OP_LOG_CANVAS_INFO);
         push_data<int32_t>((int32_t)handle);
     }
 
-    extern "C" __attribute__((import_module("w"), import_name("97"))) void __webcc_m_97(void);
+    extern "C" __attribute__((import_module("w"), import_name("99"))) void __webcc_m_99(void);
     inline void set_global_alpha(webcc::CanvasContext2D handle, double alpha){
-        [[maybe_unused]] static void (*const __webcc_keep)(void) __attribute__((used)) = &__webcc_m_97;
+        [[maybe_unused]] static void (*const __webcc_keep)(void) __attribute__((used)) = &__webcc_m_99;
         push_command((uint32_t)OP_SET_GLOBAL_ALPHA);
         push_data<int32_t>((int32_t)handle);
         push_data<double>(alpha);
     }
 
-    extern "C" __attribute__((import_module("w"), import_name("98"))) void __webcc_m_98(void);
+    extern "C" __attribute__((import_module("w"), import_name("100"))) void __webcc_m_100(void);
     inline void set_line_cap(webcc::CanvasContext2D handle, webcc::string_view cap){
-        [[maybe_unused]] static void (*const __webcc_keep)(void) __attribute__((used)) = &__webcc_m_98;
+        [[maybe_unused]] static void (*const __webcc_keep)(void) __attribute__((used)) = &__webcc_m_100;
         push_command((uint32_t)OP_SET_LINE_CAP);
         push_data<int32_t>((int32_t)handle);
         webcc::CommandBuffer::push_string(cap.data(), cap.length());
     }
 
-    extern "C" __attribute__((import_module("w"), import_name("99"))) void __webcc_m_99(void);
+    extern "C" __attribute__((import_module("w"), import_name("101"))) void __webcc_m_101(void);
     inline void set_line_join(webcc::CanvasContext2D handle, webcc::string_view join){
-        [[maybe_unused]] static void (*const __webcc_keep)(void) __attribute__((used)) = &__webcc_m_99;
+        [[maybe_unused]] static void (*const __webcc_keep)(void) __attribute__((used)) = &__webcc_m_101;
         push_command((uint32_t)OP_SET_LINE_JOIN);
         push_data<int32_t>((int32_t)handle);
         webcc::CommandBuffer::push_string(join.data(), join.length());
     }
 
-    extern "C" __attribute__((import_module("w"), import_name("100"))) void __webcc_m_100(void);
+    extern "C" __attribute__((import_module("w"), import_name("102"))) void __webcc_m_102(void);
     inline void set_shadow(webcc::CanvasContext2D handle, double blur, double off_x, double off_y, webcc::string_view color){
-        [[maybe_unused]] static void (*const __webcc_keep)(void) __attribute__((used)) = &__webcc_m_100;
+        [[maybe_unused]] static void (*const __webcc_keep)(void) __attribute__((used)) = &__webcc_m_102;
         push_command((uint32_t)OP_SET_SHADOW);
         push_data<int32_t>((int32_t)handle);
         push_data<double>(blur);
@@ -397,9 +397,9 @@ namespace webcc::canvas {
         webcc::CommandBuffer::push_string(color.data(), color.length());
     }
 
-    extern "C" __attribute__((import_module("w"), import_name("101"))) void __webcc_m_101(void);
+    extern "C" __attribute__((import_module("w"), import_name("103"))) void __webcc_m_103(void);
     inline void bezier_curve_to(webcc::CanvasContext2D handle, double cp1x, double cp1y, double cp2x, double cp2y, double x, double y){
-        [[maybe_unused]] static void (*const __webcc_keep)(void) __attribute__((used)) = &__webcc_m_101;
+        [[maybe_unused]] static void (*const __webcc_keep)(void) __attribute__((used)) = &__webcc_m_103;
         push_command((uint32_t)OP_BEZIER_CURVE_TO);
         push_data<int32_t>((int32_t)handle);
         push_data<double>(cp1x);
@@ -410,9 +410,9 @@ namespace webcc::canvas {
         push_data<double>(y);
     }
 
-    extern "C" __attribute__((import_module("w"), import_name("102"))) void __webcc_m_102(void);
+    extern "C" __attribute__((import_module("w"), import_name("104"))) void __webcc_m_104(void);
     inline void quadratic_curve_to(webcc::CanvasContext2D handle, double cpx, double cpy, double x, double y){
-        [[maybe_unused]] static void (*const __webcc_keep)(void) __attribute__((used)) = &__webcc_m_102;
+        [[maybe_unused]] static void (*const __webcc_keep)(void) __attribute__((used)) = &__webcc_m_104;
         push_command((uint32_t)OP_QUADRATIC_CURVE_TO);
         push_data<int32_t>((int32_t)handle);
         push_data<double>(cpx);
@@ -421,9 +421,9 @@ namespace webcc::canvas {
         push_data<double>(y);
     }
 
-    extern "C" __attribute__((import_module("w"), import_name("103"))) void __webcc_m_103(void);
+    extern "C" __attribute__((import_module("w"), import_name("105"))) void __webcc_m_105(void);
     inline void rect(webcc::CanvasContext2D handle, double x, double y, double w, double h){
-        [[maybe_unused]] static void (*const __webcc_keep)(void) __attribute__((used)) = &__webcc_m_103;
+        [[maybe_unused]] static void (*const __webcc_keep)(void) __attribute__((used)) = &__webcc_m_105;
         push_command((uint32_t)OP_RECT);
         push_data<int32_t>((int32_t)handle);
         push_data<double>(x);
@@ -432,16 +432,16 @@ namespace webcc::canvas {
         push_data<double>(h);
     }
 
-    extern "C" __attribute__((import_module("w"), import_name("104"))) void __webcc_m_104(void);
+    extern "C" __attribute__((import_module("w"), import_name("106"))) void __webcc_m_106(void);
     inline void clip(webcc::CanvasContext2D handle){
-        [[maybe_unused]] static void (*const __webcc_keep)(void) __attribute__((used)) = &__webcc_m_104;
+        [[maybe_unused]] static void (*const __webcc_keep)(void) __attribute__((used)) = &__webcc_m_106;
         push_command((uint32_t)OP_CLIP);
         push_data<int32_t>((int32_t)handle);
     }
 
-    extern "C" __attribute__((import_module("w"), import_name("105"))) void __webcc_m_105(void);
+    extern "C" __attribute__((import_module("w"), import_name("107"))) void __webcc_m_107(void);
     inline void stroke_text(webcc::CanvasContext2D handle, webcc::string_view text, double x, double y){
-        [[maybe_unused]] static void (*const __webcc_keep)(void) __attribute__((used)) = &__webcc_m_105;
+        [[maybe_unused]] static void (*const __webcc_keep)(void) __attribute__((used)) = &__webcc_m_107;
         push_command((uint32_t)OP_STROKE_TEXT);
         push_data<int32_t>((int32_t)handle);
         webcc::CommandBuffer::push_string(text.data(), text.length());
@@ -449,25 +449,25 @@ namespace webcc::canvas {
         push_data<double>(y);
     }
 
-    extern "C" __attribute__((import_module("w"), import_name("106"))) void __webcc_m_106(void);
+    extern "C" __attribute__((import_module("w"), import_name("108"))) void __webcc_m_108(void);
     inline void set_text_baseline(webcc::CanvasContext2D handle, webcc::string_view baseline){
-        [[maybe_unused]] static void (*const __webcc_keep)(void) __attribute__((used)) = &__webcc_m_106;
+        [[maybe_unused]] static void (*const __webcc_keep)(void) __attribute__((used)) = &__webcc_m_108;
         push_command((uint32_t)OP_SET_TEXT_BASELINE);
         push_data<int32_t>((int32_t)handle);
         webcc::CommandBuffer::push_string(baseline.data(), baseline.length());
     }
 
-    extern "C" __attribute__((import_module("w"), import_name("107"))) void __webcc_m_107(void);
+    extern "C" __attribute__((import_module("w"), import_name("109"))) void __webcc_m_109(void);
     inline void set_global_composite_operation(webcc::CanvasContext2D handle, webcc::string_view op){
-        [[maybe_unused]] static void (*const __webcc_keep)(void) __attribute__((used)) = &__webcc_m_107;
+        [[maybe_unused]] static void (*const __webcc_keep)(void) __attribute__((used)) = &__webcc_m_109;
         push_command((uint32_t)OP_SET_GLOBAL_COMPOSITE_OPERATION);
         push_data<int32_t>((int32_t)handle);
         webcc::CommandBuffer::push_string(op.data(), op.length());
     }
 
-    extern "C" __attribute__((import_module("w"), import_name("108"))) void __webcc_m_108(void);
+    extern "C" __attribute__((import_module("w"), import_name("110"))) void __webcc_m_110(void);
     inline void draw_image_scaled(webcc::CanvasContext2D handle, webcc::DOMElement source, double x, double y, double w, double h){
-        [[maybe_unused]] static void (*const __webcc_keep)(void) __attribute__((used)) = &__webcc_m_108;
+        [[maybe_unused]] static void (*const __webcc_keep)(void) __attribute__((used)) = &__webcc_m_110;
         push_command((uint32_t)OP_DRAW_IMAGE_SCALED);
         push_data<int32_t>((int32_t)handle);
         push_data<int32_t>((int32_t)source);
@@ -477,9 +477,9 @@ namespace webcc::canvas {
         push_data<double>(h);
     }
 
-    extern "C" __attribute__((import_module("w"), import_name("109"))) void __webcc_m_109(void);
+    extern "C" __attribute__((import_module("w"), import_name("111"))) void __webcc_m_111(void);
     inline void draw_image_full(webcc::CanvasContext2D handle, webcc::DOMElement source, double sx, double sy, double sw, double sh, double dx, double dy, double dw, double dh){
-        [[maybe_unused]] static void (*const __webcc_keep)(void) __attribute__((used)) = &__webcc_m_109;
+        [[maybe_unused]] static void (*const __webcc_keep)(void) __attribute__((used)) = &__webcc_m_111;
         push_command((uint32_t)OP_DRAW_IMAGE_FULL);
         push_data<int32_t>((int32_t)handle);
         push_data<int32_t>((int32_t)source);
@@ -493,16 +493,16 @@ namespace webcc::canvas {
         push_data<double>(dh);
     }
 
-    extern "C" __attribute__((import_module("w"), import_name("110"))) void __webcc_m_110(void);
+    extern "C" __attribute__((import_module("w"), import_name("112"))) void __webcc_m_112(void);
     inline void reset_transform(webcc::CanvasContext2D handle){
-        [[maybe_unused]] static void (*const __webcc_keep)(void) __attribute__((used)) = &__webcc_m_110;
+        [[maybe_unused]] static void (*const __webcc_keep)(void) __attribute__((used)) = &__webcc_m_112;
         push_command((uint32_t)OP_RESET_TRANSFORM);
         push_data<int32_t>((int32_t)handle);
     }
 
-    extern "C" __attribute__((import_module("w"), import_name("111"))) void __webcc_m_111(void);
+    extern "C" __attribute__((import_module("w"), import_name("113"))) void __webcc_m_113(void);
     inline void ellipse(webcc::CanvasContext2D handle, double x, double y, double radius_x, double radius_y, double rotation, double start_angle, double end_angle, uint8_t counter_clockwise){
-        [[maybe_unused]] static void (*const __webcc_keep)(void) __attribute__((used)) = &__webcc_m_111;
+        [[maybe_unused]] static void (*const __webcc_keep)(void) __attribute__((used)) = &__webcc_m_113;
         push_command((uint32_t)OP_ELLIPSE);
         push_data<int32_t>((int32_t)handle);
         push_data<double>(x);
@@ -515,9 +515,9 @@ namespace webcc::canvas {
         push_data<uint32_t>((uint32_t)counter_clockwise);
     }
 
-    extern "C" __attribute__((import_module("w"), import_name("112"))) void __webcc_m_112(void);
+    extern "C" __attribute__((import_module("w"), import_name("114"))) void __webcc_m_114(void);
     inline void arc_to(webcc::CanvasContext2D handle, double x1, double y1, double x2, double y2, double radius){
-        [[maybe_unused]] static void (*const __webcc_keep)(void) __attribute__((used)) = &__webcc_m_112;
+        [[maybe_unused]] static void (*const __webcc_keep)(void) __attribute__((used)) = &__webcc_m_114;
         push_command((uint32_t)OP_ARC_TO);
         push_data<int32_t>((int32_t)handle);
         push_data<double>(x1);
@@ -527,9 +527,9 @@ namespace webcc::canvas {
         push_data<double>(radius);
     }
 
-    extern "C" __attribute__((import_module("w"), import_name("113"))) void __webcc_m_113(void);
+    extern "C" __attribute__((import_module("w"), import_name("115"))) void __webcc_m_115(void);
     inline void set_transform(webcc::CanvasContext2D handle, double a, double b, double c, double d, double e, double f){
-        [[maybe_unused]] static void (*const __webcc_keep)(void) __attribute__((used)) = &__webcc_m_113;
+        [[maybe_unused]] static void (*const __webcc_keep)(void) __attribute__((used)) = &__webcc_m_115;
         push_command((uint32_t)OP_SET_TRANSFORM);
         push_data<int32_t>((int32_t)handle);
         push_data<double>(a);
@@ -540,9 +540,9 @@ namespace webcc::canvas {
         push_data<double>(f);
     }
 
-    extern "C" __attribute__((import_module("w"), import_name("114"))) void __webcc_m_114(void);
+    extern "C" __attribute__((import_module("w"), import_name("116"))) void __webcc_m_116(void);
     inline void transform(webcc::CanvasContext2D handle, double a, double b, double c, double d, double e, double f){
-        [[maybe_unused]] static void (*const __webcc_keep)(void) __attribute__((used)) = &__webcc_m_114;
+        [[maybe_unused]] static void (*const __webcc_keep)(void) __attribute__((used)) = &__webcc_m_116;
         push_command((uint32_t)OP_TRANSFORM);
         push_data<int32_t>((int32_t)handle);
         push_data<double>(a);
@@ -553,17 +553,17 @@ namespace webcc::canvas {
         push_data<double>(f);
     }
 
-    extern "C" __attribute__((import_module("w"), import_name("115"))) void __webcc_m_115(void);
+    extern "C" __attribute__((import_module("w"), import_name("117"))) void __webcc_m_117(void);
     inline void set_miter_limit(webcc::CanvasContext2D handle, double limit){
-        [[maybe_unused]] static void (*const __webcc_keep)(void) __attribute__((used)) = &__webcc_m_115;
+        [[maybe_unused]] static void (*const __webcc_keep)(void) __attribute__((used)) = &__webcc_m_117;
         push_command((uint32_t)OP_SET_MITER_LIMIT);
         push_data<int32_t>((int32_t)handle);
         push_data<double>(limit);
     }
 
-    extern "C" __attribute__((import_module("w"), import_name("116"))) void __webcc_m_116(void);
+    extern "C" __attribute__((import_module("w"), import_name("118"))) void __webcc_m_118(void);
     inline void set_image_smoothing_enabled(webcc::CanvasContext2D handle, uint8_t enabled){
-        [[maybe_unused]] static void (*const __webcc_keep)(void) __attribute__((used)) = &__webcc_m_116;
+        [[maybe_unused]] static void (*const __webcc_keep)(void) __attribute__((used)) = &__webcc_m_118;
         push_command((uint32_t)OP_SET_IMAGE_SMOOTHING_ENABLED);
         push_data<int32_t>((int32_t)handle);
         push_data<uint32_t>((uint32_t)enabled);

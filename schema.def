@@ -44,6 +44,11 @@ dom|command|CREATE_COMMENT|create_comment|string:text RET:handle(DOMElement)|{ c
 dom|command|CREATE_COMMENT_DEFERRED|create_comment_deferred|handle:handle string:text|{ const el = document.createComment(text); el.__wcc_h = handle; elements[handle] = el; }
 dom|command|CREATE_TEXT_NODE|create_text_node|string:text RET:handle(DOMElement)|{ const handle = (window.webcc_next_id = (window.webcc_next_id || 0) + 1); const el = document.createTextNode(text); el.__wcc_h = handle; elements[handle] = el; return handle; }
 dom|command|CREATE_TEXT_NODE_DEFERRED|create_text_node_deferred|handle:handle string:text|{ const el = document.createTextNode(text); el.__wcc_h = handle; elements[handle] = el; }
+# a subtree built with the commands above and kept off the page, to be stamped out by clone_template:
+# its nodes are the handles first..first+count-1 in document order, let go of here
+dom|command|SAVE_TEMPLATE|save_template|int32:id handle:first int32:count|{ const t = elements[first]; for (let h = first, e = first + count; h < e; h++) elements[h] = undefined; templates[id] = t; }
+# a copy of a saved template: its nodes take the handles first..first+count-1 in document order
+dom|command|CLONE_TEMPLATE|clone_template|handle:first int32:id int32:count|{ let n = templates[id].cloneNode(true); const root = n; for (let h = first, e = first + count; h < e && n; h++) { elements[h] = n; n.__wcc_h = h; let c = n.firstChild; if (!c) { while (n !== root && !(c = n.nextSibling)) n = n.parentNode; } n = c; } }
 dom|command|SET_NODE_VALUE|set_node_value|handle(DOMElement):handle string:text|{ const el = elements[handle]; if(el) el.nodeValue = text; }
 dom|command|SET_ATTRIBUTE|set_attribute|handle(DOMElement):handle string:name string:value|{ const el = elements[handle]; if(!el){ console.warn('set_attribute: unknown element handle', handle); continue; } el.setAttribute(name, value); }
 dom|command|SET_PROPERTY|set_property|handle(DOMElement):handle string:name string:value|{ const el = elements[handle]; if(!el){ console.warn('set_property: unknown element handle', handle); continue; } el[name] = value; }
