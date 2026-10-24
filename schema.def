@@ -282,6 +282,17 @@ system|early|__wcc_install|js/install.js
 system|event|INSTALL_STATE|uint8:state
 system|command|INIT_INSTALL|init_install||{ if (__wcc_install.notify) { __wcc_install.notify(); continue; } __wcc_install.notify = () => { push_event_system_INSTALL_STATE(__wcc_install.state); _triggerDiscreteUpdate(); }; __wcc_install.notify(); }
 system|command|PROMPT_INSTALL|prompt_install||{ const e = __wcc_install.prompt; if (!e) continue; __wcc_install.prompt = null; __wcc_install.state = 0; e.prompt(); e.userChoice.then(r => { if (r && r.outcome === 'accepted') __wcc_install.state = 2; if (__wcc_install.notify) __wcc_install.notify(); }).catch(() => { if (__wcc_install.notify) __wcc_install.notify(); }); }
+# page-wide input and layout: a pointer let go anywhere (a drag that ends off the element it
+# started on, cancel included), the window's size (reported once at init, then on every change,
+# at most once a frame), the page's own scroll, and a click anywhere on the page
+system|event|POINTER_UP|int32:pointer_id uint8:pointer_type float32:x float32:y
+system|command|INIT_POINTER_UP|init_pointer_up||{ if (window.__wcc_pup) continue; window.__wcc_pup = 1; const types = { mouse: 0, pen: 1, touch: 2 }; const f = (e) => { push_event_system_POINTER_UP(e.pointerId, types[e.pointerType] ?? 0, e.clientX, e.clientY); _triggerDiscreteUpdate(); }; window.addEventListener('pointerup', f); window.addEventListener('pointercancel', f); }
+system|event|WINDOW_RESIZE|float32:width float32:height float32:dpr
+system|command|INIT_WINDOW_RESIZE|init_window_resize||{ if (window.__wcc_wrs) continue; window.__wcc_wrs = 1; const report = () => { push_event_system_WINDOW_RESIZE(window.innerWidth, window.innerHeight, window.devicePixelRatio || 1); _triggerDiscreteUpdate(); }; let queued = false; window.addEventListener('resize', () => { if (queued) return; queued = true; requestAnimationFrame(() => { queued = false; report(); }); }); report(); }
+system|event|PAGE_SCROLL|float32:left float32:top
+system|command|INIT_PAGE_SCROLL|init_page_scroll||{ if (window.__wcc_psc) continue; window.__wcc_psc = 1; let queued = false; window.addEventListener('scroll', () => { if (queued) return; queued = true; requestAnimationFrame(() => { queued = false; push_event_system_PAGE_SCROLL(window.scrollX, window.scrollY); _triggerDiscreteUpdate(); }); }, { passive: true }); }
+system|event|PAGE_CLICK|float32:x float32:y
+system|command|INIT_PAGE_CLICK|init_page_click||{ if (window.__wcc_pcl) continue; window.__wcc_pcl = 1; document.addEventListener('click', (e) => { push_event_system_PAGE_CLICK(e.clientX, e.clientY); _triggerDiscreteUpdate(); }); }
 
 # ------------------------------------------------------------------------------
 # CLIPBOARD
