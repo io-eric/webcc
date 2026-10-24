@@ -15,6 +15,10 @@ namespace webcc {
     struct CanvasContext2D_tag {};
     using CanvasContext2D = typed_handle<CanvasContext2D_tag>;
 
+    // Tag struct for Compression
+    struct Compression_tag {};
+    using Compression = typed_handle<Compression_tag>;
+
     // Tag struct for DOMElement
     struct DOMElement_tag {};
     using DOMElement = typed_handle<DOMElement_tag>;

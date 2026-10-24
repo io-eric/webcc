@@ -127,6 +127,15 @@ void set_text_baseline(webcc::CanvasContext2D ctx, webcc::string_view baseline);
 float measure_text_width(webcc::CanvasContext2D ctx, webcc::string_view text);
 ```
 
+### Pixels
+
+```cpp
+webcc::vector<uint8_t> get_image_data(webcc::CanvasContext2D ctx, int32_t x, int32_t y, int32_t w, int32_t h);
+```
+
+The pixels of a rectangle, four bytes each (red, green, blue, alpha), row by row. Empty when they
+can't be read: a canvas that has drawn an image from another origin without CORS is tainted.
+
 ### Transformations
 
 ```cpp

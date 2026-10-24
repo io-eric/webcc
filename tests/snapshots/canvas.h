@@ -65,6 +65,7 @@ namespace webcc::canvas {
         OP_SET_MITER_LIMIT = 0x73,
         OP_SET_IMAGE_SMOOTHING_ENABLED = 0x74,
         OP_MEASURE_TEXT_WIDTH = 0x75,
+        OP_GET_IMAGE_DATA = 0x76,
     };
 
     extern "C" int32_t webcc_canvas_create_canvas(const char* dom_id, uint32_t dom_id_len, double width, double height);
@@ -572,6 +573,13 @@ namespace webcc::canvas {
     inline double measure_text_width(webcc::CanvasContext2D handle, webcc::string_view text){
         ::webcc::flush();
         return webcc_canvas_measure_text_width((int32_t)handle, text.data(), text.length());
+    }
+
+    extern "C" uint32_t webcc_canvas_get_image_data(int32_t handle, int32_t x, int32_t y, int32_t w, int32_t h);
+    inline webcc::vector<uint8_t> get_image_data(webcc::CanvasContext2D handle, int32_t x, int32_t y, int32_t w, int32_t h){
+        ::webcc::flush();
+        uint32_t len = webcc_canvas_get_image_data((int32_t)handle, x, y, w, h);
+        return ::webcc::take_bytes_result(len);
     }
 
 } // namespace webcc::canvas

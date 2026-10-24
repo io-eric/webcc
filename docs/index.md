@@ -28,6 +28,7 @@ WebCC provides a direct, high-performance bridge between C++ and HTML5 APIs. It 
     - [Image](api/image.md)
     - [Storage](api/storage.md)
     - [Blob](api/blob.md)
+    - [Compression](api/compression.md)
     - [Clipboard](api/clipboard.md)
     - [Files](api/files.md)
     - [PDF](api/pdf.md)
