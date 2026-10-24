@@ -160,7 +160,7 @@ const run = async () => {
                     const text_padded = (text_len + 3) & ~3;
                     if (pos + text_padded > end) { console.error('WebCC: OOB text_data'); break; }
                     const text = _str(pos, text_len); pos += text_padded;
-                    { const el = elements[handle]; if(el) { if ('innerText' in el) el.innerText = text; else el.textContent = text; } }
+                    { const el = elements[handle]; if(el) { if (text.indexOf('\n') < 0 || !('innerText' in el)) el.textContent = text; else el.innerText = text; } }
                     break;
                 }
 

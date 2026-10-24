@@ -27,6 +27,7 @@ const __wcc_morph = {
         if (o.__wcc_h !== undefined && elements[o.__wcc_h] === o) elements[o.__wcc_h] = undefined;
         if (n.__wcc_h !== undefined) elements[n.__wcc_h] = o;
         o.__wcc_h = n.__wcc_h;
+        for (const k of ['__wcc_c', '__wcc_i', '__wcc_g', '__wcc_k']) o[k] = n[k];
     },
 
     node(elements, o, n) {

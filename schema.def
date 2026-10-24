@@ -88,11 +88,11 @@ dom|command|DETACH|detach|handle(DOMElement):handle|{ const el = elements[handle
 # node right before ref (null ref = last), moved only when it isn't there already
 dom|command|PLACE|place|handle(DOMElement):parent_handle handle(DOMElement):node_handle handle(DOMElement):ref_handle|{ const parent = elements[parent_handle]; const node = elements[node_handle]; const ref = elements[ref_handle] || null; if (!parent || !node) continue; if (node.parentNode !== parent || node.nextSibling !== ref) parent.insertBefore(node, ref); }
 dom|command|SET_INNER_HTML|set_inner_html|handle(DOMElement):handle string:html|{ const el = elements[handle]; if(el) el.innerHTML = html; }
-dom|command|SET_INNER_TEXT|set_inner_text|handle(DOMElement):handle string:text|{ const el = elements[handle]; if(el) { if ('innerText' in el) el.innerText = text; else el.textContent = text; } }
+dom|command|SET_INNER_TEXT|set_inner_text|handle(DOMElement):handle string:text|{ const el = elements[handle]; if(el) { if (text.indexOf('\n') < 0 || !('innerText' in el)) el.textContent = text; else el.innerText = text; } }
 dom|command|ADD_CLASS|add_class|handle(DOMElement):handle string:cls|{ const el = elements[handle]; if(el) el.classList.add(cls); }
 dom|command|REMOVE_CLASS|remove_class|handle(DOMElement):handle string:cls|{ const el = elements[handle]; if(el) el.classList.remove(cls); }
 dom|event|CLICK|handle(DOMElement):handle
-dom|command|ADD_CLICK_LISTENER|add_click_listener|handle(DOMElement):handle|{ const el = elements[handle]; if(el) el.dataset.c = handle; }
+dom|command|ADD_CLICK_LISTENER|add_click_listener|handle(DOMElement):handle|{ const el = elements[handle]; if(el) el.__wcc_c = handle; }
 # x/y in CSS px from the element's top-left
 # CAPTURE keeps the pointer outside, COALESCED sends every sample, PREDICT sends guesses
 dom|flags|PointerFlags:uint8|CAPTURE=1 COALESCED=2 NO_SCROLL=4 PREDICT=8
@@ -121,11 +121,11 @@ dom|event|RESIZE|handle(DOMElement):handle float32:width float32:height int32:pi
 dom|command|OBSERVE_RESIZE|observe_resize|handle(DOMElement):handle|{ const el = elements[handle]; if(!el || el.__wcc_rs) continue; let rs = window.__wcc_rs; if (!rs) { const report = (el, box, dpx) => { const wdpr = window.devicePixelRatio || 1; const pw = dpx ? dpx.inlineSize : Math.round(box.inlineSize * wdpr); const ph = dpx ? dpx.blockSize : Math.round(box.blockSize * wdpr); const dpr = box.inlineSize ? pw / box.inlineSize : wdpr; push_event_dom_RESIZE(el.__wcc_rs, box.inlineSize, box.blockSize, pw, ph, dpr); }; const ro = new ResizeObserver((entries) => { for (const e of entries) report(e.target, e.contentBoxSize[0], e.devicePixelContentBoxSize && e.devicePixelContentBoxSize[0]); _triggerDiscreteUpdate(); }); const observe = (el) => { try { ro.observe(el, { box: 'device-pixel-content-box' }); } catch (e) { ro.observe(el); } }; rs = window.__wcc_rs = { ro, els: new Set(), observe }; const watch = () => { matchMedia(`(resolution: ${window.devicePixelRatio || 1}dppx)`).addEventListener('change', () => { for (const el of rs.els) { rs.ro.unobserve(el); observe(el); } watch(); }, { once: true }); }; watch(); } el.__wcc_rs = handle; rs.els.add(el); rs.observe(el); }
 dom|command|UNOBSERVE_RESIZE|unobserve_resize|handle(DOMElement):handle|{ const el = elements[handle]; const rs = window.__wcc_rs; if(!el || !el.__wcc_rs || !rs) continue; rs.ro.unobserve(el); rs.els.delete(el); el.__wcc_rs = undefined; }
 dom|event|INPUT|handle(DOMElement):handle string:value
-dom|command|ADD_INPUT_LISTENER|add_input_listener|handle(DOMElement):handle|{ const el = elements[handle]; if(el) el.dataset.i = handle; }
+dom|command|ADD_INPUT_LISTENER|add_input_listener|handle(DOMElement):handle|{ const el = elements[handle]; if(el) el.__wcc_i = handle; }
 dom|event|CHANGE|handle(DOMElement):handle string:value
-dom|command|ADD_CHANGE_LISTENER|add_change_listener|handle(DOMElement):handle|{ const el = elements[handle]; if(el) el.dataset.g = handle; }
+dom|command|ADD_CHANGE_LISTENER|add_change_listener|handle(DOMElement):handle|{ const el = elements[handle]; if(el) el.__wcc_g = handle; }
 dom|event|KEYDOWN|handle(DOMElement):handle int32:keycode
-dom|command|ADD_KEYDOWN_LISTENER|add_keydown_listener|handle(DOMElement):handle|{ const el = elements[handle]; if(el) el.dataset.k = handle; }
+dom|command|ADD_KEYDOWN_LISTENER|add_keydown_listener|handle(DOMElement):handle|{ const el = elements[handle]; if(el) el.__wcc_k = handle; }
 dom|command|REQUEST_FULLSCREEN|request_fullscreen|handle(DOMElement):handle|{ const el = elements[handle] || document.body; el.requestFullscreen().catch(console.error); }
 dom|command|REQUEST_POINTER_LOCK|request_pointer_lock|handle(DOMElement):handle|{ const el = elements[handle] || document.body; el.requestPointerLock(); }
 dom|command|SCROLL_TO_TOP|scroll_to_top||{ window.scrollTo({ top: 0, left: 0, behavior: 'instant' }); }

@@ -1373,7 +1373,7 @@ namespace webcc
             w.write("    let el = e.target;");
             w.write("    let pushed = false;");
             w.write("    while (el && el !== document.body) {");
-            w.write("        if (el.dataset.c) { push_event_dom_CLICK(parseInt(el.dataset.c)); pushed = true; }");
+            w.write("        if (el.__wcc_c !== undefined) { push_event_dom_CLICK(el.__wcc_c); pushed = true; }");
             w.write("        el = el.parentElement;");
             w.write("    }");
             w.write("    if (pushed) _triggerDiscreteUpdate();");
@@ -1388,7 +1388,7 @@ namespace webcc
             w.write("    let el = e.target;");
             w.write("    let pushed = false;");
             w.write("    while (el && el !== document.body) {");
-            w.write("        if (el.dataset.i) { push_event_dom_INPUT(parseInt(el.dataset.i), e.target.value || ''); pushed = true; }");
+            w.write("        if (el.__wcc_i !== undefined) { push_event_dom_INPUT(el.__wcc_i, e.target.value || ''); pushed = true; }");
             w.write("        el = el.parentElement;");
             w.write("    }");
             w.write("    if (pushed) _triggerDiscreteUpdate();");
@@ -1403,9 +1403,9 @@ namespace webcc
             w.write("    let el = e.target;");
             w.write("    let pushed = false;");
             w.write("    while (el && el !== document.body) {");
-            w.write("        if (el.dataset.g) {");
+            w.write("        if (el.__wcc_g !== undefined) {");
             w.write("            const val = e.target.type === 'checkbox' ? (e.target.checked ? 'true' : 'false') : (e.target.value || '');");
-            w.write("            push_event_dom_CHANGE(parseInt(el.dataset.g), val); pushed = true;");
+            w.write("            push_event_dom_CHANGE(el.__wcc_g, val); pushed = true;");
             w.write("        }");
             w.write("        el = el.parentElement;");
             w.write("    }");
@@ -1421,7 +1421,7 @@ namespace webcc
             w.write("    let el = e.target;");
             w.write("    let pushed = false;");
             w.write("    while (el && el !== document.body) {");
-            w.write("        if (el.dataset.k) { push_event_dom_KEYDOWN(parseInt(el.dataset.k), e.keyCode); pushed = true; }");
+            w.write("        if (el.__wcc_k !== undefined) { push_event_dom_KEYDOWN(el.__wcc_k, e.keyCode); pushed = true; }");
             w.write("        el = el.parentElement;");
             w.write("    }");
             w.write("    if (pushed) _triggerDiscreteUpdate();");

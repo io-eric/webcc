@@ -464,8 +464,6 @@ namespace
         out += '<' + n->tag;
         for (auto &a : n->attrs)
         {
-            // runtime bookkeeping, not page content
-            if (a.first == "data-c" || a.first == "data-i" || a.first == "data-g" || a.first == "data-k") continue;
             out += ' ' + a.first;
             if (!a.second.empty()) { out += "=\""; esc_attr(a.second, out); out += '"'; }
         }
