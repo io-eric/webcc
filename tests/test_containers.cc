@@ -5,6 +5,7 @@
 
 #include "webcc/core/vector.h"
 #include "webcc/core/unordered_map.h"
+#include "webcc/core/array.h"
 #include "webcc/core/format.h"
 #include <cstring>
 #include "webcc/core/queue.h"
@@ -180,4 +181,36 @@ TEST(string_index_of_from_position)
     CHECK_EQ(s.index_of("\"", 100), -1);  // from past the end
     CHECK_EQ(s.index_of("", 3), 3);        // an empty needle is found where the search starts
     CHECK_EQ(webcc::string().index_of("a"), -1);
+}
+
+TEST(containers_compare_by_content)
+{
+    webcc::vector<int> a, b;
+    a.push_back(1); a.push_back(2);
+    b.push_back(1);
+    CHECK(a != b);
+    b.push_back(2);
+    CHECK(a == b);
+    b[1] = 3;
+    CHECK(!(a == b));
+
+    webcc::array<int, 3> x = {1, 2, 3}, y = {1, 2, 3};
+    CHECK(x == y);
+    y[2] = 4;
+    CHECK(x != y);
+
+    // added in another order, still equal; a different value or an extra key is not
+    webcc::unordered_map<int, int> m, n;
+    m[1] = 10; m[2] = 20;
+    n[2] = 20; n[1] = 10;
+    CHECK(m == n);
+    n[2] = 21;
+    CHECK(m != n);
+    n[2] = 20; n[3] = 30;
+    CHECK(m != n);
+
+    // nested: a vector of vectors
+    webcc::vector<webcc::vector<int>> vv, ww;
+    vv.push_back(a); ww.push_back(a);
+    CHECK(vv == ww);
 }

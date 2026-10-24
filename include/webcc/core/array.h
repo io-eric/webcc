@@ -34,6 +34,16 @@ namespace webcc
             return index_of(value) >= 0;
         }
 
+        // the same elements in the same order
+        bool operator==(const array &other) const
+        {
+            for (size_t i = 0; i < N; ++i)
+                if (!(m_data[i] == other.m_data[i]))
+                    return false;
+            return true;
+        }
+        bool operator!=(const array &other) const { return !(*this == other); }
+
         // Fill entire array with value
         void fill(const T& value)
         {

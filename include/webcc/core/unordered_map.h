@@ -197,6 +197,18 @@ namespace webcc
         
         size_t size() const { return m_size; }
         bool empty() const { return m_size == 0; }
+
+        // the same keys, each with an equal value; the order they were added in doesn't matter
+        bool operator==(const unordered_map &other) const
+        {
+            if (m_size != other.m_size)
+                return false;
+            for (const Key &k : *this)
+                if (!other.contains(k) || !((*this)[k] == other[k]))
+                    return false;
+            return true;
+        }
+        bool operator!=(const unordered_map &other) const { return !(*this == other); }
         
         iterator find(const Key& key) {
             if (m_capacity == 0) return end();

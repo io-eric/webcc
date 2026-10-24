@@ -276,6 +276,18 @@ namespace webcc
             return index_of(value) >= 0;
         }
 
+        // the same elements in the same order
+        bool operator==(const vector &other) const
+        {
+            if (m_size != other.m_size)
+                return false;
+            for (size_t i = 0; i < m_size; ++i)
+                if (!(m_data[i] == other.m_data[i]))
+                    return false;
+            return true;
+        }
+        bool operator!=(const vector &other) const { return !(*this == other); }
+
         // Remove element at index (alias for erase for consistency with Coi naming)
         void remove(size_t index)
         {
