@@ -138,7 +138,7 @@ struct BlurEvent  { webcc::DOMElement handle; };
 - `focus` moves keyboard focus to the element. `prevent_scroll = 1` keeps the page from scrolling it into view. It runs after the rest of the flush, so an element created in the same update, or moved into place by a morph, takes focus once it is in the page.
 - `focus_end(handle)` focuses an editable element with the caret at the end of its content, inside its last element (after `set_inner_html("<ul><li>…</li></ul>")` the caret is in the item, not after the list).
 - On phones the on-screen keyboard only opens when `focus` runs inside a tap or key handler. Pointer down, click and key events run the update function right away, so calling it there works.
-- `blur_active` takes focus off whatever element has it. A pointer listener with `NO_SCROLL` cancels the press's default action, and with it the browser's own move of focus away from a text field; call this in the down handler when a press there should end typing.
+- `blur_active` blurs whatever element has focus. Useful in a `NO_SCROLL` pointer handler, since the cancelled pointerdown doesn't move focus.
 - `add_focus_listener` sends `FocusEvent` and `BlurEvent` when the element itself gains or loses focus. Both run the update function right away.
 
 **Focusing from a canvas tap.** A press on a non-focusable element such as a canvas normally moves focus to the page body right after the pointer down. That undoes a `focus` call made while handling it. Register the canvas with `add_pointer_listener(canvas, 7)` (or at least flag `4`, block touch scrolling), which cancels the press's default action and keeps the focus where you put it.

@@ -124,8 +124,7 @@ dom|command|ADD_KEYDOWN_LISTENER|add_keydown_listener|handle(DOMElement):handle|
 dom|command|REQUEST_FULLSCREEN|request_fullscreen|handle(DOMElement):handle|{ const el = elements[handle] || document.body; el.requestFullscreen().catch(console.error); }
 dom|command|REQUEST_POINTER_LOCK|request_pointer_lock|handle(DOMElement):handle|{ const el = elements[handle] || document.body; el.requestPointerLock(); }
 dom|command|SCROLL_TO_TOP|scroll_to_top||{ window.scrollTo({ top: 0, left: 0, behavior: 'instant' }); }
-# focus off whatever element has it; for surfaces whose pointerdown is prevented, which keeps the
-# browser from moving focus away from a text field the way a click would
+# blur the focused element
 dom|command|BLUR_ACTIVE|blur_active||{ const a = document.activeElement; if (a && a !== document.body && a.blur) a.blur(); }
 # editing commands for a focused contenteditable: bold, italic, formatBlock, insertHTML...
 dom|command|EXEC_COMMAND|exec_command|string:name string:value|{ document.execCommand(name, false, value); }
@@ -213,15 +212,13 @@ canvas|command|TRANSFORM|transform|handle(CanvasContext2D):handle float64:a floa
 canvas|command|SET_MITER_LIMIT|set_miter_limit|handle(CanvasContext2D):handle float64:limit|{ const ctx = contexts[handle]; if(ctx) ctx.miterLimit = limit; }
 canvas|command|SET_IMAGE_SMOOTHING_ENABLED|set_image_smoothing_enabled|handle(CanvasContext2D):handle uint8:enabled|{ const ctx = contexts[handle]; if(ctx) ctx.imageSmoothingEnabled = (enabled !== 0); }
 canvas|command|MEASURE_TEXT_WIDTH|measure_text_width|handle(CanvasContext2D):handle string:text RET:float64|{ const ctx = contexts[handle]; return (ctx ? ctx.measureText(text).width : 0); }
-# the pixels of a rectangle, RGBA 8 bits each, row by row (empty when they can't be read: a canvas
-# with an image from another origin on it)
+# RGBA pixels of a rectangle, empty if the canvas is tainted
 canvas|command|GET_IMAGE_DATA|get_image_data|handle(CanvasContext2D):handle int32:x int32:y int32:w int32:h RET:bytes|{ const ctx = contexts[handle]; let ret = new Uint8Array(0); if (ctx && w > 0 && h > 0) { try { const d = ctx.getImageData(x, y, w, h).data; ret = new Uint8Array(d.buffer, d.byteOffset, d.length); } catch (e) { console.warn('get_image_data:', e.message || e); } } }
 
 # ------------------------------------------------------------------------------
 # INPUT
 # ------------------------------------------------------------------------------
-# key_code and key from KeyboardEvent; in_field is 1 when the key went to a text field (input,
-# textarea, select, contenteditable), so page-wide shortcuts can stay out of the way of typing
+# key_code and key from KeyboardEvent; in_field: 1 when the target is an input, textarea, select or contenteditable
 input|flags|Mods:uint8|SHIFT=1 CTRL=2 ALT=4 META=8
 input|event|KEY_DOWN|int32:key_code Mods:mods uint8:repeat string:key uint8:in_field
 input|event|KEY_UP|int32:key_code Mods:mods string:key
@@ -329,7 +326,7 @@ files|command|SAVE|save|string:name string:mime bytes:data RET:uint8|{ const url
 # ------------------------------------------------------------------------------
 # PDF
 # ------------------------------------------------------------------------------
-# reading via pdf.js: open a file, draw its pages into canvases
+# via pdf.js
 pdf|helper|__wcc_pdf|js/pdf.js
 # page_count 0 and error set on failure
 pdf|event|OPENED|handle(PdfDocument):doc int32:page_count string:error|last
@@ -501,8 +498,7 @@ wgpu|command|DRAW|draw|handle(WGPURenderPass):pass_handle int32:vertex_count int
 # ------------------------------------------------------------------------------
 # COMPRESSION
 # ------------------------------------------------------------------------------
-# bytes through the browser's CompressionStream / DecompressionStream; format: deflate (zlib, what
-# PDF and PNG streams use), deflate-raw or gzip. The result comes as DONE with a new blob
+# CompressionStream / DecompressionStream; format: deflate, deflate-raw or gzip. DONE carries the result
 compression|event|DONE|handle(Compression):job handle(Blob):data string:error|last
 compression|command|COMPRESS|compress|bytes:data string:format="deflate" RET:handle(Compression)|{ const h = (window.webcc_next_id = (window.webcc_next_id || 0) + 1); const copy = data.slice(); let stream; try { stream = new Blob([copy]).stream().pipeThrough(new CompressionStream(format)); } catch (e) { queueMicrotask(() => push_event_compression_DONE(h, -1, String((e && e.message) || e))); return h; } new Response(stream).arrayBuffer().then((buf) => { const b = (window.webcc_next_id = (window.webcc_next_id || 0) + 1); blobs[b] = new Uint8Array(buf); push_event_compression_DONE(h, b, ''); }, (e) => push_event_compression_DONE(h, -1, String((e && e.message) || e))); return h; }
 compression|command|DECOMPRESS|decompress|bytes:data string:format="deflate" RET:handle(Compression)|{ const h = (window.webcc_next_id = (window.webcc_next_id || 0) + 1); const copy = data.slice(); let stream; try { stream = new Blob([copy]).stream().pipeThrough(new DecompressionStream(format)); } catch (e) { queueMicrotask(() => push_event_compression_DONE(h, -1, String((e && e.message) || e))); return h; } new Response(stream).arrayBuffer().then((buf) => { const b = (window.webcc_next_id = (window.webcc_next_id || 0) + 1); blobs[b] = new Uint8Array(buf); push_event_compression_DONE(h, b, ''); }, (e) => push_event_compression_DONE(h, -1, String((e && e.message) || e))); return h; }
