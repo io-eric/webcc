@@ -214,14 +214,15 @@ canvas|command|MEASURE_TEXT_WIDTH|measure_text_width|handle(CanvasContext2D):han
 # ------------------------------------------------------------------------------
 # INPUT
 # ------------------------------------------------------------------------------
-# key_code and key from KeyboardEvent
+# key_code and key from KeyboardEvent; in_field is 1 when the key went to a text field (input,
+# textarea, select, contenteditable), so page-wide shortcuts can stay out of the way of typing
 input|flags|Mods:uint8|SHIFT=1 CTRL=2 ALT=4 META=8
-input|event|KEY_DOWN|int32:key_code Mods:mods uint8:repeat string:key
+input|event|KEY_DOWN|int32:key_code Mods:mods uint8:repeat string:key uint8:in_field
 input|event|KEY_UP|int32:key_code Mods:mods string:key
 input|event|MOUSE_DOWN|int32:button int32:x int32:y
 input|event|MOUSE_UP|int32:button int32:x int32:y
 input|event|MOUSE_MOVE|int32:x int32:y
-input|command|INIT_KEYBOARD|init_keyboard||{ if (window.__wcc_kb) continue; window.__wcc_kb = 1; const mods = (e) => (e.shiftKey ? 1 : 0) | (e.ctrlKey ? 2 : 0) | (e.altKey ? 4 : 0) | (e.metaKey ? 8 : 0); window.addEventListener('keydown', e => { push_event_input_KEY_DOWN(e.keyCode, mods(e), e.repeat ? 1 : 0, e.key || ''); _triggerDiscreteUpdate(); }); window.addEventListener('keyup', e => { push_event_input_KEY_UP(e.keyCode, mods(e), e.key || ''); _triggerDiscreteUpdate(); }); }
+input|command|INIT_KEYBOARD|init_keyboard||{ if (window.__wcc_kb) continue; window.__wcc_kb = 1; const mods = (e) => (e.shiftKey ? 1 : 0) | (e.ctrlKey ? 2 : 0) | (e.altKey ? 4 : 0) | (e.metaKey ? 8 : 0); window.addEventListener('keydown', e => { const t = e.target; push_event_input_KEY_DOWN(e.keyCode, mods(e), e.repeat ? 1 : 0, e.key || '', t && (t.isContentEditable || /^(INPUT|TEXTAREA|SELECT)$/.test(t.tagName)) ? 1 : 0); _triggerDiscreteUpdate(); }); window.addEventListener('keyup', e => { push_event_input_KEY_UP(e.keyCode, mods(e), e.key || ''); _triggerDiscreteUpdate(); }); }
 input|command|INIT_MOUSE|init_mouse|handle(DOMElement):handle|{ const el = elements[handle] || document; if (el.__wcc_mouse) continue; el.__wcc_mouse = 1; el.addEventListener('mousedown', e => { push_event_input_MOUSE_DOWN(e.button, e.offsetX, e.offsetY); _triggerDiscreteUpdate(); }); el.addEventListener('mouseup', e => { push_event_input_MOUSE_UP(e.button, e.offsetX, e.offsetY); _triggerDiscreteUpdate(); }); el.addEventListener('mousemove', e => push_event_input_MOUSE_MOVE(e.offsetX, e.offsetY)); }
 # block the browser default for a key combo, mods must match exactly
 input|command|PREVENT_KEY|prevent_key|int32:key_code Mods:mods=0|{ let pk = window.__wcc_pk; if (!pk) { pk = window.__wcc_pk = new Set(); window.addEventListener('keydown', (e) => { const m = (e.shiftKey ? 1 : 0) | (e.ctrlKey ? 2 : 0) | (e.altKey ? 4 : 0) | (e.metaKey ? 8 : 0); if (pk.has(e.keyCode * 16 + m)) e.preventDefault(); }, true); } pk.add(key_code * 16 + mods); }

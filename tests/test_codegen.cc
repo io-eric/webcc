@@ -487,7 +487,7 @@ TEST(codegen_js_events_in_hidden_tab)
     CHECK(js.find("&& pos && _update(performance.now())) { _eventViews(); pos = event_offset_view[0]; }", helper) < helper_end);
 }
 
-// Key events carry mods, repeat and the key string.
+// Key events carry mods, repeat, the key string and whether a text field had it.
 TEST(codegen_js_keyboard_events)
 {
     SchemaDefs defs = real_defs();
@@ -495,7 +495,7 @@ TEST(codegen_js_keyboard_events)
     generate_js_runtime(defs, {"webcc_js_flush"}, markers, {}, "/tmp");
     std::string js = read_file("/tmp/app.js");
 
-    CHECK(js.find("function push_event_input_KEY_DOWN(key_code, mods, repeat, key)") != std::string::npos);
+    CHECK(js.find("function push_event_input_KEY_DOWN(key_code, mods, repeat, key, in_field)") != std::string::npos);
     CHECK(js.find("function push_event_input_KEY_UP(key_code, mods, key)") != std::string::npos);
     CHECK(js.find("e.preventDefault()") != std::string::npos);
 }

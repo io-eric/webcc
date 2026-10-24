@@ -64,6 +64,7 @@ struct KeyDownEvent {
     input::Mods mods;        // flags: Mods::SHIFT, CTRL, ALT, META (Cmd on macOS)
     uint8_t repeat;          // 1 when the key is held down and auto-repeats
     webcc::string_view key;  // KeyboardEvent.key: "z", "Z", "+", "Enter", "ä"
+    uint8_t in_field;        // 1 when the key went to a text field (input, textarea, select, contenteditable)
 };
 
 struct KeyUpEvent {
