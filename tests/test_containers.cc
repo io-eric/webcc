@@ -183,6 +183,53 @@ TEST(string_index_of_from_position)
     CHECK_EQ(webcc::string().index_of("a"), -1);
 }
 
+TEST(string_append_builds_in_place)
+{
+    webcc::string s;
+    for (int i = 0; i < 26; i++)
+        s += (char)('a' + i);
+    CHECK(s == "abcdefghijklmnopqrstuvwxyz");
+    s += webcc::string("!");
+    s += "?";
+    CHECK_EQ(s.length(), 28u);
+    CHECK(s == "abcdefghijklmnopqrstuvwxyz!?");
+    CHECK_EQ(s.c_str()[28], '\0');
+
+    // a copy is its own buffer, and appending to it leaves the original alone
+    webcc::string copy = s;
+    copy += "x";
+    CHECK(s == "abcdefghijklmnopqrstuvwxyz!?");
+    CHECK(copy == "abcdefghijklmnopqrstuvwxyz!?x");
+}
+
+TEST(string_append_to_itself)
+{
+    webcc::string s("abc");
+    for (int i = 0; i < 6; i++)
+        s += s;
+    CHECK_EQ(s.length(), 3u * 64u);
+    CHECK(s.substr(0, 6) == "abcabc");
+    CHECK(s.substr(189) == "abc");
+    webcc::string t("xy");
+    t += t.c_str() + 1;
+    CHECK(t == "xyy");
+}
+
+// a string built a character at a time moves its buffer a few dozen times, not once per character
+TEST(string_append_grows_geometrically)
+{
+    webcc::string s;
+    const char *last = nullptr;
+    int moves = 0;
+    for (int i = 0; i < 1000000; i++) {
+        s += 'x';
+        if (s.data() != last) { moves++; last = s.data(); }
+    }
+    CHECK_EQ(s.length(), 1000000u);
+    CHECK(moves < 60);
+    CHECK(webcc::usable_size(s.data()) >= 1000001u);
+}
+
 TEST(containers_compare_by_content)
 {
     webcc::vector<int> a, b;

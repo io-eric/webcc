@@ -312,18 +312,37 @@ namespace webcc
             fmt << val;
             return concat(*this, fmt.c_str());
         }
-        string& operator+=(const string& other) {
-            *this = concat(*this, other);
+        // Appending grows the buffer in place, by half again when it runs out of room, so a
+        // string built a piece at a time costs time in proportion to its length, not its square.
+        // A copy of the string gets an exact-size buffer again.
+        string& append(const char* s, uint32_t n) {
+            if (n == 0) return *this;
+            if (n > 0xFFFFFFFEu - m_len) return *this;     // past 4 GB: can't be represented
+            uint32_t len = m_len + n;
+            if (webcc::usable_size(m_data) < (size_t)len + 1) {
+                // s may point into this string (s += s): keep where it is, the buffer may move
+                bool inside = m_data && s >= m_data && s <= m_data + m_len;
+                uint32_t at = inside ? (uint32_t)(s - m_data) : 0;
+                size_t room = (size_t)len + 1 + len / 2;
+                char *grown = (char *)webcc::realloc(m_data, room);
+                if (!grown) return *this;
+                m_data = grown;
+                if (inside) s = m_data + at;
+            }
+            for (uint32_t i = 0; i < n; i++)
+                m_data[m_len + i] = s[i];
+            m_len = len;
+            m_data[m_len] = '\0';
             return *this;
+        }
+        string& operator+=(const string& other) {
+            return append(other.m_data, other.m_len);
         }
         string& operator+=(const char* other) {
-            *this = concat(*this, other);
-            return *this;
+            return append(other, strlen(other));
         }
         string& operator+=(char c) {
-            char buf[2] = {c, '\0'};
-            *this = concat(*this, buf);
-            return *this;
+            return append(&c, 1);
         }
         string& operator+=(int val) {
             formatter<32> fmt;

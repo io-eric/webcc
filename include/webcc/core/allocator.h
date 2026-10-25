@@ -333,6 +333,16 @@ namespace webcc
         return np;
     }
 
+    // How many bytes the block behind ptr can hold: at least what was asked for, often a little
+    // more (sizes are rounded up, and a split may leave a tail too small to stand alone).
+    // 0 for a null pointer.
+    inline size_t usable_size(void *ptr)
+    {
+        if (!ptr)
+            return 0;
+        return detail::blk_size(detail::hdr_of(ptr));
+    }
+
     // Enlarge an existing allocation to at least `size` bytes WITHOUT moving any
     // bytes, returning true on success and false if it could not grow in place.
     // Unlike realloc this never relocates, so it is safe for element types whose
