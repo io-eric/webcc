@@ -269,7 +269,7 @@ else if (p->phase == dom::PointerPhase::PREDICTED) tail.push(p->x, p->y, p->pres
 // frame: draw stroke + tail, then tail.clear()
 ```
 
-**Long press.** With `HOLD`, a finger on a list scrolls it as usual, but one that stays put for 500 ms gets a `HELD` sample at where it is now. From then on its moves arrive without the page scrolling under them, until it lifts: lift it to open a menu, move it to drag. A touch that moves more than 8 px first is a scroll as before, and a second finger cancels the hold. The element also loses what a browser does on a long press of its own: the iOS callout, text selection, the context menu on Android, and the click on release after a hold. Mouse and pen are untouched; they have a right button and can drag at once.
+**Long press.** With `HOLD`, a finger on a list scrolls it as usual, but one that stays put for 500 ms gets a `HELD` sample at where it is now. From then on its moves arrive without the page scrolling under them, until it lifts: lift it to open a menu, move it to drag. A touch that moves more than 8 px first is a scroll as before, and a second finger cancels the hold. The element also loses what a browser does on a long press of its own: the iOS callout, text selection, the context menu on Android, and the click on release after a hold, wherever it lands by then (the page-wide click right after a hold is eaten). Mouse and pen are untouched; they have a right button and can drag at once.
 
 ```cpp
 if (p->phase == dom::PointerPhase::HELD) startDrag(p->x, p->y);

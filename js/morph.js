@@ -2,7 +2,8 @@
 // look like the fresh ones, so a re-render doesn't drop pointer capture, focus, hover or scroll.
 // Afterwards the fresh row's handles name the live nodes and its listeners sit on them.
 const __wcc_morph = {
-    // listener sets kept on a node by the add_*_listener commands, with their options
+    // listener sets kept on a node by the add_*_listener commands, with their options (an entry
+    // may carry its own as a third item)
     hydrating: false,
     kinds: [['__wcc_ptr', undefined], ['__wcc_wh', { passive: false }], ['__wcc_drop', undefined], ['__wcc_focus', undefined], ['__wcc_clk', undefined]],
 
@@ -84,8 +85,8 @@ const __wcc_morph = {
     listeners(o, n) {
         for (const [k, opt] of this.kinds) {
             if (o[k] === n[k]) continue;
-            if (o[k]) for (const [ev, f] of o[k]) o.removeEventListener(ev, f, opt);
-            if (n[k]) for (const [ev, f] of n[k]) o.addEventListener(ev, f, opt);
+            if (o[k]) for (const [ev, f, own] of o[k]) o.removeEventListener(ev, f, own !== undefined ? own : opt);
+            if (n[k]) for (const [ev, f, own] of n[k]) o.addEventListener(ev, f, own !== undefined ? own : opt);
             o[k] = n[k];
         }
         if (o.__wcc_sc !== n.__wcc_sc) {
