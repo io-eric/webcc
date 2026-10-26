@@ -191,7 +191,11 @@ Elements the page made itself (`set_inner_html`, typing in a `contenteditable`) 
 ```cpp
 webcc::DOMElement closest(webcc::DOMElement handle, webcc::string_view selector);  // Element.closest, invalid when none
 uint8_t contains(webcc::DOMElement handle, webcc::DOMElement other);              // 1 if other is the element or inside it
+// the innermost element of handle (or itself) under a point in its own px, invalid outside it
+webcc::DOMElement element_at(webcc::DOMElement handle, float x, float y);
 ```
+
+`element_at` looks through whatever is drawn over the element at that point (an overlay that takes the pointer, like a drawing canvas on top), and measures from where the element is on screen, transforms included.
 
 ```cpp
 // is the caret in a list item of this editor?
@@ -238,7 +242,7 @@ It runs the update function right away.
 
 #### `add_press_target_listener`
 
-The same for a press (`pointerdown`): the element pressed, where on it, the modifier keys.
+The same for a press (`pointerdown`): the element pressed, where on it, the modifier keys, and what pressed.
 
 ```cpp
 void add_press_target_listener(webcc::DOMElement handle);
@@ -248,6 +252,7 @@ struct PressTargetEvent {
     webcc::DOMElement target;
     float x, y;
     webcc::input::Mods mods;
+    webcc::dom::PointerType pointer_type;  // MOUSE, PEN or TOUCH
 };
 ```
 

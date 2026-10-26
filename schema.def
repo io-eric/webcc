@@ -155,10 +155,13 @@ dom|command|ADD_CLICK_TARGET_LISTENER|add_click_target_listener|handle(DOMElemen
 # cancelled (preventDefault), e.g. a link isn't followed. The update runs in a microtask after the
 # listener, still inside the event's dispatch, and the listener looks for the call after it
 dom|command|PREVENT_DEFAULT|prevent_default||{ window.__wcc_pd = 1; }
-# a press anywhere inside the element (pointerdown), like CLICK_TARGET. The update runs right away, so what
-# the handler changes is in place before the browser focuses or selects
-dom|event|PRESS_TARGET|handle(DOMElement):handle handle(DOMElement):target float32:x float32:y Mods:mods
-dom|command|ADD_PRESS_TARGET_LISTENER|add_press_target_listener|handle(DOMElement):handle|{ const el = elements[handle]; if (!el || el.__wcc_prs) continue; const f = (e) => { let t = e.target; if (t && t.nodeType !== 1) t = t.parentElement; if (!t) return; const mods = (e.shiftKey ? 1 : 0) | (e.ctrlKey ? 2 : 0) | (e.altKey ? 4 : 0) | (e.metaKey ? 8 : 0); window.__wcc_pd = 0; push_event_dom_PRESS_TARGET(handle, __wcc_handle(elements, t), e.offsetX, e.offsetY, mods); _triggerDiscreteUpdate(); queueMicrotask(() => { if (window.__wcc_pd) { window.__wcc_pd = 0; e.preventDefault(); } }); }; el.addEventListener('pointerdown', f); el.__wcc_prs = [['pointerdown', f]]; }
+# a press anywhere inside the element (pointerdown), like CLICK_TARGET, and what pressed (mouse, pen, touch).
+# The update runs right away, so what the handler changes is in place before the browser focuses or selects
+dom|event|PRESS_TARGET|handle(DOMElement):handle handle(DOMElement):target float32:x float32:y Mods:mods PointerType:pointer_type
+dom|command|ADD_PRESS_TARGET_LISTENER|add_press_target_listener|handle(DOMElement):handle|{ const el = elements[handle]; if (!el || el.__wcc_prs) continue; const f = (e) => { let t = e.target; if (t && t.nodeType !== 1) t = t.parentElement; if (!t) return; const mods = (e.shiftKey ? 1 : 0) | (e.ctrlKey ? 2 : 0) | (e.altKey ? 4 : 0) | (e.metaKey ? 8 : 0); window.__wcc_pd = 0; push_event_dom_PRESS_TARGET(handle, __wcc_handle(elements, t), e.offsetX, e.offsetY, mods, ({ mouse: 0, pen: 1, touch: 2 })[e.pointerType] ?? 0); _triggerDiscreteUpdate(); queueMicrotask(() => { if (window.__wcc_pd) { window.__wcc_pd = 0; e.preventDefault(); } }); }; el.addEventListener('pointerdown', f); el.__wcc_prs = [['pointerdown', f]]; }
+# the innermost element of this one (or itself) under a point in its own px, from where it is on screen,
+# whatever is drawn over it there (an overlay that takes the pointer); -1 when the point is outside it
+dom|command|ELEMENT_AT|element_at|handle(DOMElement):handle float32:x float32:y RET:handle(DOMElement)|{ const el = elements[handle]; if (!el) return -1; const r = el.getBoundingClientRect(); const hit = document.elementsFromPoint(r.left + x, r.top + y).find((e) => el.contains(e)); return hit ? __wcc_handle(elements, hit) : -1; }
 # focus with the caret at the end of the content, inside its last element (Firefox would leave it after a list)
 dom|command|FOCUS_END|focus_end|handle(DOMElement):handle|{ const el = elements[handle]; if (!el) continue; el.focus({ preventScroll: true }); let n = el; while (n.lastChild && n.lastChild.nodeType === 1 && n.lastChild.tagName !== 'BR') n = n.lastChild; const r = document.createRange(); r.selectNodeContents(n); r.collapse(false); const s = window.getSelection(); s.removeAllRanges(); s.addRange(r); }
 
