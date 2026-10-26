@@ -293,6 +293,11 @@ system|early|__wcc_install|js/install.js
 system|event|INSTALL_STATE|uint8:state
 system|command|INIT_INSTALL|init_install||{ if (__wcc_install.notify) { __wcc_install.notify(); continue; } __wcc_install.notify = () => { push_event_system_INSTALL_STATE(__wcc_install.state); _triggerDiscreteUpdate(); }; __wcc_install.notify(); }
 system|command|PROMPT_INSTALL|prompt_install||{ const e = __wcc_install.prompt; if (!e) continue; __wcc_install.prompt = null; __wcc_install.state = 0; e.prompt(); e.userChoice.then(r => { if (r && r.outcome === 'accepted') __wcc_install.state = 2; if (__wcc_install.notify) __wcc_install.notify(); }).catch(() => { if (__wcc_install.notify) __wcc_install.notify(); }); }
+# the page's service worker: look for a newer version of it (ServiceWorkerRegistration.update()),
+# and hear when a new one takes over the page (the container's controllerchange)
+system|command|UPDATE_SERVICE_WORKER|update_service_worker||{ if (navigator.serviceWorker) navigator.serviceWorker.getRegistration().then(r => { if (r) return r.update(); }).catch(() => {}); }
+system|event|CONTROLLER_CHANGE|uint8:controlled
+system|command|INIT_CONTROLLER_CHANGE|init_controller_change||{ if (window.__wcc_ctl || !navigator.serviceWorker) continue; window.__wcc_ctl = 1; navigator.serviceWorker.addEventListener('controllerchange', () => { push_event_system_CONTROLLER_CHANGE(navigator.serviceWorker.controller ? 1 : 0); _triggerDiscreteUpdate(); }); }
 # page-wide input and layout: a pointer let go anywhere (a drag that ends off the element it
 # started on, cancel included), the window's size (reported once at init, then on every change,
 # at most once a frame), the page's own scroll, and a click anywhere on the page
