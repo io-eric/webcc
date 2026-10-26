@@ -5,7 +5,7 @@ const __wcc_morph = {
     // listener sets kept on a node by the add_*_listener commands, with their options (an entry
     // may carry its own as a third item)
     hydrating: false,
-    kinds: [['__wcc_ptr', undefined], ['__wcc_wh', { passive: false }], ['__wcc_drop', undefined], ['__wcc_focus', undefined], ['__wcc_clk', undefined]],
+    kinds: [['__wcc_ptr', undefined], ['__wcc_wh', { passive: false }], ['__wcc_drop', undefined], ['__wcc_focus', undefined], ['__wcc_clk', undefined], ['__wcc_prs', undefined]],
 
     item(elements, oh, nh) {
         const o = elements[oh], n = elements[nh];

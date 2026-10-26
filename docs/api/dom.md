@@ -236,6 +236,31 @@ struct ClickTargetEvent {
 
 It runs the update function right away.
 
+#### `add_press_target_listener`
+
+The same for a press (`pointerdown`): the element pressed, where on it, the modifier keys.
+
+```cpp
+void add_press_target_listener(webcc::DOMElement handle);
+
+struct PressTargetEvent {
+    webcc::DOMElement handle;
+    webcc::DOMElement target;
+    float x, y;
+    webcc::input::Mods mods;
+};
+```
+
+It runs the update function right away, so what the handler changes (an attribute, a class) is in place before the browser acts on the press with focus and text selection.
+
+#### `prevent_default`
+
+```cpp
+void prevent_default();
+```
+
+Called from a click target or press target handler, it cancels the browser's own action for that event, as `preventDefault()` would: a link clicked isn't followed. The listeners run the update right away, so the call is seen before the event is done; anywhere else it does nothing.
+
 #### `add_pointer_listener`
 
 Reports mouse, pen and touch input on an element as `PointerEvent`s.
