@@ -73,6 +73,7 @@ void set_title(webcc::string_view title);
 // <meta name="theme-color"> gets it, or one is added
 void set_theme_color(webcc::string_view color);
 void reload();
+// in a new tab, with no way back to this page (noopener)
 void open_url(webcc::string_view url);
 ```
 

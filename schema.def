@@ -261,7 +261,7 @@ system|command|REQUEST_FRAME|request_frame||{ _requestFrame(); }
 system|command|SET_TITLE|set_title|string:title|{ document.title = title; }
 system|command|SET_THEME_COLOR|set_theme_color|string:color|{ const metas = document.querySelectorAll('meta[name="theme-color"]'); if (metas.length) { for (const m of metas) m.content = color; } else { const m = document.createElement('meta'); m.name = 'theme-color'; m.content = color; document.head.appendChild(m); } }
 system|command|RELOAD|reload||{ location.reload(); }
-system|command|OPEN_URL|open_url|string:url|{ window.open(url, '_blank'); }
+system|command|OPEN_URL|open_url|string:url|{ window.open(url, '_blank', 'noopener'); }
 # the page itself goes to url, as a link followed in the same tab
 system|command|GO_TO|go_to|string:url|{ location.assign(url); }
 system|command|GET_TIME|get_time|RET:float64|{ return performance.now(); }
