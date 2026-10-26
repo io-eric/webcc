@@ -260,3 +260,18 @@ After `init_install()`, an `InstallStateEvent` arrives right away with the curre
 `prompt_install()` shows the browser's prompt; call it from the button's click handler. After the user answers, the state becomes `2` (installed) or `0`. Browsers may offer the prompt again later, which sends another `1`.
 
 The prompt can arrive before the module has loaded, so the generated JS listens for it from the moment the script starts and keeps it until `init_install()`. Browsers without a prompt still let people install by hand (Safari: Share, then Add to Home Screen), so a page usually shows a short hint instead of the button when the state stays `0`.
+
+## A newer build
+
+```cpp
+void update_service_worker();   // look for a newer build now
+void init_controller_change();
+
+struct ControllerChangeEvent { uint8_t controlled; };
+```
+
+`update_service_worker()` asks the page's service worker to look for a newer version of itself, as a browser does by itself now and then; a newer build installs and takes the page over. After `init_controller_change()`, a `ControllerChangeEvent` says when that happens:
+
+- `0`: no worker controls the page any more.
+- `1`: the first worker took the page: a first visit, not a newer build.
+- `2`: a new worker took over from the last one. The page still runs the old build; a reload gets the new one.

@@ -299,8 +299,10 @@ system|command|PROMPT_INSTALL|prompt_install||{ const e = __wcc_install.prompt; 
 # the page's service worker: look for a newer version of it (ServiceWorkerRegistration.update()),
 # and hear when a new one takes over the page (the container's controllerchange)
 system|command|UPDATE_SERVICE_WORKER|update_service_worker||{ if (navigator.serviceWorker) navigator.serviceWorker.getRegistration().then(r => { if (r) return r.update(); }).catch(() => {}); }
+# controlled: 0 no worker, 1 the first one took the page (a first visit), 2 a new one took over from
+# the last (a newer build: a reload gets it)
 system|event|CONTROLLER_CHANGE|uint8:controlled
-system|command|INIT_CONTROLLER_CHANGE|init_controller_change||{ if (window.__wcc_ctl || !navigator.serviceWorker) continue; window.__wcc_ctl = 1; navigator.serviceWorker.addEventListener('controllerchange', () => { push_event_system_CONTROLLER_CHANGE(navigator.serviceWorker.controller ? 1 : 0); _triggerDiscreteUpdate(); }); }
+system|command|INIT_CONTROLLER_CHANGE|init_controller_change||{ if (window.__wcc_ctl || !navigator.serviceWorker) continue; window.__wcc_ctl = 1; let had = !!navigator.serviceWorker.controller; navigator.serviceWorker.addEventListener('controllerchange', () => { const now = !!navigator.serviceWorker.controller; push_event_system_CONTROLLER_CHANGE(now ? (had ? 2 : 1) : 0); had = now; _triggerDiscreteUpdate(); }); }
 # page-wide input and layout: a pointer let go anywhere (a drag that ends off the element it
 # started on, cancel included), the window's size (reported once at init, then on every change,
 # at most once a frame), the page's own scroll, and a click anywhere on the page
