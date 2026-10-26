@@ -252,6 +252,7 @@ void add_pointer_listener(webcc::DOMElement handle, uint8_t flags = 0);
 | `PointerFlags::COALESCED` | Report every coalesced sample of a move instead of one per event. Pens and fast mice produce several samples per frame; without this, fast strokes look jagged. |
 | `PointerFlags::NO_SCROLL` | Set `touch-action: none` and cancel the default action on down, so touch and pen don't scroll the page or select text. |
 | `PointerFlags::PREDICT` | After each move with a button down, also report where the browser expects the pointer to be next, as `PointerPhase::PREDICTED` samples. See below. |
+| `PointerFlags::HOLD` | A touch that stays within 8 px for 500 ms reports `PointerPhase::HELD`, then no longer scrolls the page, so its moves can drag something. See below. |
 
 For a drawing surface use the first three, plus `PREDICT` for less visible lag:
 
@@ -266,6 +267,12 @@ dom::add_pointer_listener(canvas, F::CAPTURE | F::COALESCED | F::NO_SCROLL | F::
 if (p->phase == dom::PointerPhase::MOVE) stroke.push(p->x, p->y, p->pressure);
 else if (p->phase == dom::PointerPhase::PREDICTED) tail.push(p->x, p->y, p->pressure);
 // frame: draw stroke + tail, then tail.clear()
+```
+
+**Long press.** With `HOLD`, a finger on a list scrolls it as usual, but one that stays put for 500 ms gets a `HELD` sample at where it is now. From then on its moves arrive without the page scrolling under them, until it lifts: lift it to open a menu, move it to drag. A touch that moves more than 8 px first is a scroll as before, and a second finger cancels the hold. The element also loses what a browser does on a long press of its own: the iOS callout, text selection, the context menu on Android, and the click on release after a hold. Mouse and pen are untouched; they have a right button and can drag at once.
+
+```cpp
+if (p->phase == dom::PointerPhase::HELD) startDrag(p->x, p->y);
 ```
 
 Calling it again on the same element does nothing.

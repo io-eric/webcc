@@ -9,6 +9,7 @@ namespace webcc::dom {
         COALESCED = 2,
         NO_SCROLL = 4,
         PREDICT = 8,
+        HOLD = 16,
     };
     constexpr PointerFlags operator|(PointerFlags a, PointerFlags b) { return PointerFlags((uint8_t)a | (uint8_t)b); }
     constexpr PointerFlags operator&(PointerFlags a, PointerFlags b) { return PointerFlags((uint8_t)a & (uint8_t)b); }
@@ -44,6 +45,7 @@ namespace webcc::dom {
         UP = 2,
         CANCEL = 3,
         PREDICTED = 4,
+        HELD = 5,
     };
 } // namespace webcc::dom
 
