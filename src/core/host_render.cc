@@ -546,6 +546,9 @@ extern "C" uint32_t webcc_system_get_pathname()
     return give_string(p && *p ? p : "/");
 }
 
+// this is the host render: a page can leave out what only makes sense live (a redirect, a fetch)
+extern "C" uint8_t webcc_system_is_prerender() { return 1; }
+
 // the clock, as a page would see it
 extern "C" double webcc_system_get_date_now()
 {

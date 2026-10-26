@@ -273,6 +273,8 @@ system|command|GET_ORIGIN|get_origin|RET:string|{ const ret = window.location.or
 system|command|GET_QUERY_PARAM|get_query_param|string:name RET:string|{ const ret = new URLSearchParams(window.location.search).get(name) || ""; }
 system|command|GET_VISIBILITY_STATE|get_visibility_state|RET:string|{ const ret = document.visibilityState || 'visible'; }
 system|command|IS_HIDDEN|is_hidden|RET:uint8|{ return document.hidden ? 1 : 0; }
+# 1 while the page is rendered on the host for static HTML (webcc --render), 0 in a browser
+system|command|IS_PRERENDER|is_prerender|RET:uint8|{ return 0; }
 system|command|PUSH_STATE|push_state|string:path|{ history.pushState(null, '', path); }
 # the current entry gets a new address, no new history entry (e.g. dropping a token from the hash)
 system|command|REPLACE_STATE|replace_state|string:path|{ history.replaceState(null, '', path); }

@@ -160,6 +160,14 @@ void init_visibility_change();
 ```
 
 Use `is_hidden()` when you only need a fast boolean-style check.
+
+## Host render
+
+```cpp
+uint8_t is_prerender();               // 1 while the page is rendered on the host for static HTML, 0 in a browser
+```
+
+A page rendered by `webcc --render` runs the same code as in a browser, with every browser import answering nothing. `is_prerender()` tells the two apart, for what only makes sense live: a redirect that depends on storage, a request, a timer.
 Use `get_visibility_state()` when you want the exact browser-reported state string.
 
 After calling `init_visibility_change()`, visibility updates are emitted through the event system. Each one runs the update function right away, because a hidden tab gets no animation frames: without that, the "hidden" event would wait until the user came back.
