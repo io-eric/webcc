@@ -48,6 +48,12 @@ namespace
     };
 
     std::unordered_map<int32_t, Node *> g_nodes;
+
+    bool console()
+    {
+        static bool on = getenv("WEBCC_CONSOLE") != nullptr;
+        return on;
+    }
     std::unordered_map<int32_t, Node *> g_templates;   // subtrees kept off the page, cloned by id
     Node *g_body = nullptr;
     int32_t g_next_handle = 1;
@@ -414,6 +420,10 @@ namespace
             case OP_ADD_CLICK_TARGET_LISTENER: { int32_t h = r.i32(); if (Node *n = get(h)) n->on_click_target = h; break; }
             case webcc::system::OP_SET_UPDATE: g_update_low = r.u32(); g_update_set = true; break;
             case webcc::system::OP_REQUEST_FRAME: g_frame_requested = true; break;
+            // the console, in a program run on the host (--run); a render keeps quiet
+            case webcc::system::OP_LOG: { std::string m = r.str(); if (console()) printf("%s\n", m.c_str()); break; }
+            case webcc::system::OP_WARN: { std::string m = r.str(); if (console()) printf("warn: %s\n", m.c_str()); break; }
+            case webcc::system::OP_ERROR: { std::string m = r.str(); if (console()) printf("error: %s\n", m.c_str()); break; }
             default:
             {
                 const char *layout = op < kLayoutCount ? kLayouts[op] : nullptr;

@@ -150,7 +150,8 @@ namespace webcc
         if (!build_host(defs, input_files, cache_dir, bin)) return 1;
         report("running");
         std::cout.flush();
-        int status = system(("\"" + bin.string() + "\"").c_str());
+        // System.log and the like print, as a browser's console would
+        int status = system(("WEBCC_CONSOLE=1 \"" + bin.string() + "\"").c_str());
         if (status == -1) return 1;
         if (WIFEXITED(status)) return WEXITSTATUS(status);
         std::cerr << "[WebCC] Error: the program stopped on a signal" << std::endl;
