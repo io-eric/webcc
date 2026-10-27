@@ -18,7 +18,9 @@ namespace webcc::host {
     extern "C" uint8_t webcc_host_keydown(int32_t handle, int32_t keycode);
     extern "C" void webcc_host_clear();
 
-    // the index-th element in the body matching a CSS selector, invalid when there is none
+    // the index-th element in the body matching a CSS selector, invalid when there is none.
+    // Selectors: tag, *, #id, .class, [attr], [attr=value], :first-child, :last-child,
+    // :nth-child(n), :not(...), descendant, > and ,
     inline DOMElement query(string_view selector, int32_t index = 0) {
         ::webcc::flush();
         return DOMElement(webcc_host_query(selector.data(), selector.length(), index));

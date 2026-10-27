@@ -525,9 +525,17 @@ namespace
 
     // --- reading the page -----------------------------------------------------------------
 
-    // selectors: tag, *, #id, .class, [attr], [attr=value], descendant, > child, a list with ,
+    // selectors: tag, *, #id, .class, [attr], [attr=value], :first-child, :last-child,
+    // :nth-child(n), :not(...), descendant, > child, a list with ,
     struct AttrTest { std::string name, value; bool has_value = false; };
-    struct Compound { std::string tag, id; std::vector<std::string> classes; std::vector<AttrTest> attrs; };
+    struct Compound
+    {
+        std::string tag, id;
+        std::vector<std::string> classes;
+        std::vector<AttrTest> attrs;
+        int nth = 0, nth_last = 0;     // 1-based among the element's element siblings
+        std::vector<Compound> nots;
+    };
     struct Step { Compound c; bool child = false; };   // child: a > before it
     using Chain = std::vector<Step>;
 
@@ -539,59 +547,95 @@ namespace
         return s;
     }
 
+    // one compound selector at i: a tag or *, then ids, classes, attributes and pseudo-classes
+    bool parse_compound(const std::string &s, size_t &i, Compound &c)
+    {
+        auto ws = [&] { while (i < s.size() && isspace((unsigned char)s[i])) i++; };
+        auto ident = [&] { size_t a = i; while (i < s.size() && ident_char(s[i])) i++; return s.substr(a, i - a); };
+        bool any = false;
+        if (i < s.size() && s[i] == '*') { i++; any = true; }
+        else if (i < s.size() && ident_char(s[i])) { c.tag = lower(ident()); any = true; }
+        while (i < s.size())
+        {
+            if (s[i] == '#' || s[i] == '.')
+            {
+                char kind = s[i++];
+                std::string name = ident();
+                if (name.empty()) return false;
+                if (kind == '#') c.id = name;
+                else c.classes.push_back(name);
+            }
+            else if (s[i] == '[')
+            {
+                i++; ws();
+                AttrTest a;
+                a.name = ident(); ws();
+                if (a.name.empty()) return false;
+                if (i < s.size() && s[i] == '=')
+                {
+                    i++; ws();
+                    a.has_value = true;
+                    if (i < s.size() && (s[i] == '"' || s[i] == '\''))
+                    {
+                        size_t end = s.find(s[i], i + 1);
+                        if (end == std::string::npos) return false;
+                        a.value = s.substr(i + 1, end - i - 1);
+                        i = end + 1;
+                    }
+                    else a.value = ident();
+                    ws();
+                }
+                if (i >= s.size() || s[i] != ']') return false;
+                i++;
+                c.attrs.push_back(a);
+            }
+            else if (s[i] == ':')
+            {
+                i++;
+                std::string name = lower(ident());
+                if (name == "first-child") c.nth = 1;
+                else if (name == "last-child") c.nth_last = 1;
+                else if (name == "nth-child" || name == "not")
+                {
+                    if (i >= s.size() || s[i] != '(') return false;
+                    i++; ws();
+                    if (name == "not")
+                    {
+                        Compound inner;
+                        if (!parse_compound(s, i, inner)) return false;
+                        c.nots.push_back(inner);
+                    }
+                    else
+                    {
+                        size_t a = i;
+                        while (i < s.size() && isdigit((unsigned char)s[i])) i++;
+                        if (i == a) return false;
+                        c.nth = atoi(s.substr(a, i - a).c_str());
+                        if (c.nth < 1) return false;
+                    }
+                    ws();
+                    if (i >= s.size() || s[i] != ')') return false;
+                    i++;
+                }
+                else return false;
+            }
+            else break;
+            any = true;
+        }
+        return any;
+    }
+
     bool parse_selector(const std::string &s, std::vector<Chain> &out)
     {
         size_t i = 0;
         auto ws = [&] { while (i < s.size() && isspace((unsigned char)s[i])) i++; };
-        auto ident = [&] { size_t a = i; while (i < s.size() && ident_char(s[i])) i++; return s.substr(a, i - a); };
         Chain chain;
         bool child = false;
         ws();
         while (i < s.size())
         {
             Step step{{}, child};
-            Compound &c = step.c;
-            bool any = false;
-            if (s[i] == '*') { i++; any = true; }
-            else if (ident_char(s[i])) { c.tag = lower(ident()); any = true; }
-            while (i < s.size())
-            {
-                if (s[i] == '#' || s[i] == '.')
-                {
-                    char kind = s[i++];
-                    std::string name = ident();
-                    if (name.empty()) return false;
-                    if (kind == '#') c.id = name;
-                    else c.classes.push_back(name);
-                }
-                else if (s[i] == '[')
-                {
-                    i++; ws();
-                    AttrTest a;
-                    a.name = ident(); ws();
-                    if (a.name.empty()) return false;
-                    if (i < s.size() && s[i] == '=')
-                    {
-                        i++; ws();
-                        a.has_value = true;
-                        if (i < s.size() && (s[i] == '"' || s[i] == '\''))
-                        {
-                            size_t end = s.find(s[i], i + 1);
-                            if (end == std::string::npos) return false;
-                            a.value = s.substr(i + 1, end - i - 1);
-                            i = end + 1;
-                        }
-                        else a.value = ident();
-                        ws();
-                    }
-                    if (i >= s.size() || s[i] != ']') return false;
-                    i++;
-                    c.attrs.push_back(a);
-                }
-                else break;
-                any = true;
-            }
-            if (!any) return false;
+            if (!parse_compound(s, i, step.c)) return false;
             chain.push_back(step);
             child = false;
             size_t before = i;
@@ -626,6 +670,21 @@ namespace
             const std::string *v = attr(n, a.name);
             if (!v || (a.has_value && *v != a.value)) return false;
         }
+        if (c.nth || c.nth_last)
+        {
+            int at = 0, of = 0;
+            if (n->parent)
+                for (const Node *sib : n->parent->children)
+                {
+                    if (sib->kind != ELEMENT) continue;
+                    of++;
+                    if (sib == n) at = of;
+                }
+            if (c.nth && at != c.nth) return false;
+            if (c.nth_last && of - at + 1 != c.nth_last) return false;
+        }
+        for (auto &x : c.nots)
+            if (matches(n, x)) return false;
         return true;
     }
 

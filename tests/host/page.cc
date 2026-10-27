@@ -56,7 +56,16 @@ int main()
     CHECK(host::count("li") == 3);
     CHECK(host::count("*") == 10);
     CHECK(!host::query("li", 3).is_valid());
-    CHECK(!host::query("li:first-child").is_valid());
+    CHECK(host::query("li:first-child") == host::query("li", 0));
+    CHECK(host::query("ul > :last-child") == host::query("li", 2));
+    CHECK(host::query("li:nth-child(2)") == host::query("li", 1));
+    CHECK(!host::query("li:nth-child(4)").is_valid());
+    CHECK(host::query("#top > :nth-child(2)") == save);
+    CHECK(host::query("li:not(.on):last-child") == host::query("li", 2));
+    CHECK(host::count("li:not(.on)") == 2);
+    CHECK(host::query("input:not([type=checkbox])") == name);
+    CHECK(!host::query("li:hover").is_valid());
+    CHECK(!host::query("li:nth-child(0)").is_valid());
 
     // reading
     CHECK(host::text(save) == "Save");
