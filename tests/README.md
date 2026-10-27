@@ -27,6 +27,10 @@ Exit code is non-zero on any failure, so CI fails loudly. The suite runs in CI
 several feature combinations using the real `webcc` binary and parses each with
 Node's `vm.Script`, confirming the generated JavaScript is syntactically valid.
 
+**Host page** ([host/page.cc](host/page.cc)): a program run with `webcc --run`
+that builds a page and reads it and sends it events through `webcc/host.h`:
+selectors, text and HTML, events bubbling to listeners, checkboxes.
+
 ## Snapshots
 
 Golden files live in [snapshots/](snapshots/). When you change codegen, run

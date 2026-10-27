@@ -3,7 +3,7 @@
 #
 #   ./tests/run.sh            Build & run all tests (C++ units + codegen snapshots + JS validation)
 #   ./tests/run.sh --update   Regenerate golden snapshots, then run
-#   ./tests/run.sh --skip-js  Skip the Node JS-validation layer (no webcc build / node needed)
+#   ./tests/run.sh --skip-js  Skip the layers that need the webcc binary (JS validation, host page)
 #
 # Zero extra dependencies: uses the same clang++ the toolchain requires, plus
 # node (already needed to serve examples) for the JS syntax checks.
@@ -72,4 +72,7 @@ fi
 
 echo "[tests] Validating generated JavaScript..."
 node "$ROOT/tests/js/check_js.mjs" "$ROOT/webcc" "$ROOT"
+
+echo "[tests] Running the host page..."
+"$ROOT/webcc" "$ROOT/tests/host/page.cc" --run --quiet --cache-dir "$BUILD/host"
 

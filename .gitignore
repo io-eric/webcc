@@ -24,3 +24,4 @@ dist/
 # Generated C++ Headers
 include/webcc/*.h
 !include/webcc/webcc.h
+!include/webcc/host.h

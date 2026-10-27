@@ -1,6 +1,7 @@
 // First render on the host, for static HTML: the app is compiled natively with this file in
 // place of the JS runtime. Commands that build the page are applied to a small tree here, the
-// rest are skipped, and when the program ends the tree is printed as HTML.
+// rest are skipped, and when the program ends the tree is printed as HTML. A program run on
+// the host can also read the tree and send it events (webcc/host.h).
 //
 // Compiled together with the app and the core sources by `webcc --render`, which generates two
 // files from the schema: host_layouts.inc, the parameter layout of every command (to step over
@@ -11,6 +12,7 @@
 #include "webcc/system.h"
 #include "host_layouts.inc"
 
+#include <cctype>
 #include <cstdint>
 #include <cstdio>
 #include <cstdlib>
@@ -22,6 +24,9 @@
 
 extern "C" uint8_t *webcc_scratch_buffer_ptr();
 extern "C" uint32_t webcc_scratch_buffer_capacity();
+extern "C" uint8_t *webcc_event_buffer_ptr();
+extern "C" uint32_t *webcc_event_offset_ptr();
+extern "C" uint32_t webcc_event_buffer_capacity();
 
 namespace
 {
@@ -38,6 +43,8 @@ namespace
         std::string raw_html;  // element: innerHTML as given, in place of children
         bool has_raw = false;
         int32_t handle = -1;
+        // listeners, by the handle they were added with
+        int32_t on_click = -1, on_input = -1, on_change = -1, on_keydown = -1, on_click_target = -1;
     };
 
     std::unordered_map<int32_t, Node *> g_nodes;
@@ -220,6 +227,8 @@ namespace
         if (o->handle >= 0 && g_nodes[o->handle] == o) g_nodes.erase(o->handle);
         if (n->handle >= 0) g_nodes[n->handle] = o;
         o->handle = n->handle;
+        o->on_click = n->on_click; o->on_input = n->on_input; o->on_change = n->on_change;
+        o->on_keydown = n->on_keydown; o->on_click_target = n->on_click_target;
         if (o->kind != ELEMENT)
         {
             if (o->text != n->text) { o->text = n->text; g_mutations++; }
@@ -398,6 +407,11 @@ namespace
                 set_classes(n, cs);
                 break;
             }
+            case OP_ADD_CLICK_LISTENER: { int32_t h = r.i32(); if (Node *n = get(h)) n->on_click = h; break; }
+            case OP_ADD_INPUT_LISTENER: { int32_t h = r.i32(); if (Node *n = get(h)) n->on_input = h; break; }
+            case OP_ADD_CHANGE_LISTENER: { int32_t h = r.i32(); if (Node *n = get(h)) n->on_change = h; break; }
+            case OP_ADD_KEYDOWN_LISTENER: { int32_t h = r.i32(); if (Node *n = get(h)) n->on_keydown = h; break; }
+            case OP_ADD_CLICK_TARGET_LISTENER: { int32_t h = r.i32(); if (Node *n = get(h)) n->on_click_target = h; break; }
             case webcc::system::OP_SET_UPDATE: g_update_low = r.u32(); g_update_set = true; break;
             case webcc::system::OP_REQUEST_FRAME: g_frame_requested = true; break;
             default:
@@ -509,6 +523,235 @@ namespace
         fflush(stdout);
     }
 
+    // --- reading the page -----------------------------------------------------------------
+
+    // selectors: tag, *, #id, .class, [attr], [attr=value], descendant, > child, a list with ,
+    struct AttrTest { std::string name, value; bool has_value = false; };
+    struct Compound { std::string tag, id; std::vector<std::string> classes; std::vector<AttrTest> attrs; };
+    struct Step { Compound c; bool child = false; };   // child: a > before it
+    using Chain = std::vector<Step>;
+
+    bool ident_char(char c) { return isalnum((unsigned char)c) || c == '-' || c == '_' || (unsigned char)c >= 0x80; }
+
+    std::string lower(std::string s)
+    {
+        for (char &c : s) c = (char)tolower((unsigned char)c);
+        return s;
+    }
+
+    bool parse_selector(const std::string &s, std::vector<Chain> &out)
+    {
+        size_t i = 0;
+        auto ws = [&] { while (i < s.size() && isspace((unsigned char)s[i])) i++; };
+        auto ident = [&] { size_t a = i; while (i < s.size() && ident_char(s[i])) i++; return s.substr(a, i - a); };
+        Chain chain;
+        bool child = false;
+        ws();
+        while (i < s.size())
+        {
+            Step step{{}, child};
+            Compound &c = step.c;
+            bool any = false;
+            if (s[i] == '*') { i++; any = true; }
+            else if (ident_char(s[i])) { c.tag = lower(ident()); any = true; }
+            while (i < s.size())
+            {
+                if (s[i] == '#' || s[i] == '.')
+                {
+                    char kind = s[i++];
+                    std::string name = ident();
+                    if (name.empty()) return false;
+                    if (kind == '#') c.id = name;
+                    else c.classes.push_back(name);
+                }
+                else if (s[i] == '[')
+                {
+                    i++; ws();
+                    AttrTest a;
+                    a.name = ident(); ws();
+                    if (a.name.empty()) return false;
+                    if (i < s.size() && s[i] == '=')
+                    {
+                        i++; ws();
+                        a.has_value = true;
+                        if (i < s.size() && (s[i] == '"' || s[i] == '\''))
+                        {
+                            size_t end = s.find(s[i], i + 1);
+                            if (end == std::string::npos) return false;
+                            a.value = s.substr(i + 1, end - i - 1);
+                            i = end + 1;
+                        }
+                        else a.value = ident();
+                        ws();
+                    }
+                    if (i >= s.size() || s[i] != ']') return false;
+                    i++;
+                    c.attrs.push_back(a);
+                }
+                else break;
+                any = true;
+            }
+            if (!any) return false;
+            chain.push_back(step);
+            child = false;
+            size_t before = i;
+            ws();
+            if (i >= s.size()) break;
+            if (s[i] == '>') { i++; ws(); child = true; }
+            else if (s[i] == ',') { i++; ws(); out.push_back(chain); chain.clear(); }
+            else if (i == before) return false;
+        }
+        if (chain.empty() || child) return false;
+        out.push_back(chain);
+        return true;
+    }
+
+    bool matches(const Node *n, const Compound &c)
+    {
+        if (n->kind != ELEMENT) return false;
+        if (!c.tag.empty() && lower(n->tag) != c.tag) return false;
+        if (!c.id.empty()) { const std::string *v = attr(n, "id"); if (!v || *v != c.id) return false; }
+        if (!c.classes.empty())
+        {
+            auto cs = classes(n);
+            for (auto &k : c.classes)
+            {
+                bool has = false;
+                for (auto &x : cs) if (x == k) has = true;
+                if (!has) return false;
+            }
+        }
+        for (auto &a : c.attrs)
+        {
+            const std::string *v = attr(n, a.name);
+            if (!v || (a.has_value && *v != a.value)) return false;
+        }
+        return true;
+    }
+
+    // step k at n, the steps before it on n's ancestors inside the body
+    bool matches(const Node *n, const Chain &ch, size_t k)
+    {
+        if (!matches(n, ch[k].c)) return false;
+        if (k == 0) return true;
+        for (const Node *p = n->parent; p && p != g_body; p = p->parent)
+        {
+            if (matches(p, ch, k - 1)) return true;
+            if (ch[k].child) return false;
+        }
+        return false;
+    }
+
+    void select_all(const Node *n, const std::vector<Chain> &sel, std::vector<const Node *> &out)
+    {
+        for (const Node *c : n->children)
+        {
+            if (c->kind != ELEMENT) continue;
+            for (auto &ch : sel)
+                if (matches(c, ch, ch.size() - 1)) { out.push_back(c); break; }
+            select_all(c, sel, out);
+        }
+    }
+
+    std::vector<const Node *> select_all(const std::string &selector)
+    {
+        std::vector<Chain> sel;
+        std::vector<const Node *> out;
+        if (!parse_selector(selector, sel))
+        {
+            fprintf(stderr, "host: can't read the selector '%s'\n", selector.c_str());
+            return out;
+        }
+        select_all(body(), sel, out);
+        return out;
+    }
+
+    void text_of(const Node *n, std::string &out)
+    {
+        if (n->kind == TEXT) { out += n->text; return; }
+        if (n->kind != ELEMENT) return;
+        if (!n->has_raw)
+        {
+            for (const Node *c : n->children) text_of(c, out);
+            return;
+        }
+        // innerHTML as given: its text without the tags
+        bool tag = false;
+        for (size_t i = 0; i < n->raw_html.size(); i++)
+        {
+            char c = n->raw_html[i];
+            if (c == '<') tag = true;
+            else if (c == '>') tag = false;
+            else if (!tag) out += c;
+        }
+    }
+
+    bool on_page(const Node *n)
+    {
+        while (n && n != g_body) n = n->parent;
+        return n != nullptr;
+    }
+
+    // --- events, as the browser writes them -----------------------------------------------
+
+    struct EventWriter
+    {
+        uint8_t *buf = webcc_event_buffer_ptr();
+        uint32_t start = *webcc_event_offset_ptr();
+        uint32_t pos = start + 4;
+        bool ok = true;
+        void put(const void *p, uint32_t n, uint32_t step)
+        {
+            if (pos + step > webcc_event_buffer_capacity()) { ok = false; return; }
+            memcpy(buf + pos, p, n);
+            pos += step;
+        }
+        void i32(int32_t v) { put(&v, 4, 4); }
+        void f32(float v) { put(&v, 4, 4); }
+        void str(const std::string &s) { i32((int32_t)s.size()); put(s.data(), (uint32_t)s.size(), ((uint32_t)s.size() + 3) & ~3u); }
+        void send(uint8_t op)
+        {
+            if (!ok) { fprintf(stderr, "host: the event buffer is full\n"); return; }
+            uint32_t len = pos - start;
+            uint32_t head = op | ((len >> 16) << 8) | (len << 16);
+            memcpy(buf + start, &head, 4);
+            *webcc_event_offset_ptr() = pos;
+        }
+    };
+
+    // the element under the event, then each ancestor with a listener of that kind
+    template <typename F>
+    bool bubble(Node *t, int32_t Node::*listener, F write)
+    {
+        bool any = false;
+        for (Node *n = t; n && n != g_body; n = n->parent)
+            if (n->*listener >= 0) { write(n->*listener); any = true; }
+        return any;
+    }
+
+    bool is_check(const Node *n)
+    {
+        const std::string *type = attr(n, "type");
+        return lower(n->tag) == "input" && type && (lower(*type) == "checkbox" || lower(*type) == "radio");
+    }
+
+    void set_checked(Node *n, bool on)
+    {
+        if (on) set_attr(n, "checked", "");
+        else remove_attr(n, "checked");
+    }
+
+    bool send_change(Node *t, const std::string &value)
+    {
+        return bubble(t, &Node::on_change, [&](int32_t h) { EventWriter w; w.i32(h); w.str(value); w.send(webcc::dom::EVENT_CHANGE); });
+    }
+
+    Node *target(int32_t h)
+    {
+        Node *n = h > 0 ? get(h) : nullptr;
+        return n && n->kind == ELEMENT && on_page(n) ? n : nullptr;
+    }
+
     uint32_t give_string(const std::string &s)
     {
         if (s.size() <= webcc_scratch_buffer_capacity())
@@ -607,4 +850,81 @@ extern "C" uint32_t webcc_dom_get_property(int32_t h, const char *name, uint32_t
     if (k == "tagName") { std::string t = n->tag; for (char &c : t) c = (char)toupper((unsigned char)c); return give_string(t); }
     const std::string *v = attr(n, k);
     return give_string(v ? *v : "");
+}
+
+// --- webcc/host.h ---------------------------------------------------------------------------
+
+extern "C" int32_t webcc_host_query(const char *selector, uint32_t len, int32_t index)
+{
+    auto found = select_all(std::string(selector, len));
+    return index >= 0 && (size_t)index < found.size() ? found[index]->handle : -1;
+}
+
+extern "C" int32_t webcc_host_count(const char *selector, uint32_t len)
+{
+    return (int32_t)select_all(std::string(selector, len)).size();
+}
+
+extern "C" uint32_t webcc_host_text(int32_t h)
+{
+    std::string out;
+    if (Node *n = get(h)) text_of(n, out);
+    return give_string(out);
+}
+
+extern "C" uint32_t webcc_host_html(int32_t h)
+{
+    std::string out;
+    Node *n = get(h);
+    if (n == body()) for (const Node *c : n->children) print(c, out);
+    else if (n) print(n, out);
+    return give_string(out);
+}
+
+extern "C" uint8_t webcc_host_click(int32_t h)
+{
+    Node *t = target(h);
+    if (!t) return 0;
+    // a checkbox flips before the handlers run, its change comes after them
+    bool check = is_check(t);
+    bool on = check && !attr(t, "checked");
+    if (check) set_checked(t, on);
+    bool any = bubble(t, &Node::on_click_target, [&](int32_t l) {
+        EventWriter w; w.i32(l); w.i32(t->handle); w.f32(0); w.f32(0); w.i32(0); w.send(webcc::dom::EVENT_CLICK_TARGET);
+    });
+    any |= bubble(t, &Node::on_click, [&](int32_t l) { EventWriter w; w.i32(l); w.send(webcc::dom::EVENT_CLICK); });
+    if (check) any |= send_change(t, on ? "true" : "false");
+    return any;
+}
+
+extern "C" uint8_t webcc_host_input(int32_t h, const char *value, uint32_t len)
+{
+    Node *t = target(h);
+    if (!t) return 0;
+    std::string v(value, len);
+    set_attr(t, "value", v);
+    return bubble(t, &Node::on_input, [&](int32_t l) { EventWriter w; w.i32(l); w.str(v); w.send(webcc::dom::EVENT_INPUT); });
+}
+
+extern "C" uint8_t webcc_host_change(int32_t h, const char *value, uint32_t len)
+{
+    Node *t = target(h);
+    if (!t) return 0;
+    std::string v(value, len);
+    if (is_check(t)) set_checked(t, v == "true");
+    else set_attr(t, "value", v);
+    return send_change(t, v);
+}
+
+extern "C" uint8_t webcc_host_keydown(int32_t h, int32_t keycode)
+{
+    Node *t = target(h);
+    if (!t) return 0;
+    return bubble(t, &Node::on_keydown, [&](int32_t l) { EventWriter w; w.i32(l); w.i32(keycode); w.send(webcc::dom::EVENT_KEYDOWN); });
+}
+
+extern "C" void webcc_host_clear()
+{
+    Node *b = body();
+    while (!b->children.empty()) detach(b->children.back());
 }

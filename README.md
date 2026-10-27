@@ -200,6 +200,8 @@ Use the `--template <path>` or `-t <path>` flag to specify a custom HTML templat
 
 Use `--render <path>=<out.html>` for a first render without a browser: the sources are compiled for the host machine with `src/core/host_render.cc` as the runtime, run once per `--render` with `system::get_pathname()` answering `<path>`, and the HTML of the page they build is written to the file (needs a host `clang++`). `--render out.html` renders `/`. Commands that don't build the page are skipped, imports with a result answer with zero, and the page gets the frames it asks for until one changes nothing.
 `--run` builds for the host the same way and runs the program once instead: its output and exit code are passed through, and whatever page it built is printed when it ends. For a program that is checked by running it rather than by looking at it.
+
+A program run on the host can read its page and act on it with `webcc/host.h`: `query` and `count` by CSS selector (tag, `#id`, `.class`, `[attr]`, `[attr=value]`, descendant, `>` and `,`), `text` and `html` of an element, and `click`, `input`, `change` and `keydown`, which reach the element's and its ancestors' listeners as events read with `poll_event`, the same as in a browser. `clear` empties the body.
 ```bash
 ./webcc main.cc [other_sources.cc ...] [--out dist] [--cache-dir .cache] [--template index.template.html] [--quiet] [--progress]
 ```
