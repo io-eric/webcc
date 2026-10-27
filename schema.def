@@ -301,8 +301,9 @@ system|event|ONLINE|uint8:online
 system|command|INIT_LIFECYCLE|init_lifecycle||{ if (window.__wcc_life) continue; window.__wcc_life = 1; window.addEventListener('pagehide', (e) => { push_event_system_PAGE_HIDE(e.persisted ? 1 : 0); _triggerDiscreteUpdate(); }); window.addEventListener('pageshow', (e) => { if (!e.persisted) return; push_event_system_PAGE_SHOW(1); _triggerDiscreteUpdate(); }); window.addEventListener('online', () => { push_event_system_ONLINE(1); _triggerDiscreteUpdate(); }); window.addEventListener('offline', () => { push_event_system_ONLINE(0); _triggerDiscreteUpdate(); }); }
 system|command|IS_ONLINE|is_online|RET:uint8|{ return navigator.onLine ? 1 : 0; }
 # installing the page as an app. INSTALL_STATE: 0 the browser offers no prompt (yet), 1 it does,
-# 2 installed or running as the installed app. init_install reports the state now and on every
-# change; prompt_install shows the prompt and must run in a click or key handler
+# 2 installed or running as the installed app, 3 no prompt but Share, Add to Home Screen installs it
+# (iPhone, iPad), 4 no prompt but File, Add to Dock does (Safari on a Mac). init_install reports the
+# state now and on every change; prompt_install shows the prompt and must run in a click or key handler
 system|early|__wcc_install|js/install.js
 system|event|INSTALL_STATE|uint8:state
 system|command|INIT_INSTALL|init_install||{ if (__wcc_install.notify) { __wcc_install.notify(); continue; } __wcc_install.notify = () => { push_event_system_INSTALL_STATE(__wcc_install.state); _triggerDiscreteUpdate(); }; __wcc_install.notify(); }

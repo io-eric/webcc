@@ -254,13 +254,15 @@ struct InstallStateEvent { uint8_t state; };
 
 After `init_install()`, an `InstallStateEvent` arrives right away with the current state, and again whenever it changes:
 
-- `0`: the browser offers no install prompt. Either it has none (Safari and Firefox on desktop), the page doesn't qualify yet (a web app manifest and a service worker are needed), or the prompt was just used and turned down.
+- `0`: the browser offers no install prompt. Either it has none (Firefox on desktop), the page doesn't qualify yet (a web app manifest and a service worker are needed), or the prompt was just used and turned down.
 - `1`: the browser has an install prompt ready. Show your own install button.
 - `2`: installed, or the page is running as the installed app.
+- `3`: no prompt, but the browser installs it by hand: Share, then Add to Home Screen (every browser on an iPhone or iPad).
+- `4`: no prompt, but Safari on a Mac (17 and later) installs it by hand: File, then Add to Dock.
 
 `prompt_install()` shows the browser's prompt; call it from the button's click handler. After the user answers, the state becomes `2` (installed) or `0`. Browsers may offer the prompt again later, which sends another `1`.
 
-The prompt can arrive before the module has loaded, so the generated JS listens for it from the moment the script starts and keeps it until `init_install()`. Browsers without a prompt still let people install by hand (Safari: Share, then Add to Home Screen), so a page usually shows a short hint instead of the button when the state stays `0`.
+The prompt can arrive before the module has loaded, so the generated JS listens for it from the moment the script starts and keeps it until `init_install()`. Browsers without a prompt still let people install by hand, so for `3` and `4` a page usually shows those steps where the button would be. They're told apart by the user agent: an iPad asking for desktop pages says it's a Mac and is known by its touch points.
 
 ## A newer build
 
