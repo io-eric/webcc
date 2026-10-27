@@ -183,6 +183,19 @@ TEST(string_index_of_from_position)
     CHECK_EQ(webcc::string().index_of("a"), -1);
 }
 
+TEST(string_starts_and_ends_with)
+{
+    webcc::string s("page/p1.json");
+    CHECK(s.starts_with("page/"));
+    CHECK(!s.starts_with("img/"));
+    CHECK(s.ends_with(".json"));
+    CHECK(!s.ends_with(".png"));
+    CHECK(s.starts_with(s) && s.ends_with(s));
+    CHECK(!s.starts_with("page/p1.json!") && !s.ends_with("xpage/p1.json"));    // longer than the string
+    CHECK(s.starts_with("") && s.ends_with(""));
+    CHECK(webcc::string().starts_with("") && !webcc::string().ends_with("a"));
+}
+
 TEST(string_append_builds_in_place)
 {
     webcc::string s;

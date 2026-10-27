@@ -178,6 +178,25 @@ namespace webcc
             return contains(string(needle));
         }
 
+        // Whether the string begins or ends with another (C++20); an empty one always matches
+        bool starts_with(const string& prefix) const {
+            if (prefix.m_len > m_len) return false;
+            for (uint32_t i = 0; i < prefix.m_len; i++)
+                if (m_data[i] != prefix.m_data[i]) return false;
+            return true;
+        }
+
+        bool ends_with(const string& suffix) const {
+            if (suffix.m_len > m_len) return false;
+            uint32_t from = m_len - suffix.m_len;
+            for (uint32_t i = 0; i < suffix.m_len; i++)
+                if (m_data[from + i] != suffix.m_data[i]) return false;
+            return true;
+        }
+
+        bool starts_with(const char* prefix) const { return starts_with(string(prefix)); }
+        bool ends_with(const char* suffix) const { return ends_with(string(suffix)); }
+
         // Byte index of the first occurrence of needle at or after from, -1 when there is none
         int index_of(const string& needle, uint32_t from = 0) const {
             if (needle.m_len > m_len || from > m_len - needle.m_len) return -1;
