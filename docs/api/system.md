@@ -84,6 +84,15 @@ webcc::dom::request_fullscreen(webcc::DOMElement handle);
 webcc::dom::request_pointer_lock(webcc::DOMElement handle);
 ```
 
+## Language
+
+```cpp
+webcc::string get_languages();   // "de-DE,de,en": the browser's languages, most wanted first
+webcc::string plural_category(webcc::string_view lang, double n);  // "one", "few", "other", ...
+```
+
+`plural_category` is `Intl.PluralRules(lang).select(n)`: CLDR's `zero`, `one`, `two`, `few`, `many` or `other`, `"other"` for a language the browser doesn't know. Run on the host (tests, prerendering) both return `""`.
+
 ## Routing Helpers
 
 ```cpp

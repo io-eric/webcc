@@ -282,6 +282,10 @@ system|command|GET_PATHNAME|get_pathname|RET:string|{ const ret = window.locatio
 system|command|GET_SEARCH|get_search|RET:string|{ const ret = window.location.search || ""; }
 system|command|GET_HASH|get_hash|RET:string|{ const ret = window.location.hash || ""; }
 system|command|GET_ORIGIN|get_origin|RET:string|{ const ret = window.location.origin || ""; }
+# the languages the browser asks for, most wanted first, comma separated ("de-DE,de,en")
+system|command|GET_LANGUAGES|get_languages|RET:string|{ const l = navigator.languages && navigator.languages.length ? navigator.languages : [navigator.language || ""]; const ret = l.join(","); }
+# n's plural category in a language (CLDR: zero, one, two, few, many, other), Intl.PluralRules
+system|command|PLURAL_CATEGORY|plural_category|string:lang float64:n RET:string|{ let ret = "other"; try { ret = new Intl.PluralRules(lang || undefined).select(n); } catch (e) {} }
 system|command|GET_QUERY_PARAM|get_query_param|string:name RET:string|{ const ret = new URLSearchParams(window.location.search).get(name) || ""; }
 system|command|GET_VISIBILITY_STATE|get_visibility_state|RET:string|{ const ret = document.visibilityState || 'visible'; }
 system|command|IS_HIDDEN|is_hidden|RET:uint8|{ return document.hidden ? 1 : 0; }
