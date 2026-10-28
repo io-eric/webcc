@@ -56,7 +56,7 @@ const run = async () => {
     let event_f32 = new Float32Array(memory.buffer, event_buffer_ptr_val);
     let event_f64 = new Float64Array(memory.buffer, event_buffer_ptr_val);
     // svg tags need their namespace, and keep attribute case there
-    const _svgTags = new Set(['svg','path','circle','ellipse','rect','line','polyline','polygon','g','defs','use','text','tspan','linearGradient','radialGradient','stop','clipPath','mask','pattern','symbol','marker','foreignObject','filter','feGaussianBlur','feOffset','feBlend','feColorMatrix']);
+    const _svgTags = new Set(['svg','path','circle','ellipse','rect','line','polyline','polygon','g','defs','use','image','text','tspan','linearGradient','radialGradient','stop','clipPath','mask','pattern','symbol','marker','foreignObject','filter','feGaussianBlur','feOffset','feBlend','feColorMatrix']);
     const _mkel = (tag) => _svgTags.has(tag) ? document.createElementNS('http://www.w3.org/2000/svg', tag) : document.createElement(tag);
     function _eventViews() {
         if (event_u8.buffer === memory.buffer) return;
