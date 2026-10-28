@@ -10,6 +10,7 @@ namespace webcc::dom {
         NO_SCROLL = 4,
         PREDICT = 8,
         HOLD = 16,
+        NO_MENU = 32,
     };
     constexpr PointerFlags operator|(PointerFlags a, PointerFlags b) { return PointerFlags((uint8_t)a | (uint8_t)b); }
     constexpr PointerFlags operator&(PointerFlags a, PointerFlags b) { return PointerFlags((uint8_t)a & (uint8_t)b); }

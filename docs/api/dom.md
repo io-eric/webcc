@@ -283,6 +283,7 @@ void add_pointer_listener(webcc::DOMElement handle, uint8_t flags = 0);
 | `PointerFlags::NO_SCROLL` | Set `touch-action: none` and cancel the default action on down, so touch and pen don't scroll the page or select text. |
 | `PointerFlags::PREDICT` | After each move with a button down, also report where the browser expects the pointer to be next, as `PointerPhase::PREDICTED` samples. See below. |
 | `PointerFlags::HOLD` | A touch that stays within 8 px for 500 ms reports `PointerPhase::HELD`, then no longer scrolls the page, so its moves can drag something. See below. |
+| `PointerFlags::NO_MENU` | The context menu doesn't open on the element: a right click, a pen's barrel button or a long press reach the handlers as presses and nothing else. Read `buttons` to tell them apart (`SECONDARY` is the right button and the barrel button). |
 
 For a drawing surface use the first three, plus `PREDICT` for less visible lag:
 
