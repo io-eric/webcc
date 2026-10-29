@@ -328,15 +328,29 @@ namespace
         }
     };
 
+    // a property that is on or off, and its attribute; nullptr for the others
+    const char *bool_property(const std::string &name)
+    {
+        static const char *const pairs[][2] = {
+            {"checked", "checked"}, {"selected", "selected"}, {"disabled", "disabled"}, {"hidden", "hidden"}, {"open", "open"},
+            {"readOnly", "readonly"}, {"required", "required"}, {"multiple", "multiple"}, {"autofocus", "autofocus"},
+            {"inert", "inert"}, {"noValidate", "novalidate"}, {"autoplay", "autoplay"}, {"controls", "controls"},
+            {"loop", "loop"}, {"muted", "muted"}, {"playsInline", "playsinline"}, {"reversed", "reversed"}};
+        for (auto &p : pairs)
+            if (name == p[0]) return p[1];
+        return nullptr;
+    }
+
     void set_property(Node *n, const std::string &name, const std::string &value)
     {
         if (name == "className") set_attr(n, "class", value);
         else if (name == "textContent" || name == "innerText") set_text(n, value);
         else if (name == "innerHTML") { set_text(n, ""); n->has_raw = true; n->raw_html = value; }
-        else if (name == "checked" || name == "disabled" || name == "selected" || name == "hidden" || name == "open")
+        else if (const char *a = bool_property(name))
         {
-            if (value == "true" || value == "1") set_attr(n, name, "");
-            else remove_attr(n, name);
+            // as a browser takes a string for it: anything but "" is on
+            if (!value.empty()) set_attr(n, a, "");
+            else remove_attr(n, a);
         }
         else set_attr(n, name, value);
     }
