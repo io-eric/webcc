@@ -1613,23 +1613,29 @@ namespace webcc
             "-Wl,--allow-undefined " // Allow undefined symbols (for JS imports)
 
             // === MEMORY LAYOUT OPTIMIZATIONS ===
-            "-Wl,--stack-first "   // Stack at address 0 (grows DOWNWARD)
-            "-z stack-size=65536 " // 64KB stack (efficient for UI recursion)
+            "-Wl,--stack-first "   // Stack at address 0 (grows DOWNWARD): running past it traps instead of corrupting data
+            ;
+        // 64KB stack (efficient for UI recursion). Unoptimized code takes several times the stack
+        // per call, so a big view that fits in 64KB optimized can run off the bottom of it in a dev
+        // build ("memory access out of bounds"); a dev build gets 1MB
+        // and 8MB to start with, for that stack on top of the static data
+        link_only_flags += dev ? "-z stack-size=1048576 -Wl,--initial-memory=8388608 " : "-z stack-size=65536 -Wl,--initial-memory=4194304 ";
+        link_only_flags +=
 
-            // Memory allocation (Bumped to 4MB to accommodate static data > 2.1MB).
+            // Memory allocation (4MB, bumped to accommodate static data > 2.1MB).
             // The maximum is a ceiling, not a reservation: linear memory grows on demand, and
             // an app that parses a large record or holds a file's bytes needs well over 64MB
-            "-Wl,--initial-memory=4194304 "   // 4MB total
             "-Wl,--max-memory=2147483648 "    // 2GB max
 
             // === PERFORMANCE OPTIMIZATIONS ===
             "-Wl,--compress-relocations " // Smaller binary = faster download
                                           // "-Wl,--lto-O3 "              // Removed: can increase size. Rely on -Oz.
 
-            // === SIZE OPTIMIZATIONS ===
-            "-Wl,--strip-debug " // Remove debug info
-            "-Wl,--strip-all "   // Strip all symbols
             ;
+        link_only_flags += "-Wl,--strip-debug "; // Remove debug info
+        // a dev build keeps the functions' names, so a trap's stack trace says where it was
+        if (!dev)
+            link_only_flags += "-Wl,--strip-all "; // Strip all symbols
         // --- 2. COMPILATION LOOP ---
         std::string object_files_str;
         bool compilation_failed = false;

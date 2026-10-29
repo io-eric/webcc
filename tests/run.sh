@@ -73,6 +73,9 @@ fi
 echo "[tests] Validating generated JavaScript..."
 node "$ROOT/tests/js/check_js.mjs" "$ROOT/webcc" "$ROOT"
 
+echo "[tests] Checking dev and release builds' stack and names..."
+node "$ROOT/tests/js/check_dev_build.mjs" "$ROOT/webcc"
+
 echo "[tests] Running the host page..."
 "$ROOT/webcc" "$ROOT/tests/host/page.cc" --run --quiet --cache-dir "$BUILD/host"
 
