@@ -190,6 +190,7 @@ Elements the page made itself (`set_inner_html`, typing in a `contenteditable`) 
 
 ```cpp
 webcc::DOMElement closest(webcc::DOMElement handle, webcc::string_view selector);  // Element.closest, invalid when none
+webcc::DOMElement query_selector(webcc::DOMElement handle, webcc::string_view selector);  // the first match inside it, invalid when none
 uint8_t contains(webcc::DOMElement handle, webcc::DOMElement other);              // 1 if other is the element or inside it
 // the innermost element of handle (or itself) under a point in its own px, invalid outside it
 webcc::DOMElement element_at(webcc::DOMElement handle, float x, float y);

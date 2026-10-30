@@ -143,6 +143,8 @@ dom|command|GET_SELECTION_ANCHOR|get_selection_anchor|RET:handle(DOMElement)|{ c
 dom|command|GET_SELECTION_TEXT|get_selection_text|RET:string|{ const s = window.getSelection(); const ret = s ? s.toString() : ''; }
 # Element.closest: the element or its nearest ancestor matching selector, -1 when none
 dom|command|CLOSEST|closest|handle(DOMElement):handle string:selector RET:handle(DOMElement)|{ const el = elements[handle]; const m = el && el.closest ? el.closest(selector) : null; return m ? __wcc_handle(elements, m) : -1; }
+# Element.querySelector: the first element inside this one matching selector, -1 when none
+dom|command|QUERY_SELECTOR|query_selector|handle(DOMElement):handle string:selector RET:handle(DOMElement)|{ const el = elements[handle]; const m = el && el.querySelector ? el.querySelector(selector) : null; return m ? __wcc_handle(elements, m) : -1; }
 # Node.contains: other is the element or inside it
 dom|command|CONTAINS|contains|handle(DOMElement):handle handle(DOMElement):other RET:uint8|{ const el = elements[handle], o = elements[other]; return el && o && el.contains(o) ? 1 : 0; }
 # the caret (the selection's focus end) as a character offset into the element's text, -1 when it isn't inside
