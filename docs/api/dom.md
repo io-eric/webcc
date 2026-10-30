@@ -309,7 +309,9 @@ if (p->phase == dom::PointerPhase::HELD) startDrag(p->x, p->y);
 
 Calling it again on the same element does nothing.
 
-Down, up and cancel run the main loop function right away; moves arrive with the next frame.
+A `LEAVE` sample comes when the pointer leaves the element: a mouse moving off it, a pen lifted out of hover range, a finger after it lifts. It's the moment to drop a hover or a pointer shown to others; its `x` and `y` are where it went out. A captured pointer leaves only once it's released outside.
+
+Down, up, cancel and leave run the main loop function right away; moves arrive with the next frame.
 
 #### `remove_pointer_listener`
 
@@ -413,7 +415,7 @@ if (auto w = e.as<dom::WheelEvent>()) {
 ```cpp
 struct PointerEvent {
     webcc::DOMElement handle;
-    dom::PointerPhase phase;  // DOWN, MOVE, UP, CANCEL, PREDICTED
+    dom::PointerPhase phase;  // DOWN, MOVE, UP, CANCEL, PREDICTED, HELD, LEAVE
     int32_t pointer_id;   // tells apart fingers and devices
     dom::PointerType pointer_type; // MOUSE, PEN, TOUCH
     dom::Buttons buttons;     // flags: PRIMARY (pen tip), SECONDARY (barrel), AUXILIARY, BACK, FORWARD, ERASER

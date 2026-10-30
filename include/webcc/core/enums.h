@@ -47,6 +47,7 @@ namespace webcc::dom {
         CANCEL = 3,
         PREDICTED = 4,
         HELD = 5,
+        LEAVE = 6,
     };
 } // namespace webcc::dom
 
