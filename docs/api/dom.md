@@ -180,9 +180,15 @@ webcc::DOMElement get_selection_anchor();   // the element holding the caret, in
 webcc::string get_selection_text();         // the selected text, empty for a caret
 int32_t get_caret_offset(webcc::DOMElement handle);   // the caret as a character offset into the element's text, -1 when it isn't inside
 void insert_at_text_offset(webcc::DOMElement handle, int32_t offset, webcc::string_view html);   // html put at that offset of the text
+webcc::string get_text_before_caret(webcc::DOMElement handle);   // the caret's line up to the caret, empty when it isn't inside
+double get_caret_left(webcc::DOMElement handle);     // the caret's line in the element's own px, -1 when it isn't inside
+double get_caret_top(webcc::DOMElement handle);
+double get_caret_bottom(webcc::DOMElement handle);
 ```
 
 `get_caret_offset` counts the text before the selection's focus (every text node, in UTF-16 units), and `insert_at_text_offset` puts markup at such a count, so an offset taken from one element lands at the same spot in another with the same content. Past the end, or with no text at all, the html goes at the end, inside the last element.
+
+`get_text_before_caret` is what was typed on the caret's line so far: the text back to the last `<br>` or block element (a `div`, `p`, `li`, heading, `pre`, table cell…) inside the element, so a command typed at the start of a line (`/table`) can be read wherever the line is. `get_caret_left`, `get_caret_top` and `get_caret_bottom` place a popup at the caret: from the element's top left corner, in its own px with a scale transform on it or an ancestor divided out, so they add straight to the element's own position. On an empty line, the line's element stands in for the caret.
 
 Elements the page made itself (`set_inner_html`, typing in a `contenteditable`) get a handle the first time they come back from one of these; the same node keeps the same handle.
 
