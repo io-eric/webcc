@@ -23,6 +23,7 @@ namespace webcc
             virtual R invoke(Args... args) = 0;
             virtual callable_base* clone(void* storage, bool use_sbo) const = 0;
             virtual size_t size() const = 0;
+            virtual const void* owner() const = 0;
         };
 
         template <typename F>
@@ -52,6 +53,14 @@ namespace webcc
             }
 
             size_t size() const override { return sizeof(callable_impl); }
+
+            // what the callable says, nothing for one that says nothing; a function inside a
+            // function passes it on
+            const void* owner() const override
+            {
+                if constexpr (requires { func.owner(); }) return func.owner();
+                else return nullptr;
+            }
         };
 
         // Small buffer for SBO (Small Buffer Optimization)
@@ -211,6 +220,12 @@ namespace webcc
 
         // Check if callable
         explicit operator bool() const { return m_callable != nullptr; }
+
+        // Whose the callable is: a callable with an owner() of its own (a method bound to its
+        // object) is asked, so whoever keeps functions around (a table of callbacks) can drop
+        // them when their owner goes; nullptr for a plain lambda or function pointer. Carried
+        // through copies, moves and a function wrapped in another function
+        const void* owner() const { return m_callable ? m_callable->owner() : nullptr; }
 
         // Swap
         void swap(function& other)

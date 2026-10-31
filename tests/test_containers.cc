@@ -113,6 +113,22 @@ TEST(queue_fifo_preserved_when_wrapped)
     CHECK(q.empty());
 }
 
+// a callable that says whose it is is asked through the function, through a function wrapped in
+// another function too; a plain lambda has no owner
+TEST(function_owner_comes_from_the_callable)
+{
+    int tag = 0;
+    struct Bound { const void* who; const void* owner() const { return who; } void operator()(int) const {} };
+    webcc::function<void(int)> f(Bound{&tag});
+    CHECK(f.owner() == &tag);
+    webcc::function<void(const int&)> g(f);
+    CHECK(g.owner() == &tag);
+    webcc::function<void(int)> h = [](int) {};
+    CHECK(h.owner() == nullptr);
+    webcc::function<void(int)> copy(f);
+    CHECK(copy.owner() == &tag);
+}
+
 // a const function moved (a closure with a const function member, copied into another function)
 // is copied, not wrapped in a new function around itself
 TEST(function_from_const_rvalue_copies)
