@@ -1132,6 +1132,10 @@ namespace webcc
                 }
         }
 
+        // a WEBCC_JS body may push events too (js::MESSAGE): its helper is emitted like an action's
+        for (const auto &fn : inline_js_fns)
+            for (const auto &e : get_pushed_events_from_action(fn)) used_event_helpers.insert(e);
+
         // early helpers run as the script starts, outside run()
         for (const auto *h : used_helpers)
         {

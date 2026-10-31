@@ -31,6 +31,16 @@
 //     result back yourself (e.g. via the scratch buffer) for now.
 //   * Use block comments inside the body, not //, since the source is collapsed
 //     onto one line.
+//
+// BACK FROM JAVASCRIPT: a body may call push_event_js_MESSAGE(channel, text),
+// right away or later (from a promise, a listener), and the program reads it
+// with poll_event as webcc::js::MessageEvent {channel, data}, like any event;
+// the program is woken for it. channel is any number the caller picks to tell
+// messages apart:
+//
+//     WEBCC_JS(void, watch_online, (int channel), {
+//         addEventListener('online', () => push_event_js_MESSAGE(channel, 'on'));
+//     });
 #pragma once
 
 #include <stdint.h>

@@ -63,6 +63,36 @@ string return may come later.
 Use block comments (`/* */`) inside the body, not `//`, because the source is
 collapsed onto a single line.
 
+## Back from JavaScript: messages
+
+A body can send data to the program, right away or later (from a promise, an
+event listener), by calling `push_event_js_MESSAGE(channel, text)`. It lands in
+the event queue like any event, the program is woken for it, and `poll_event`
+hands it out as `webcc::js::MessageEvent` with `channel` (an `int32_t`) and
+`data` (a `string_view`, valid until the next poll). `channel` is any number
+the caller picks to tell messages apart: one per request, per listener, per
+whatever the body stands for.
+
+```cpp
+#include "webcc/js.h"
+
+WEBCC_JS(void, watch_online, (int channel), {
+    addEventListener('online',  () => push_event_js_MESSAGE(channel, 'on'));
+    addEventListener('offline', () => push_event_js_MESSAGE(channel, 'off'));
+});
+
+watch_online(7);
+
+webcc::Event ev;
+while (webcc::poll_event(ev))
+    if (auto m = ev.as<webcc::js::MessageEvent>())
+        if (m->channel == 7) set_status(m->data);
+```
+
+The helper is emitted only when a retained body mentions it, so it costs
+nothing otherwise. A string result from a synchronous call is the same thing
+posted at once: call `push_event_js_MESSAGE` and return.
+
 ## How it works
 
 The whole function, signature and body, is compiled into a **wasm import whose

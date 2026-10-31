@@ -217,6 +217,24 @@ TEST(codegen_js_inline_js_fn_no_utf8_without_string_params)
     CHECK(js.find("__webcc_utf8") == std::string::npos);
 }
 
+// A WEBCC_JS body that posts a message gets the js::MESSAGE helper, like a schema action would.
+TEST(codegen_js_inline_js_fn_can_push_message)
+{
+    SchemaDefs defs = real_defs();
+    std::set<std::string> imports = {"webcc_js_flush"};
+    std::set<std::string> markers;
+    std::set<std::string> fns = {"watch(int channel){ addEventListener('online', () => push_event_js_MESSAGE(channel, 'on')); }"};
+    generate_js_runtime(defs, imports, markers, fns, "/tmp");
+    std::string js = read_file("/tmp/app.js");
+    CHECK(js.find("function push_event_js_MESSAGE(channel, data)") != std::string::npos);
+
+    // and not when no body mentions it
+    fns = {"js_add(int a, int b){ return a + b; }"};
+    generate_js_runtime(defs, imports, markers, fns, "/tmp");
+    js = read_file("/tmp/app.js");
+    CHECK(js.find("push_event_js_MESSAGE") == std::string::npos);
+}
+
 TEST(codegen_js_no_inline_js_when_none_used)
 {
     SchemaDefs defs = real_defs();

@@ -142,7 +142,7 @@ int main() {
 }
 ```
 
-Parameters cross by name: numeric types arrive as JS numbers and `const char*` is auto-decoded to a JS string. Calls run **synchronously** and `flush()` first (so they see preceding batched commands), which also means each one crosses the JS boundary; on hot paths prefer a real schema command, which batches. See [docs/api/inline_js.md](docs/api/inline_js.md) for the full reference.
+Parameters cross by name: numeric types arrive as JS numbers and `const char*` is auto-decoded to a JS string. Calls run **synchronously** and `flush()` first (so they see preceding batched commands), which also means each one crosses the JS boundary; on hot paths prefer a real schema command, which batches. Data goes the other way as a message: a body calls `push_event_js_MESSAGE(channel, text)`, now or later from a promise or a listener, and the program reads it with `poll_event` as `webcc::js::MessageEvent`. See [docs/api/inline_js.md](docs/api/inline_js.md) for the full reference.
 
 ### Building & Running
 

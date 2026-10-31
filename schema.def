@@ -538,3 +538,10 @@ wgpu|command|DRAW|draw|handle(WGPURenderPass):pass_handle int32:vertex_count int
 compression|event|DONE|handle(Compression):job handle(Blob):data string:error|last
 compression|command|COMPRESS|compress|bytes:data string:format="deflate" RET:handle(Compression)|{ const h = (window.webcc_next_id = (window.webcc_next_id || 0) + 1); const copy = data.slice(); let stream; try { stream = new Blob([copy]).stream().pipeThrough(new CompressionStream(format)); } catch (e) { queueMicrotask(() => push_event_compression_DONE(h, -1, String((e && e.message) || e))); return h; } new Response(stream).arrayBuffer().then((buf) => { const b = (window.webcc_next_id = (window.webcc_next_id || 0) + 1); blobs[b] = new Uint8Array(buf); push_event_compression_DONE(h, b, ''); }, (e) => push_event_compression_DONE(h, -1, String((e && e.message) || e))); return h; }
 compression|command|DECOMPRESS|decompress|bytes:data string:format="deflate" RET:handle(Compression)|{ const h = (window.webcc_next_id = (window.webcc_next_id || 0) + 1); const copy = data.slice(); let stream; try { stream = new Blob([copy]).stream().pipeThrough(new DecompressionStream(format)); } catch (e) { queueMicrotask(() => push_event_compression_DONE(h, -1, String((e && e.message) || e))); return h; } new Response(stream).arrayBuffer().then((buf) => { const b = (window.webcc_next_id = (window.webcc_next_id || 0) + 1); blobs[b] = new Uint8Array(buf); push_event_compression_DONE(h, b, ''); }, (e) => push_event_compression_DONE(h, -1, String((e && e.message) || e))); return h; }
+
+# ------------------------------------------------------------------------------
+# JS
+# ------------------------------------------------------------------------------
+# a message from inline JavaScript (WEBCC_JS): its body calls push_event_js_MESSAGE(channel, text), at once or
+# later from a promise or a listener; the program reads it like any event. channel tells messages apart
+js|event|MESSAGE|int32:channel string:data
