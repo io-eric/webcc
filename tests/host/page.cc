@@ -97,6 +97,17 @@ int main()
     CHECK(poll_event(e) && e.as<dom::ChangeEvent>() && e.as<dom::ChangeEvent>()->value == "false");
     CHECK(!host::query("[checked]").is_valid());
 
+    // a press: pointer down, then up, to the pointer listeners of the element and its ancestors
+    dom::add_pointer_listener(box);
+    CHECK(host::press(label, 2));
+    CHECK(poll_event(e) && e.as<dom::PointerEvent>() && e.as<dom::PointerEvent>()->handle == box);
+    CHECK(e.as<dom::PointerEvent>()->phase == dom::PointerPhase::DOWN && e.as<dom::PointerEvent>()->pointer_type == dom::PointerType::TOUCH);
+    CHECK((uint32_t)e.as<dom::PointerEvent>()->buttons == 1 && e.as<dom::PointerEvent>()->time == 0);
+    CHECK(poll_event(e) && e.as<dom::PointerEvent>() && e.as<dom::PointerEvent>()->phase == dom::PointerPhase::UP);
+    CHECK((uint32_t)e.as<dom::PointerEvent>()->buttons == 0);
+    CHECK(!poll_event(e));
+    CHECK(!host::press(host::query("li")));
+
     host::clear();
     CHECK(host::count("*") == 0);
     CHECK(!host::click(save));

@@ -44,7 +44,7 @@ namespace
         bool has_raw = false;
         int32_t handle = -1;
         // listeners, by the handle they were added with
-        int32_t on_click = -1, on_input = -1, on_change = -1, on_keydown = -1, on_click_target = -1;
+        int32_t on_click = -1, on_input = -1, on_change = -1, on_keydown = -1, on_click_target = -1, on_pointer = -1;
     };
 
     std::unordered_map<int32_t, Node *> g_nodes;
@@ -234,7 +234,7 @@ namespace
         if (n->handle >= 0) g_nodes[n->handle] = o;
         o->handle = n->handle;
         o->on_click = n->on_click; o->on_input = n->on_input; o->on_change = n->on_change;
-        o->on_keydown = n->on_keydown; o->on_click_target = n->on_click_target;
+        o->on_keydown = n->on_keydown; o->on_click_target = n->on_click_target; o->on_pointer = n->on_pointer;
         if (o->kind != ELEMENT)
         {
             if (o->text != n->text) { o->text = n->text; g_mutations++; }
@@ -432,6 +432,8 @@ namespace
             case OP_ADD_CHANGE_LISTENER: { int32_t h = r.i32(); if (Node *n = get(h)) n->on_change = h; break; }
             case OP_ADD_KEYDOWN_LISTENER: { int32_t h = r.i32(); if (Node *n = get(h)) n->on_keydown = h; break; }
             case OP_ADD_CLICK_TARGET_LISTENER: { int32_t h = r.i32(); if (Node *n = get(h)) n->on_click_target = h; break; }
+            case OP_ADD_POINTER_LISTENER: { int32_t h = r.i32(); r.i32(); if (Node *n = get(h)) n->on_pointer = h; break; }
+            case OP_REMOVE_POINTER_LISTENER: { int32_t h = r.i32(); if (Node *n = get(h)) n->on_pointer = -1; break; }
             case webcc::system::OP_SET_UPDATE: g_update_low = r.u32(); g_update_set = true; break;
             case webcc::system::OP_REQUEST_FRAME: g_frame_requested = true; break;
             // the console, in a program run on the host (--run); a render keeps quiet
@@ -792,6 +794,15 @@ namespace
         void i32(int32_t v) { put(&v, 4, 4); }
         void f32(float v) { put(&v, 4, 4); }
         void str(const std::string &s) { i32((int32_t)s.size()); put(s.data(), (uint32_t)s.size(), ((uint32_t)s.size() + 3) & ~3u); }
+        // a double starts on an 8-byte address, as the event's reader expects
+        void f64(double v)
+        {
+            uint32_t pad = (uint32_t)((8 - ((uintptr_t)(buf + pos) & 7)) & 7);
+            if (pos + pad + 8 > webcc_event_buffer_capacity()) { ok = false; return; }
+            memset(buf + pos, 0, pad);
+            pos += pad;
+            put(&v, 8, 8);
+        }
         void send(uint8_t op)
         {
             if (!ok) { fprintf(stderr, "host: the event buffer is full\n"); return; }
@@ -977,6 +988,26 @@ extern "C" uint8_t webcc_host_click(int32_t h)
     });
     any |= bubble(t, &Node::on_click, [&](int32_t l) { EventWriter w; w.i32(l); w.send(webcc::dom::EVENT_CLICK); });
     if (check) any |= send_change(t, on ? "true" : "false");
+    return any;
+}
+
+// a press: pointer down, then up, on the element and its ancestors' pointer listeners, at their
+// corner (no layout here), with the primary button while down
+extern "C" uint8_t webcc_host_press(int32_t h, int32_t pointer_type)
+{
+    Node *t = target(h);
+    if (!t) return 0;
+    bool any = false;
+    for (uint8_t phase : {(uint8_t)webcc::dom::PointerPhase::DOWN, (uint8_t)webcc::dom::PointerPhase::UP})
+    {
+        bool down = phase == (uint8_t)webcc::dom::PointerPhase::DOWN;
+        any |= bubble(t, &Node::on_pointer, [&](int32_t l) {
+            EventWriter w;
+            w.i32(l); w.i32(phase); w.i32(1); w.i32(pointer_type); w.i32(down ? 1 : 0);
+            w.f32(0); w.f32(0); w.f32(down ? 0.5f : 0.0f); w.f32(0); w.f32(0); w.f64(0);
+            w.send(webcc::dom::EVENT_POINTER);
+        });
+    }
     return any;
 }
 

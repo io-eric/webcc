@@ -13,6 +13,7 @@ namespace webcc::host {
     extern "C" uint32_t webcc_host_text(int32_t handle);
     extern "C" uint32_t webcc_host_html(int32_t handle);
     extern "C" uint8_t webcc_host_click(int32_t handle);
+    extern "C" uint8_t webcc_host_press(int32_t handle, int32_t pointer_type);
     extern "C" uint8_t webcc_host_input(int32_t handle, const char* value, uint32_t len);
     extern "C" uint8_t webcc_host_change(int32_t handle, const char* value, uint32_t len);
     extern "C" uint8_t webcc_host_keydown(int32_t handle, int32_t keycode);
@@ -49,6 +50,13 @@ namespace webcc::host {
     inline bool click(DOMElement el) {
         ::webcc::flush();
         return webcc_host_click((int32_t)el);
+    }
+
+    // a press as a tap or a mouse button makes it: pointer down, then up (no click); pointer_type
+    // is a dom::PointerType (0 mouse, 1 pen, 2 touch)
+    inline bool press(DOMElement el, int32_t pointer_type = 0) {
+        ::webcc::flush();
+        return webcc_host_press((int32_t)el, pointer_type);
     }
 
     // sets the value, then input
