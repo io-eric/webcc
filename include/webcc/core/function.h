@@ -81,8 +81,12 @@ namespace webcc
 
         function(decltype(nullptr)) : m_callable(nullptr), m_uses_sbo(false) {}
 
-        // Constructor from callable (functions, lambdas, functors)
+        // Constructor from callable (functions, lambdas, functors). Not from a function itself,
+        // however it's qualified: a const rvalue (a const member of a closure being moved) would
+        // otherwise pick this over the copy constructor and wrap itself without end
         template <typename F>
+            requires (!__is_same(typename remove_reference<F>::type, function) &&
+                      !__is_same(typename remove_reference<F>::type, const function))
         function(F&& f)
         {
             using Impl = callable_impl<typename remove_reference<F>::type>;

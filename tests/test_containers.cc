@@ -4,6 +4,7 @@
 // path must never byte-copy those).
 
 #include "webcc/core/vector.h"
+#include "webcc/core/function.h"
 #include "webcc/core/unordered_map.h"
 #include "webcc/core/array.h"
 #include "webcc/core/format.h"
@@ -110,6 +111,22 @@ TEST(queue_fifo_preserved_when_wrapped)
         q.pop();
     }
     CHECK(q.empty());
+}
+
+// a const function moved (a closure with a const function member, copied into another function)
+// is copied, not wrapped in a new function around itself
+TEST(function_from_const_rvalue_copies)
+{
+    int hits = 0;
+    const webcc::function<void(int)> f = [&](int n) { hits += n; };
+    webcc::function<void(int)> g(static_cast<const webcc::function<void(int)>&&>(f));
+    g(2);
+    f(3);
+    CHECK(hits == 5);
+    const auto closure = [f](int n) { f(n); };
+    webcc::function<void(int)> h(closure);   // copies the closure, and f with it
+    h(4);
+    CHECK(hits == 9);
 }
 
 TEST(vector_copy_from_non_const_lvalue)
