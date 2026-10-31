@@ -390,12 +390,15 @@ pdf|command|CANCEL_RENDER|cancel_render|handle(PdfRender):render|{ __wcc_pdf.can
 pdf|command|CLOSE|close|handle(PdfDocument):doc|{ __wcc_pdf.close(doc); }
 
 # ------------------------------------------------------------------------------
-# STORAGE (LocalStorage)
+# STORAGE (LocalStorage, SessionStorage)
 # ------------------------------------------------------------------------------
 storage|command|SET_ITEM|set_item|string:key string:value|{ localStorage.setItem(key, value); }
 storage|command|GET_ITEM|get_item|string:key RET:string|{ const ret = localStorage.getItem(key) || ""; }
 storage|command|REMOVE_ITEM|remove_item|string:key|{ localStorage.removeItem(key); }
 storage|command|CLEAR|clear||{ localStorage.clear(); }
+# sessionStorage: kept for this tab only, through reloads and navigations, gone when the tab closes
+storage|command|SESSION_SET_ITEM|session_set_item|string:key string:value|{ try { sessionStorage.setItem(key, value); } catch (e) {} }
+storage|command|SESSION_GET_ITEM|session_get_item|string:key RET:string|{ let ret = ""; try { ret = sessionStorage.getItem(key) || ""; } catch (e) {} }
 # ask the browser to keep this site's data (IndexedDB too) out of storage eviction; PERSISTED says whether it agreed
 storage|event|PERSISTED|uint8:granted
 storage|command|PERSIST|persist||{ const st = navigator.storage; if (!st || !st.persist) { push_event_storage_PERSISTED(0); _triggerDiscreteUpdate(); continue; } st.persist().then(g => { push_event_storage_PERSISTED(g ? 1 : 0); _triggerDiscreteUpdate(); }, () => { push_event_storage_PERSISTED(0); _triggerDiscreteUpdate(); }); }
