@@ -404,7 +404,7 @@ struct WheelEvent {
 };
 ```
 
-- **Pinch to zoom:** a trackpad pinch arrives as a wheel event with `input::Mods::CTRL` set; `delta_y < 0` means zoom in. Safari reports pinches as gesture events instead; these are converted to the same form.
+- **Pinch to zoom:** a trackpad pinch arrives as a wheel event with `input::Mods::CTRL` set; `delta_y < 0` means zoom in. Safari reports trackpad pinches as gesture events instead; these are converted to the same form. A pinch of fingers on a touch screen is not: it arrives only as pointer events, one per finger.
 - **Line and page scrolling** (Firefox with a mouse wheel) is converted to pixels: 40 per line, the element's height per page.
 - Wheel events arrive with the next frame, like pointer moves.
 
