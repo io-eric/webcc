@@ -27,14 +27,19 @@ namespace webcc
 {
     struct BlockHeader
     {
-        // payload size in bytes (8-aligned, low 3 bits free); bit 0 = is-free
+        // payload size in bytes (a multiple of ALIGN, so the low bits are free); bit 0 = is-free
         size_t size_flags;
         BlockHeader *prev_phys; // previous block in address order (null if first)
     };
 
     namespace detail
     {
-        constexpr size_t ALIGN = 8;
+        // Payloads should be as aligned as operator new promises (16 on both targets). Host
+        // builds give it: their header is 16 bytes already, so sizes rounded to 16 keep every
+        // payload aligned, and x86-64 faults on the aligned SSE stores the compiler emits for
+        // an object with a 16-aligned member. wasm32 stays at 8: its loads and stores never
+        // fault on alignment, and 16 would add 8 bytes of padding to every block.
+        constexpr size_t ALIGN = sizeof(BlockHeader) >= 16 ? 16 : 8;
         constexpr size_t FREE_BIT = 1;
         constexpr size_t HEADER_SIZE = sizeof(BlockHeader);
         // Free blocks stash two list pointers in their payload, so every block

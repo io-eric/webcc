@@ -45,6 +45,29 @@ TEST(alloc_returns_8byte_aligned)
     }
 }
 
+// a host build's payloads are as aligned as operator new promises: an object with a 16-aligned
+// member gets aligned SSE stores, which fault at an address 8 past a 16 boundary. Odd sizes,
+// frees and splits in between, so blocks are reused and cut, not only bumped
+TEST(host_alloc_is_new_aligned)
+{
+    heap_reset();
+    if (sizeof(webcc::BlockHeader) < 16)
+        return; // a 32-bit host keeps wasm32's 8
+    void *keep[64];
+    for (size_t s = 1; s <= 64; ++s)
+    {
+        keep[s - 1] = webcc::malloc(s * 3);
+        CHECK(((uintptr_t)keep[s - 1] % __STDCPP_DEFAULT_NEW_ALIGNMENT__) == 0);
+    }
+    for (size_t i = 0; i < 64; i += 2)
+        webcc::free(keep[i]);
+    for (size_t s = 1; s <= 64; ++s)
+    {
+        void *p = webcc::malloc(s * 5);
+        CHECK(((uintptr_t)p % __STDCPP_DEFAULT_NEW_ALIGNMENT__) == 0);
+    }
+}
+
 TEST(zero_size_returns_null)
 {
     heap_reset();
