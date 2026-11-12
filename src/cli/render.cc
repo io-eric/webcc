@@ -132,8 +132,12 @@ namespace webcc
         report("rendering");
         for (const auto &t : targets)
         {
-            // the program reads its location through get_pathname, answered from here
-            std::string run = "WEBCC_PATHNAME='" + t.path + "' \"" + bin.string() + "\" > \"" + t.out_html + "\"";
+            // the program reads its location through get_pathname, answered from here; what the
+            // page set of its <head> (title, description) goes to <out>.head, gone when it set nothing
+            std::string head = t.out_html + ".head";
+            std::error_code ec;
+            fs::remove(head, ec);
+            std::string run = "WEBCC_PATHNAME='" + t.path + "' WEBCC_HEAD='" + head + "' \"" + bin.string() + "\" > \"" + t.out_html + "\"";
             if (system(run.c_str()) != 0)
             {
                 std::cerr << "[WebCC] Error: the page failed while rendering " << t.path << std::endl;

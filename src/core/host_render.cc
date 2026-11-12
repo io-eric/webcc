@@ -62,6 +62,9 @@ namespace
     bool g_update_set = false;
     bool g_frame_requested = false;
     std::string g_big_result;    // a returned string too big for the scratch buffer
+    // the document's title and description as the page last set them, for its <head>
+    std::string g_title, g_description;
+    bool g_title_set = false, g_description_set = false;
 
     Node *body()
     {
@@ -436,6 +439,8 @@ namespace
             case OP_REMOVE_POINTER_LISTENER: { int32_t h = r.i32(); if (Node *n = get(h)) n->on_pointer = -1; break; }
             case webcc::system::OP_SET_UPDATE: g_update_low = r.u32(); g_update_set = true; break;
             case webcc::system::OP_REQUEST_FRAME: g_frame_requested = true; break;
+            case webcc::system::OP_SET_TITLE: g_title = r.str(); g_title_set = true; break;
+            case webcc::system::OP_SET_DESCRIPTION: g_description = r.str(); g_description_set = true; break;
             // the console, in a program run on the host (--run); a render keeps quiet
             case webcc::system::OP_LOG: { std::string m = r.str(); if (console()) printf("%s\n", m.c_str()); break; }
             case webcc::system::OP_WARN: { std::string m = r.str(); if (console()) printf("warn: %s\n", m.c_str()); break; }
@@ -532,6 +537,23 @@ namespace
         return (void (*)())best;
     }
 
+    // WEBCC_HEAD names a file for what the page set of its <head>: a line "title\t..." and a line
+    // "description\t...", each only when set, as plain text (a line break in one becomes a space)
+    void write_head()
+    {
+        const char *path = getenv("WEBCC_HEAD");
+        if (!path || !*path || (!g_title_set && !g_description_set)) return;
+        FILE *f = fopen(path, "w");
+        if (!f) return;
+        auto line = [&](const char *key, std::string v) {
+            for (char &c : v) if (c == '\n' || c == '\r' || c == '\t') c = ' ';
+            fprintf(f, "%s\t%s\n", key, v.c_str());
+        };
+        if (g_title_set) line("title", g_title);
+        if (g_description_set) line("description", g_description);
+        fclose(f);
+    }
+
     // frames the page asked for, until one changes nothing; then the page
     void finish()
     {
@@ -547,6 +569,7 @@ namespace
         for (const Node *c : body()->children) print(c, out);
         fwrite(out.data(), 1, out.size(), stdout);
         fflush(stdout);
+        write_head();
     }
 
     // --- reading the page -----------------------------------------------------------------
