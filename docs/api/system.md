@@ -84,6 +84,18 @@ webcc::dom::request_fullscreen(webcc::DOMElement handle);
 webcc::dom::request_pointer_lock(webcc::DOMElement handle);
 ```
 
+## Fullscreen
+
+The whole page fullscreen (`document.documentElement`):
+
+```cpp
+uint8_t can_fullscreen();       // 0 where the browser has no fullscreen (iPhone)
+uint8_t is_fullscreen();
+void enter_fullscreen();        // in a click or key handler, the browser refuses it otherwise
+void exit_fullscreen();
+void init_fullscreen_change();  // FullscreenChangeEvent { uint8_t on; }, also when the browser leaves it (Esc)
+```
+
 ## Language
 
 ```cpp

@@ -318,6 +318,14 @@ system|event|PAGE_SHOW|uint8:persisted
 system|event|ONLINE|uint8:online
 system|command|INIT_LIFECYCLE|init_lifecycle||{ if (window.__wcc_life) continue; window.__wcc_life = 1; window.addEventListener('pagehide', (e) => { push_event_system_PAGE_HIDE(e.persisted ? 1 : 0); _triggerDiscreteUpdate(); }); window.addEventListener('pageshow', (e) => { if (!e.persisted) return; push_event_system_PAGE_SHOW(1); _triggerDiscreteUpdate(); }); window.addEventListener('online', () => { push_event_system_ONLINE(1); _triggerDiscreteUpdate(); }); window.addEventListener('offline', () => { push_event_system_ONLINE(0); _triggerDiscreteUpdate(); }); }
 system|command|IS_ONLINE|is_online|RET:uint8|{ return navigator.onLine ? 1 : 0; }
+# the whole page fullscreen. enter_fullscreen must run in a click or key handler; can_fullscreen is 0
+# where the browser has none (iPhone). FULLSCREEN_CHANGE also comes when the browser leaves it (Esc)
+system|command|CAN_FULLSCREEN|can_fullscreen|RET:uint8|{ return (document.fullscreenEnabled || document.webkitFullscreenEnabled) ? 1 : 0; }
+system|command|IS_FULLSCREEN|is_fullscreen|RET:uint8|{ return (document.fullscreenElement || document.webkitFullscreenElement) ? 1 : 0; }
+system|command|ENTER_FULLSCREEN|enter_fullscreen||{ const el = document.documentElement; if (el.requestFullscreen) el.requestFullscreen().catch(console.error); else if (el.webkitRequestFullscreen) el.webkitRequestFullscreen(); }
+system|command|EXIT_FULLSCREEN|exit_fullscreen||{ if (!(document.fullscreenElement || document.webkitFullscreenElement)) continue; if (document.exitFullscreen) document.exitFullscreen().catch(console.error); else if (document.webkitExitFullscreen) document.webkitExitFullscreen(); }
+system|event|FULLSCREEN_CHANGE|uint8:on
+system|command|INIT_FULLSCREEN_CHANGE|init_fullscreen_change||{ if (window.__wcc_fs) continue; window.__wcc_fs = 1; const f = () => { push_event_system_FULLSCREEN_CHANGE((document.fullscreenElement || document.webkitFullscreenElement) ? 1 : 0); _triggerDiscreteUpdate(); }; document.addEventListener('fullscreenchange', f); document.addEventListener('webkitfullscreenchange', f); }
 # installing the page as an app. INSTALL_STATE: 0 the browser offers no prompt (yet), 1 it does,
 # 2 installed or running as the installed app, 3 no prompt but Share, Add to Home Screen installs it
 # (iPhone, iPad), 4 no prompt but File, Add to Dock does (Safari on a Mac). init_install reports the
