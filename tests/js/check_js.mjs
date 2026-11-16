@@ -171,7 +171,8 @@ int main(){ uint8_t d[3]={1,2,3};
   fetch_storage: `#include "webcc/fetch.h"
 #include "webcc/storage.h"
 int main(){ webcc::fetch::get("/api","{}");
-  webcc::storage::set_item("k","v"); webcc::storage::persist(); }`,
+  webcc::storage::set_item("k","v"); webcc::storage::get_item("k");
+  webcc::storage::remove_item("k"); webcc::storage::clear(); webcc::storage::persist(); }`,
 
   webgpu: `#include "webcc/wgpu.h"
 int main(){ webcc::wgpu::request_adapter(); }`,
@@ -240,6 +241,36 @@ for (const [name, src] of Object.entries(cases)) {
 }
 
 rmSync(work, { recursive: true, force: true });
+
+// js/store.js run for real: a page with no usable localStorage (null in a WebView with storage
+// off, a throw when site data is blocked) gets one in memory instead of a crash at the first read
+{
+  const store = readFileSync(join(repoRoot, "js/store.js"), "utf8");
+  const blocked = {};
+  Object.defineProperty(blocked, "localStorage", { get() { throw new Error("SecurityError"); } });
+  const real = new Map();
+  const pages = {
+    null: { localStorage: null },
+    throwing: blocked,
+    working: { localStorage: { getItem: k => real.get(k) ?? null, setItem: (k, v) => real.set(k, v),
+      removeItem: k => real.delete(k), clear: () => real.clear() } },
+  };
+  for (const [name, page] of Object.entries(pages)) {
+    try {
+      const s = vm.runInNewContext(store + "\n__wcc_store", page);
+      s.setItem("k", "v");
+      const got = s.getItem("k");
+      s.removeItem("k");
+      if (got !== "v" || s.getItem("k") !== null) throw new Error(`read back ${got}`);
+      if (name === "working" && s !== page.localStorage)
+        throw new Error("not the page's own localStorage");
+      console.log(`  PASS  store.js with localStorage ${name}`);
+    } catch (e) {
+      console.error(`  FAIL  store.js with localStorage ${name}: ${e.message}`);
+      failures++;
+    }
+  }
+}
 
 console.log("");
 if (failures) {

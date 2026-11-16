@@ -402,10 +402,12 @@ pdf|command|CLOSE|close|handle(PdfDocument):doc|{ __wcc_pdf.close(doc); }
 # ------------------------------------------------------------------------------
 # STORAGE (LocalStorage, SessionStorage)
 # ------------------------------------------------------------------------------
-storage|command|SET_ITEM|set_item|string:key string:value|{ localStorage.setItem(key, value); }
-storage|command|GET_ITEM|get_item|string:key RET:string|{ const ret = localStorage.getItem(key) || ""; }
-storage|command|REMOVE_ITEM|remove_item|string:key|{ localStorage.removeItem(key); }
-storage|command|CLEAR|clear||{ localStorage.clear(); }
+# localStorage, or one in memory for the page where the browser has none
+storage|helper|__wcc_store|js/store.js
+storage|command|SET_ITEM|set_item|string:key string:value|{ __wcc_store.setItem(key, value); }
+storage|command|GET_ITEM|get_item|string:key RET:string|{ const ret = __wcc_store.getItem(key) || ""; }
+storage|command|REMOVE_ITEM|remove_item|string:key|{ __wcc_store.removeItem(key); }
+storage|command|CLEAR|clear||{ __wcc_store.clear(); }
 # sessionStorage: kept for this tab only, through reloads and navigations, gone when the tab closes
 storage|command|SESSION_SET_ITEM|session_set_item|string:key string:value|{ try { sessionStorage.setItem(key, value); } catch (e) {} }
 storage|command|SESSION_GET_ITEM|session_get_item|string:key RET:string|{ let ret = ""; try { ret = sessionStorage.getItem(key) || ""; } catch (e) {} }
