@@ -1,6 +1,7 @@
-// Keyed loop rows are built fresh on every sync; morphing keeps the live row's nodes and makes them
-// look like the fresh ones, so a re-render doesn't drop pointer capture, focus, hover or scroll.
-// Afterwards the fresh row's handles name the live nodes and its listeners sit on them.
+// A part of the page built again (a list row whose shape changed, a prerendered page taken over):
+// morphing keeps the live nodes and makes them look like the fresh ones, so it doesn't drop
+// pointer capture, focus, hover or scroll. Afterwards the fresh handles name the live nodes and
+// their listeners sit on them.
 const __wcc_morph = {
     // listener sets kept on a node by the add_*_listener commands, with their options (an entry
     // may carry its own as a third item)
