@@ -160,6 +160,33 @@ TEST(vector_copy_from_non_const_lvalue)
     CHECK_EQ(nested[0].size(), (size_t)4);
 }
 
+// one of the vector's own elements pushed while it has to move to grow: the element is read
+// before the old storage goes, as std::vector does
+TEST(vector_push_own_element_across_growth)
+{
+    heap_reset();
+    {
+        webcc::vector<webcc::string> v;
+        v.push_back(webcc::string("first"));
+        v.push_back(webcc::string("second"));
+        v.push_back(webcc::string("third"));
+        v.push_back(webcc::string("fourth"));
+        CHECK_EQ(v.size(), v.capacity());
+        v.push_back(v[0]);
+        CHECK(v[4] == "first");
+        while (v.size() < v.capacity())
+            v.push_back(webcc::string("more"));
+        v.emplace_back(v[1]);
+        CHECK(v.back() == "second");
+        while (v.size() < v.capacity())
+            v.push_back(webcc::string("more"));
+        v.push_back(webcc::move(v[2]));
+        CHECK(v.back() == "third");
+        CHECK(v[0] == "first");
+    }
+    CHECK_EQ(heap_used(), (size_t)0);
+}
+
 TEST(unordered_map_const_read_and_iterate)
 {
     webcc::unordered_map<int, int> m;

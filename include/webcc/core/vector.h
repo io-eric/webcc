@@ -139,47 +139,28 @@ namespace webcc
             return *this;
         }
 
-        void push_back(const T &value)
-        {
-            if (m_size == m_capacity)
-            {
-                size_t new_cap = m_capacity == 0 ? 4 : m_capacity * 2;
-                reallocate(new_cap);
-            }
-            if (m_size < m_capacity)
-            {
-                new (m_data + m_size) T(value);
-                m_size++;
-            }
-        }
+        void push_back(const T &value) { emplace_back(value); }
 
-        void push_back(T &&value)
-        {
-            if (m_size == m_capacity)
-            {
-                size_t new_cap = m_capacity == 0 ? 4 : m_capacity * 2;
-                reallocate(new_cap);
-            }
-            if (m_size < m_capacity)
-            {
-                new (m_data + m_size) T(webcc::move(value));
-                m_size++;
-            }
-        }
+        void push_back(T &&value) { emplace_back(webcc::move(value)); }
 
+        // when full, the element is built before the storage moves: args may be one of this
+        // vector's own elements (v.push_back(v[0])), gone once the old block is freed
         template <typename... Args>
         void emplace_back(Args &&...args)
         {
             if (m_size == m_capacity)
             {
-                size_t new_cap = m_capacity == 0 ? 4 : m_capacity * 2;
-                reallocate(new_cap);
+                T value(webcc::forward<Args>(args)...);
+                reallocate(m_capacity == 0 ? 4 : m_capacity * 2);
+                if (m_size < m_capacity)
+                {
+                    new (m_data + m_size) T(webcc::move(value));
+                    m_size++;
+                }
+                return;
             }
-            if (m_size < m_capacity)
-            {
-                new (m_data + m_size) T(webcc::forward<Args>(args)...);
-                m_size++;
-            }
+            new (m_data + m_size) T(webcc::forward<Args>(args)...);
+            m_size++;
         }
 
         T &back() { return m_data[m_size - 1]; }
