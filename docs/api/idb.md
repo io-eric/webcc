@@ -18,6 +18,7 @@ IndexedDB is asynchronous. Every call returns a handle right away, and the resul
 | `put`, `remove` | `DoneEvent` or `ErrorEvent` |
 | `get` | `ValueEvent` or `ErrorEvent` |
 | `keys` | `KeysEvent` or `ErrorEvent` |
+| `drop` | `DoneEvent` or `ErrorEvent` |
 
 - Calls made before `OpenedEvent` wait for the database, so there is no need to wait for it before the first `get`.
 - Calls on one database run in the order they were made. A `get` after a `put` of the same key sees the new value.
@@ -79,6 +80,14 @@ Closes the database. Calls already made still finish. Calls made after `close` g
 
 ```cpp
 void close(webcc::Database db);
+```
+
+### `drop`
+
+Deletes the database `name` with everything in it, but only while no other connection has it open: one still open (another tab, or a `Database` here not yet closed) gets `ErrorEvent` with `"in use"`, and the database stays as it was, so nothing is lost from under a page still using it. Try again later. `DoneEvent` also arrives when there was no such database.
+
+```cpp
+webcc::IdbRequest drop(webcc::string_view name);
 ```
 
 ## Events

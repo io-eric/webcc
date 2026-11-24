@@ -108,7 +108,7 @@ int main(){ namespace i=webcc::idb;
   uint8_t d[3]={1,2,3};
   auto db=i::open("t");
   i::put(db,"k",webcc::bytes_view(d,3)); i::get(db,"k");
-  i::remove(db,"k"); i::keys(db); i::close(db); }`,
+  i::remove(db,"k"); i::keys(db); i::close(db); i::drop("t"); }`,
 
   // binary fetch: bytes param with a default, fetches + blobs maps
   fetch_binary: `#include "webcc/fetch.h"
