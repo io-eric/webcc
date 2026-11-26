@@ -22,10 +22,12 @@ Exit code is non-zero on any failure, so CI fails loudly. The suite runs in CI
 | [test_event_buffer.cc](test_event_buffer.cc) | The JS/C++ event format read by `next_event`: header layout, 24-bit event length (events over 64KB), and reset on a malformed length. |
 | [test_schema.cc](test_schema.cc) | `load_defs` parsing: opcode assignment, `handle(T)` extraction, `RET:` handling, inheritance, pipes inside JS actions, plus the `schema.wcc.bin` binary-cache round-trip. |
 | [test_codegen.cc](test_codegen.cc) | Golden snapshots of `emit_headers` and `generate_js_runtime` output, plus tree-shaking assertions (a canvas-only build embeds canvas code and not DOM/WebSocket/WebGPU). |
+| [test_random.cc](test_random.cc) | `core/random.h`: the first number drawn comes from the seed import and not the fixed start, and a seed given by hand repeats. |
 
 **JS validation** ([js/check_js.mjs](js/check_js.mjs)): generates `app.js` for
 several feature combinations using the real `webcc` binary and parses each with
-Node's `vm.Script`, confirming the generated JavaScript is syntactically valid.
+Node's `vm.Script`, confirming the generated JavaScript is syntactically valid. It also runs a program that draws a random number, with
+the seed import answered by hand: two seeds draw different numbers, one seed the same.
 
 **Host page** ([host/page.cc](host/page.cc)): a program run with `webcc --run`
 that builds a page and reads it and sends it events through `webcc/host.h`:

@@ -242,6 +242,38 @@ for (const [name, src] of Object.entries(cases)) {
 
 rmSync(work, { recursive: true, force: true });
 
+// core/random.h run for real: the first number drawn comes from the page's seed import, so two
+// loads differ; with no seed (0) a run repeats from the fixed start
+{
+  const dir = mkdtempSync(join(tmpdir(), "webcc-random-"));
+  try {
+    writeFileSync(join(dir, "r.cc"), `#include "webcc/core/random.h"
+int main(){ return webcc::random_int(0, 1000000000); }`);
+    execFileSync(webccBin, ["-o", join(dir, "out"), join(dir, "r.cc")], { cwd: repoRoot, stdio: "pipe" });
+    const js = readFileSync(join(dir, "out", "app.js"), "utf8");
+    if (!js.includes("webcc_system_get_random_seed") || !js.includes("crypto.getRandomValues"))
+      throw new Error("app.js has no seed import that asks crypto.getRandomValues");
+    const wasm = new WebAssembly.Module(readFileSync(join(dir, "out", "app.wasm")));
+    const draw = (seed) => {
+      const env = new Proxy({ webcc_system_get_random_seed: seed }, { get: (t, k) => t[k] ?? (() => 0) });
+      const stubs = new Proxy({}, { get: (t, k) => new Proxy({}, { get: () => () => 0 }) });
+      const imports = new Proxy({ env }, { get: (t, k) => t[k] ?? stubs[k] });
+      return new WebAssembly.Instance(wasm, imports).exports.main();
+    };
+    const counter = (from) => { let n = from; return () => n++; };
+    const a = draw(counter(1000)), b = draw(counter(2000)), again = draw(counter(1000));
+    const none = draw(() => 0), none2 = draw(() => 0);
+    if (a === b) throw new Error(`two seeds drew the same number ${a}`);
+    if (a !== again) throw new Error(`one seed drew ${a} then ${again}`);
+    if (none !== none2 || none === a) throw new Error(`no seed drew ${none} then ${none2}`);
+    console.log("  PASS  random.h takes its seed from the page");
+  } catch (e) {
+    console.error(`  FAIL  random.h seed: ${e.message}`);
+    failures++;
+  }
+  rmSync(dir, { recursive: true, force: true });
+}
+
 // js/store.js run for real: a page with no usable localStorage (null in a WebView with storage
 // off, a throw when site data is blocked) gets one in memory instead of a crash at the first read
 {
